@@ -1,0 +1,176 @@
+@page "/tutores/novo"
+@page "/tutores/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNovo ? "Novo Tutor" : "Editar Tutor")</PageTitle>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">@(IsNovo ? "Novo Tutor" : "Editar Tutor")</h3>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                <EditForm Model="tutor" OnValidSubmit="SalvarAsync" FormName="form-tutor">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Nome</label>
+                            <InputText class="form-control" @bind-Value="tutor.Nome" />
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Titulação</label>
+                            <InputSelect class="form-select" @bind-Value="tutor.TitulacaoId">
+                                <option value="0">-- Selecione --</option>
+                                @foreach (var titulacao in titulacoes)
+                                {
+                                    <option value="@titulacao.Id">@titulacao.Nome</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">CPF</label>
+                            <InputText class="form-control" @bind-Value="tutor.Cpf" />
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">RG</label>
+                            <InputText class="form-control" @bind-Value="tutor.Rg" />
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Chave PIX</label>
+                            <InputText class="form-control" @bind-Value="tutor.ChavePix" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Banco</label>
+                            <InputText class="form-control" @bind-Value="tutor.Banco" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Código</label>
+                            <InputText class="form-control" @bind-Value="tutor.CodigoBanco" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Agência</label>
+                            <InputText class="form-control" @bind-Value="tutor.Agencia" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Conta</label>
+                            <InputText class="form-control" @bind-Value="tutor.Conta" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Nome do Titular</label>
+                            <InputText class="form-control" @bind-Value="tutor.NomeTitular" />
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private Tutor tutor = new();
+    private List<Titulacao> titulacoes = new();
+    private bool carregando = true;
+    private string? mensagemErro;
+
+    private bool IsNovo => Id is null or 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        titulacoes = await context.Titulacoes
+            .AsNoTracking()
+            .OrderBy(t => t.Nome)
+            .ToListAsync();
+
+        if (!IsNovo)
+        {
+            var existente = await context.Tutores
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo("/tutores");
+                return;
+            }
+
+            tutor = existente;
+        }
+
+        carregando = false;
+    }
+
+    private async Task SalvarAsync()
+    {
+        if (tutor.TitulacaoId == 0)
+        {
+            mensagemErro = "Selecione uma titulação.";
+            return;
+        }
+
+        mensagemErro = null;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        if (IsNovo)
+        {
+            context.Tutores.Add(tutor);
+        }
+        else
+        {
+            context.Tutores.Update(tutor);
+        }
+
+        await context.SaveChangesAsync();
+
+        Navigation.NavigateTo("/tutores");
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/tutores");
+    }
+}

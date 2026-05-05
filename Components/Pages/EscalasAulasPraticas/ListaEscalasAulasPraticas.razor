@@ -1,0 +1,148 @@
+@page "/escalas-aulas-praticas"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Escalas de Aula Prática</PageTitle>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Escalas de Aula Prática</h1>
+        <button class="btn btn-primary" @onclick="Nova">
+            Nova Escala
+        </button>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Pesquisar por nome do tutor..."
+                   @bind="filtroNome"
+                   @bind:event="oninput" />
+        </div>
+    </div>
+
+    @if (escalas is null)
+    {
+        <p>Carregando...</p>
+    }
+    else if (!EscalasFiltradas.Any())
+    {
+        <div class="alert alert-info">Nenhuma escala encontrada.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Tutor</th>
+                        <th>Dia da Semana</th>
+                        <th>Hora Início</th>
+                        <th>Hora Fim</th>
+                        <th>Ativo</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in EscalasFiltradas)
+                    {
+                        <tr>
+                            <td>@e.Tutor?.Nome</td>
+                            <td>@e.DiaSemana</td>
+                            <td>@e.HoraInicio.ToString(@"hh\:mm")</td>
+                            <td>@e.HoraFim.ToString(@"hh\:mm")</td>
+                            <td>
+                                @if (e.Ativo)
+                                {
+                                    <span class="badge bg-success">Sim</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Não</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-secondary me-1"
+                                        @onclick="() => Editar(e.Id)">
+                                    Editar
+                                </button>
+                                <button class="btn btn-sm btn-danger"
+                                        @onclick="() => ExcluirAsync(e.Id)">
+                                    Excluir
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<EscalaAulaPratica>? escalas;
+    private string filtroNome = string.Empty;
+
+    private IEnumerable<EscalaAulaPratica> EscalasFiltradas =>
+        escalas is null
+            ? Enumerable.Empty<EscalaAulaPratica>()
+            : string.IsNullOrWhiteSpace(filtroNome)
+                ? escalas
+                : escalas.Where(e =>
+                    e.Tutor != null &&
+                    e.Tutor.Nome.Contains(filtroNome, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarDadosAsync();
+    }
+
+    private async Task CarregarDadosAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        escalas = await context.EscalasAulasPraticas
+            .AsNoTracking()
+            .Include(e => e.Tutor)
+            .OrderBy(e => e.Tutor!.Nome)
+            .ThenBy(e => e.DiaSemana)
+            .ToListAsync();
+    }
+
+    private void Nova()
+    {
+        Navigation.NavigateTo("/escalas-aulas-praticas/novo");
+    }
+
+    private void Editar(int id)
+    {
+        Navigation.NavigateTo($"/escalas-aulas-praticas/editar/{id}");
+    }
+
+    private async Task ExcluirAsync(int id)
+    {
+        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta escala?");
+
+        if (!confirmado)
+            return;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        var entidade = await context.EscalasAulasPraticas.FindAsync(id);
+
+        if (entidade is not null)
+        {
+            context.EscalasAulasPraticas.Remove(entidade);
+            await context.SaveChangesAsync();
+            await CarregarDadosAsync();
+        }
+    }
+}

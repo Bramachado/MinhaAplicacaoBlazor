@@ -1,0 +1,138 @@
+@page "/tutores"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Tutores</PageTitle>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Tutores</h1>
+        <button class="btn btn-primary" @onclick="NovoTutor">
+            Novo Tutor
+        </button>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Pesquisar por nome..."
+                   @bind="filtroNome"
+                   @bind:event="oninput" />
+        </div>
+    </div>
+
+    @if (tutores is null)
+    {
+        <p>Carregando...</p>
+    }
+    else if (!TutoresFiltrados.Any())
+    {
+        <div class="alert alert-info">Nenhum tutor encontrado.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome</th>
+                        <th>CPF</th>
+                        <th>Titulação</th>
+                        <th>Banco</th>
+                        <th>Agência</th>
+                        <th>Conta</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tutor in TutoresFiltrados)
+                    {
+                        <tr>
+                            <td>@tutor.Nome</td>
+                            <td>@tutor.Cpf</td>
+                            <td>@tutor.Titulacao?.Nome</td>
+                            <td>@tutor.Banco</td>
+                            <td>@tutor.Agencia</td>
+                            <td>@tutor.Conta</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-secondary me-1"
+                                        @onclick="() => Editar(tutor.Id)">
+                                    Editar
+                                </button>
+                                <button class="btn btn-sm btn-danger"
+                                        @onclick="() => ExcluirAsync(tutor.Id)">
+                                    Excluir
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Tutor>? tutores;
+    private string filtroNome = string.Empty;
+
+    private IEnumerable<Tutor> TutoresFiltrados =>
+        tutores is null
+            ? Enumerable.Empty<Tutor>()
+            : string.IsNullOrWhiteSpace(filtroNome)
+                ? tutores
+                : tutores.Where(t => t.Nome.Contains(filtroNome, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarDadosAsync();
+    }
+
+    private async Task CarregarDadosAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        tutores = await context.Tutores
+            .AsNoTracking()
+            .Include(t => t.Titulacao)
+            .OrderBy(t => t.Nome)
+            .ToListAsync();
+    }
+
+    private void NovoTutor()
+    {
+        Navigation.NavigateTo("/tutores/novo");
+    }
+
+    private void Editar(int id)
+    {
+        Navigation.NavigateTo($"/tutores/editar/{id}");
+    }
+
+    private async Task ExcluirAsync(int id)
+    {
+        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir este tutor?");
+
+        if (!confirmado)
+            return;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        var entidade = await context.Tutores.FindAsync(id);
+
+        if (entidade is not null)
+        {
+            context.Tutores.Remove(entidade);
+            await context.SaveChangesAsync();
+            await CarregarDadosAsync();
+        }
+    }
+}

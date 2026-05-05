@@ -1,0 +1,196 @@
+@page "/escalas-aulas-praticas/novo"
+@page "/escalas-aulas-praticas/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNovo ? "Nova Escala" : "Editar Escala")</PageTitle>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">@(IsNovo ? "Nova Escala de Aula Prática" : "Editar Escala de Aula Prática")</h3>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                <EditForm Model="escala" OnValidSubmit="SalvarAsync" FormName="form-escala">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tutor</label>
+                            <InputSelect class="form-select" @bind-Value="escala.TutorId">
+                                <option value="0">-- Selecione --</option>
+                                @foreach (var tutor in tutores)
+                                {
+                                    <option value="@tutor.Id">@tutor.Nome</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Dia da Semana</label>
+                            <InputSelect class="form-select" @bind-Value="escala.DiaSemana">
+                                <option value="">-- Selecione --</option>
+                                @foreach (var dia in DiasDaSemana)
+                                {
+                                    <option value="@dia">@dia</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Hora Início</label>
+                            <input type="time"
+                                   class="form-control"
+                                   value="@FormatarHora(escala.HoraInicio)"
+                                   @onchange="OnHoraInicioChanged" />
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Hora Fim</label>
+                            <input type="time"
+                                   class="form-control"
+                                   value="@FormatarHora(escala.HoraFim)"
+                                   @onchange="OnHoraFimChanged" />
+                        </div>
+
+                        <div class="col-md-4 mb-3 d-flex align-items-end">
+                            <div class="form-check">
+                                <InputCheckbox class="form-check-input" id="ativo" @bind-Value="escala.Ativo" />
+                                <label class="form-check-label" for="ativo">Ativo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private EscalaAulaPratica escala = new();
+    private List<Tutor> tutores = new();
+    private bool carregando = true;
+    private string? mensagemErro;
+
+    private bool IsNovo => Id is null or 0;
+
+    private static readonly string[] DiasDaSemana =
+    {
+        "Segunda-feira",
+        "Terça-feira",
+        "Quarta-feira",
+        "Quinta-feira",
+        "Sexta-feira",
+        "Sábado",
+        "Domingo"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        tutores = await context.Tutores
+            .AsNoTracking()
+            .OrderBy(t => t.Nome)
+            .ToListAsync();
+
+        if (!IsNovo)
+        {
+            var existente = await context.EscalasAulasPraticas
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo("/escalas-aulas-praticas");
+                return;
+            }
+
+            escala = existente;
+        }
+
+        carregando = false;
+    }
+
+    private static string FormatarHora(TimeSpan ts) => ts.ToString(@"hh\:mm");
+
+    private void OnHoraInicioChanged(ChangeEventArgs e)
+    {
+        if (TimeSpan.TryParse(e.Value?.ToString(), out var ts))
+        {
+            escala.HoraInicio = ts;
+        }
+    }
+
+    private void OnHoraFimChanged(ChangeEventArgs e)
+    {
+        if (TimeSpan.TryParse(e.Value?.ToString(), out var ts))
+        {
+            escala.HoraFim = ts;
+        }
+    }
+
+    private async Task SalvarAsync()
+    {
+        if (escala.TutorId == 0)
+        {
+            mensagemErro = "Selecione um tutor.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(escala.DiaSemana))
+        {
+            mensagemErro = "Selecione um dia da semana.";
+            return;
+        }
+
+        mensagemErro = null;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        if (IsNovo)
+        {
+            context.EscalasAulasPraticas.Add(escala);
+        }
+        else
+        {
+            context.EscalasAulasPraticas.Update(escala);
+        }
+
+        await context.SaveChangesAsync();
+
+        Navigation.NavigateTo("/escalas-aulas-praticas");
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/escalas-aulas-praticas");
+    }
+}

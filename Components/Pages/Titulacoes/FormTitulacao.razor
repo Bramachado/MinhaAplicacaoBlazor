@@ -1,0 +1,111 @@
+@page "/titulacoes/novo"
+@page "/titulacoes/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNovo ? "Nova Titulação" : "Editar Titulação")</PageTitle>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">@(IsNovo ? "Nova Titulação" : "Editar Titulação")</h3>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                <EditForm Model="titulacao" OnValidSubmit="SalvarAsync" FormName="form-titulacao">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Nome</label>
+                            <InputText class="form-control" @bind-Value="titulacao.Nome" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Valor Hora Aula Normal</label>
+                            <InputNumber class="form-control" @bind-Value="titulacao.ValorHoraAulaNormal" step="0.01" />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Valor Hora Aula Prática</label>
+                            <InputNumber class="form-control" @bind-Value="titulacao.ValorHoraAulaPratica" step="0.01" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private Titulacao titulacao = new();
+    private bool carregando = true;
+
+    private bool IsNovo => Id is null or 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!IsNovo)
+        {
+            await using var context = await DbFactory.CreateDbContextAsync();
+
+            var existente = await context.Titulacoes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo("/titulacoes");
+                return;
+            }
+
+            titulacao = existente;
+        }
+
+        carregando = false;
+    }
+
+    private async Task SalvarAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        if (IsNovo)
+        {
+            context.Titulacoes.Add(titulacao);
+        }
+        else
+        {
+            context.Titulacoes.Update(titulacao);
+        }
+
+        await context.SaveChangesAsync();
+
+        Navigation.NavigateTo("/titulacoes");
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/titulacoes");
+    }
+}

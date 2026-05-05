@@ -1,0 +1,131 @@
+@page "/titulacoes"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Titulações</PageTitle>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Titulações</h1>
+        <button class="btn btn-primary" @onclick="Nova">
+            Nova Titulação
+        </button>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Pesquisar por nome..."
+                   @bind="filtroNome"
+                   @bind:event="oninput" />
+        </div>
+    </div>
+
+    @if (titulacoes is null)
+    {
+        <p>Carregando...</p>
+    }
+    else if (!TitulacoesFiltradas.Any())
+    {
+        <div class="alert alert-info">Nenhuma titulação encontrada.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome</th>
+                        <th>Valor Hora Aula Normal</th>
+                        <th>Valor Hora Aula Prática</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in TitulacoesFiltradas)
+                    {
+                        <tr>
+                            <td>@t.Nome</td>
+                            <td>@t.ValorHoraAulaNormal.ToString("C")</td>
+                            <td>@t.ValorHoraAulaPratica.ToString("C")</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-secondary me-1"
+                                        @onclick="() => Editar(t.Id)">
+                                    Editar
+                                </button>
+                                <button class="btn btn-sm btn-danger"
+                                        @onclick="() => ExcluirAsync(t.Id)">
+                                    Excluir
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Titulacao>? titulacoes;
+    private string filtroNome = string.Empty;
+
+    private IEnumerable<Titulacao> TitulacoesFiltradas =>
+        titulacoes is null
+            ? Enumerable.Empty<Titulacao>()
+            : string.IsNullOrWhiteSpace(filtroNome)
+                ? titulacoes
+                : titulacoes.Where(t => t.Nome.Contains(filtroNome, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarDadosAsync();
+    }
+
+    private async Task CarregarDadosAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        titulacoes = await context.Titulacoes
+            .AsNoTracking()
+            .OrderBy(t => t.Nome)
+            .ToListAsync();
+    }
+
+    private void Nova()
+    {
+        Navigation.NavigateTo("/titulacoes/novo");
+    }
+
+    private void Editar(int id)
+    {
+        Navigation.NavigateTo($"/titulacoes/editar/{id}");
+    }
+
+    private async Task ExcluirAsync(int id)
+    {
+        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta titulação?");
+
+        if (!confirmado)
+            return;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        var entidade = await context.Titulacoes.FindAsync(id);
+
+        if (entidade is not null)
+        {
+            context.Titulacoes.Remove(entidade);
+            await context.SaveChangesAsync();
+            await CarregarDadosAsync();
+        }
+    }
+}
