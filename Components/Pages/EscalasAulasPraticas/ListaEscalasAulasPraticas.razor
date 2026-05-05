@@ -27,6 +27,15 @@
                    @bind="filtroNome"
                    @bind:event="oninput" />
         </div>
+        <div class="col-md-4">
+            <select class="form-select" @bind="filtroUnidadeId">
+                <option value="0">Todas as Unidades</option>
+                @foreach (var u in unidades)
+                {
+                    <option value="@u.Id">@u.Nome</option>
+                }
+            </select>
+        </div>
     </div>
 
     @if (escalas is null)
@@ -44,6 +53,10 @@
                 <thead class="table-dark">
                     <tr>
                         <th>Tutor</th>
+                        <th>Unidade</th>
+                        <th>Mês Aula Prática</th>
+                        <th>Curso/Turma</th>
+                        <th>Sala/Lab</th>
                         <th>Dia da Semana</th>
                         <th>Hora Início</th>
                         <th>Hora Fim</th>
@@ -56,6 +69,10 @@
                     {
                         <tr>
                             <td>@e.Tutor?.Nome</td>
+                            <td>@e.Tutor?.Unidade?.Nome</td>
+                            <td>@e.MesAulaPratica</td>
+                            <td>@e.CursoTurma</td>
+                            <td>@e.SalaLab</td>
                             <td>@e.DiaSemana</td>
                             <td>@e.HoraInicio.ToString(@"hh\:mm")</td>
                             <td>@e.HoraFim.ToString(@"hh\:mm")</td>
@@ -89,16 +106,31 @@
 
 @code {
     private List<EscalaAulaPratica>? escalas;
+    private List<Unidade> unidades = new();
     private string filtroNome = string.Empty;
+    private int filtroUnidadeId;
 
-    private IEnumerable<EscalaAulaPratica> EscalasFiltradas =>
-        escalas is null
-            ? Enumerable.Empty<EscalaAulaPratica>()
-            : string.IsNullOrWhiteSpace(filtroNome)
-                ? escalas
-                : escalas.Where(e =>
+    private IEnumerable<EscalaAulaPratica> EscalasFiltradas
+    {
+        get
+        {
+            if (escalas is null)
+                return Enumerable.Empty<EscalaAulaPratica>();
+
+            IEnumerable<EscalaAulaPratica> resultado = escalas;
+
+            if (!string.IsNullOrWhiteSpace(filtroNome))
+                resultado = resultado.Where(e =>
                     e.Tutor != null &&
                     e.Tutor.Nome.Contains(filtroNome, StringComparison.OrdinalIgnoreCase));
+
+            if (filtroUnidadeId > 0)
+                resultado = resultado.Where(e =>
+                    e.Tutor != null && e.Tutor.UnidadeId == filtroUnidadeId);
+
+            return resultado;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -112,8 +144,15 @@
         escalas = await context.EscalasAulasPraticas
             .AsNoTracking()
             .Include(e => e.Tutor)
+                .ThenInclude(t => t!.Unidade)
             .OrderBy(e => e.Tutor!.Nome)
+            .ThenBy(e => e.MesAulaPratica)
             .ThenBy(e => e.DiaSemana)
+            .ToListAsync();
+
+        unidades = await context.Unidades
+            .AsNoTracking()
+            .OrderBy(u => u.Nome)
             .ToListAsync();
     }
 

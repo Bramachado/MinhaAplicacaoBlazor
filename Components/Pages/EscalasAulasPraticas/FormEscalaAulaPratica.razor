@@ -28,7 +28,7 @@
                     <ValidationSummary class="text-danger" />
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-8 mb-3">
                             <label class="form-label">Tutor</label>
                             <InputSelect class="form-select" @bind-Value="escala.TutorId">
                                 <option value="0">-- Selecione --</option>
@@ -39,7 +39,14 @@
                             </InputSelect>
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Mês de Aula Prática (MM/AAAA)</label>
+                            <InputText class="form-control" @bind-Value="escala.MesAulaPratica" placeholder="05/2026" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
                             <label class="form-label">Dia da Semana</label>
                             <InputSelect class="form-select" @bind-Value="escala.DiaSemana">
                                 <option value="">-- Selecione --</option>
@@ -73,6 +80,25 @@
                                 <InputCheckbox class="form-check-input" id="ativo" @bind-Value="escala.Ativo" />
                                 <label class="form-check-label" for="ativo">Ativo</label>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Curso/Turma</label>
+                            <InputText class="form-control" @bind-Value="escala.CursoTurma" />
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Sala/Lab</label>
+                            <InputText class="form-control" @bind-Value="escala.SalaLab" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Observação</label>
+                            <InputTextArea class="form-control" rows="3" @bind-Value="escala.Observacao" />
                         </div>
                     </div>
 

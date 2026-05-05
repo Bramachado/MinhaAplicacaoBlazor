@@ -35,7 +35,22 @@ public class Tutor
     [MaxLength(150)]
     public string? NomeTitular { get; set; }
 
+    [MaxLength(150)]
+    [EmailAddress]
+    public string? Email { get; set; }
+
+    [MaxLength(20)]
+    public string? Telefone { get; set; }
+
+    public DateTime? DataNascimento { get; set; }
+
+    public bool Ativo { get; set; } = true;
+
     public int TitulacaoId { get; set; }
 
     public Titulacao? Titulacao { get; set; }
+
+    public int UnidadeId { get; set; }
+
+    public Unidade? Unidade { get; set; }
 }

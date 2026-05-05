@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MinhaAplicacaoBlazor.Data;
 
@@ -11,9 +12,11 @@ using MinhaAplicacaoBlazor.Data;
 namespace MinhaAplicacaoBlazor.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260505003956_AdicionaDataNascimentoAtivoTutor")]
+    partial class AdicionaDataNascimentoAtivoTutor
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -33,10 +36,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.Property<bool>("Ativo")
                         .HasColumnType("bit");
 
-                    b.Property<string>("CursoTurma")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<string>("DiaSemana")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -47,19 +46,6 @@ namespace MinhaAplicacaoBlazor.Migrations
 
                     b.Property<TimeSpan>("HoraInicio")
                         .HasColumnType("time");
-
-                    b.Property<string>("MesAulaPratica")
-                        .IsRequired()
-                        .HasMaxLength(7)
-                        .HasColumnType("nvarchar(7)");
-
-                    b.Property<string>("Observacao")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("SalaLab")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("TutorId")
                         .HasColumnType("int");
@@ -160,9 +146,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.Property<int>("TitulacaoId")
                         .HasColumnType("int");
 
-                    b.Property<int>("UnidadeId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("Cpf")
@@ -170,46 +153,7 @@ namespace MinhaAplicacaoBlazor.Migrations
 
                     b.HasIndex("TitulacaoId");
 
-                    b.HasIndex("UnidadeId");
-
                     b.ToTable("Tutores");
-                });
-
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Unidade", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("Ativa")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("Endereco")
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("Telefone")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Codigo")
-                        .IsUnique();
-
-                    b.ToTable("Unidades");
                 });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.EscalaAulaPratica", b =>
@@ -231,23 +175,10 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("MinhaAplicacaoBlazor.Models.Unidade", "Unidade")
-                        .WithMany("Tutores")
-                        .HasForeignKey("UnidadeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("Titulacao");
-
-                    b.Navigation("Unidade");
                 });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Titulacao", b =>
-                {
-                    b.Navigation("Tutores");
-                });
-
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Unidade", b =>
                 {
                     b.Navigation("Tutores");
                 });

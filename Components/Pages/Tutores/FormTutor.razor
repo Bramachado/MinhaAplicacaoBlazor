@@ -28,18 +28,31 @@
                     <ValidationSummary class="text-danger" />
 
                     <div class="row">
-                        <div class="col-md-8 mb-3">
+                        <div class="col-md-12 mb-3">
                             <label class="form-label">Nome</label>
                             <InputText class="form-control" @bind-Value="tutor.Nome" />
                         </div>
+                    </div>
 
-                        <div class="col-md-4 mb-3">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Titulação</label>
                             <InputSelect class="form-select" @bind-Value="tutor.TitulacaoId">
                                 <option value="0">-- Selecione --</option>
                                 @foreach (var titulacao in titulacoes)
                                 {
                                     <option value="@titulacao.Id">@titulacao.Nome</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Unidade</label>
+                            <InputSelect class="form-select" @bind-Value="tutor.UnidadeId">
+                                <option value="0">-- Selecione --</option>
+                                @foreach (var u in unidades)
+                                {
+                                    <option value="@u.Id">@u.Codigo - @u.Nome</option>
                                 }
                             </InputSelect>
                         </div>
@@ -59,6 +72,23 @@
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Chave PIX</label>
                             <InputText class="form-control" @bind-Value="tutor.ChavePix" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            <InputText type="email" class="form-control" @bind-Value="tutor.Email" />
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Telefone</label>
+                            <InputText class="form-control" @bind-Value="tutor.Telefone" />
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data de Nascimento</label>
+                            <InputDate class="form-control" @bind-Value="tutor.DataNascimento" />
                         </div>
                     </div>
 
@@ -85,9 +115,16 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-9 mb-3">
                             <label class="form-label">Nome do Titular</label>
                             <InputText class="form-control" @bind-Value="tutor.NomeTitular" />
+                        </div>
+
+                        <div class="col-md-3 mb-3 d-flex align-items-end">
+                            <div class="form-check">
+                                <InputCheckbox class="form-check-input" id="ativo-tutor" @bind-Value="tutor.Ativo" />
+                                <label class="form-check-label" for="ativo-tutor">Ativo</label>
+                            </div>
                         </div>
                     </div>
 
@@ -111,6 +148,7 @@
 
     private Tutor tutor = new();
     private List<Titulacao> titulacoes = new();
+    private List<Unidade> unidades = new();
     private bool carregando = true;
     private string? mensagemErro;
 
@@ -123,6 +161,12 @@
         titulacoes = await context.Titulacoes
             .AsNoTracking()
             .OrderBy(t => t.Nome)
+            .ToListAsync();
+
+        unidades = await context.Unidades
+            .AsNoTracking()
+            .Where(u => u.Ativa)
+            .OrderBy(u => u.Nome)
             .ToListAsync();
 
         if (!IsNovo)
@@ -148,6 +192,12 @@
         if (tutor.TitulacaoId == 0)
         {
             mensagemErro = "Selecione uma titulação.";
+            return;
+        }
+
+        if (tutor.UnidadeId == 0)
+        {
+            mensagemErro = "Selecione uma unidade.";
             return;
         }
 
