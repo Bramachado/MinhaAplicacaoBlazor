@@ -11,23 +11,39 @@
 
 <PageTitle>Escalas de Aula Prática</PageTitle>
 
-<div class="container mt-4">
+<div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1>Escalas de Aula Prática</h1>
-        <button class="btn btn-primary" @onclick="Nova">
-            Nova Escala
-        </button>
+        <div class="d-flex gap-2 d-print-none">
+            <button class="btn btn-outline-primary" @onclick="ImprimirAsync">
+                Imprimir
+            </button>
+            <button class="btn btn-primary" @onclick="Nova">
+                Nova Escala
+            </button>
+        </div>
     </div>
 
-    <div class="row mb-3">
-        <div class="col-md-6">
+    <div class="d-none d-print-block mb-3">
+        <h5 class="mb-1">Filtros aplicados</h5>
+        <div>
+            <strong>Pesquisa:</strong> @(string.IsNullOrWhiteSpace(filtroTexto) ? "—" : filtroTexto) &nbsp;|&nbsp;
+            <strong>Unidade:</strong> @NomeUnidadeFiltro &nbsp;|&nbsp;
+            <strong>Mês:</strong> @(string.IsNullOrWhiteSpace(filtroMes) ? "—" : filtroMes) &nbsp;|&nbsp;
+            <strong>Status:</strong> @StatusFiltro &nbsp;|&nbsp;
+            <strong>Total:</strong> @EscalasFiltradas.Count() registro(s)
+        </div>
+    </div>
+
+    <div class="row mb-3 g-2 d-print-none">
+        <div class="col-md-4">
             <input type="text"
                    class="form-control"
-                   placeholder="Pesquisar por nome do tutor..."
-                   @bind="filtroNome"
+                   placeholder="Pesquisar por tutor, curso/turma ou sala..."
+                   @bind="filtroTexto"
                    @bind:event="oninput" />
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <select class="form-select" @bind="filtroUnidadeId">
                 <option value="0">Todas as Unidades</option>
                 @foreach (var u in unidades)
@@ -36,70 +52,78 @@
                 }
             </select>
         </div>
+        <div class="col-md-2">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Mês (MM/AAAA)"
+                   @bind="filtroMes"
+                   @bind:event="oninput" />
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="filtroAtivo">
+                <option value="">Ativos e Inativos</option>
+                <option value="true">Apenas Ativos</option>
+                <option value="false">Apenas Inativos</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <select class="form-select" @bind="pagination.ItemsPerPage">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+        </div>
     </div>
 
     @if (escalas is null)
     {
         <p>Carregando...</p>
     }
-    else if (!EscalasFiltradas.Any())
-    {
-        <div class="alert alert-info">Nenhuma escala encontrada.</div>
-    }
     else
     {
         <div class="table-responsive">
-            <table class="table table-striped table-hover align-middle">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Tutor</th>
-                        <th>Unidade</th>
-                        <th>Mês Aula Prática</th>
-                        <th>Curso/Turma</th>
-                        <th>Sala/Lab</th>
-                        <th>Dia da Semana</th>
-                        <th>Hora Início</th>
-                        <th>Hora Fim</th>
-                        <th>Ativo</th>
-                        <th class="text-end">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var e in EscalasFiltradas)
+            <QuickGrid Items="EscalasFiltradas" Pagination="pagination" Class="table table-striped table-hover align-middle imprimivel-sem-acoes">
+                <PropertyColumn Property="@(e => e.Tutor!.Nome)" Title="Tutor" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
+                <PropertyColumn Property="@(e => e.Tutor!.Unidade!.Nome)" Title="Unidade" Sortable="true" />
+                <PropertyColumn Property="@(e => e.MesAulaPratica)" Title="Mês Aula Prática" Sortable="true" />
+                <PropertyColumn Property="@(e => e.CursoTurma)" Title="Curso/Turma" Sortable="true" />
+                <PropertyColumn Property="@(e => e.SalaLab)" Title="Sala/Lab" Sortable="true" />
+                <PropertyColumn Property="@(e => e.DiaSemana)" Title="Dia da Semana" Sortable="true" />
+                <TemplateColumn Title="Hora Início" Sortable="true" SortBy="@sortPorHoraInicio">
+                    @context.HoraInicio.ToString(@"hh\:mm")
+                </TemplateColumn>
+                <TemplateColumn Title="Hora Fim" Sortable="true" SortBy="@sortPorHoraFim">
+                    @context.HoraFim.ToString(@"hh\:mm")
+                </TemplateColumn>
+                <TemplateColumn Title="Ativo" Sortable="true" SortBy="@sortPorAtivo" Align="Align.Center">
+                    @if (context.Ativo)
                     {
-                        <tr>
-                            <td>@e.Tutor?.Nome</td>
-                            <td>@e.Tutor?.Unidade?.Nome</td>
-                            <td>@e.MesAulaPratica</td>
-                            <td>@e.CursoTurma</td>
-                            <td>@e.SalaLab</td>
-                            <td>@e.DiaSemana</td>
-                            <td>@e.HoraInicio.ToString(@"hh\:mm")</td>
-                            <td>@e.HoraFim.ToString(@"hh\:mm")</td>
-                            <td>
-                                @if (e.Ativo)
-                                {
-                                    <span class="badge bg-success">Sim</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary">Não</span>
-                                }
-                            </td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-secondary me-1"
-                                        @onclick="() => Editar(e.Id)">
-                                    Editar
-                                </button>
-                                <button class="btn btn-sm btn-danger"
-                                        @onclick="() => ExcluirAsync(e.Id)">
-                                    Excluir
-                                </button>
-                            </td>
-                        </tr>
+                        <span class="badge bg-success">Sim</span>
                     }
-                </tbody>
-            </table>
+                    else
+                    {
+                        <span class="badge bg-secondary">Não</span>
+                    }
+                </TemplateColumn>
+                <TemplateColumn Title="Ações" Align="Align.End">
+                    <button class="btn btn-sm btn-secondary me-1"
+                            @onclick="() => Editar(context.Id)">
+                        Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger"
+                            @onclick="() => ExcluirAsync(context.Id)">
+                        Excluir
+                    </button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-2 d-print-none">
+            <small class="text-muted">
+                @(EscalasFiltradas.Count()) registro(s) encontrado(s)
+            </small>
+            <Paginator State="pagination" />
         </div>
     }
 </div>
@@ -107,28 +131,47 @@
 @code {
     private List<EscalaAulaPratica>? escalas;
     private List<Unidade> unidades = new();
-    private string filtroNome = string.Empty;
+    private string filtroTexto = string.Empty;
     private int filtroUnidadeId;
+    private string filtroMes = string.Empty;
+    private string filtroAtivo = string.Empty;
 
-    private IEnumerable<EscalaAulaPratica> EscalasFiltradas
+    private readonly PaginationState pagination = new() { ItemsPerPage = 10 };
+
+    private readonly GridSort<EscalaAulaPratica> sortPorHoraInicio = GridSort<EscalaAulaPratica>.ByAscending(e => e.HoraInicio);
+    private readonly GridSort<EscalaAulaPratica> sortPorHoraFim = GridSort<EscalaAulaPratica>.ByAscending(e => e.HoraFim);
+    private readonly GridSort<EscalaAulaPratica> sortPorAtivo = GridSort<EscalaAulaPratica>.ByAscending(e => e.Ativo);
+
+    private IQueryable<EscalaAulaPratica> EscalasFiltradas
     {
         get
         {
             if (escalas is null)
-                return Enumerable.Empty<EscalaAulaPratica>();
+                return Enumerable.Empty<EscalaAulaPratica>().AsQueryable();
 
             IEnumerable<EscalaAulaPratica> resultado = escalas;
 
-            if (!string.IsNullOrWhiteSpace(filtroNome))
+            if (!string.IsNullOrWhiteSpace(filtroTexto))
+            {
+                var termo = filtroTexto.Trim();
                 resultado = resultado.Where(e =>
-                    e.Tutor != null &&
-                    e.Tutor.Nome.Contains(filtroNome, StringComparison.OrdinalIgnoreCase));
+                    (e.Tutor != null && e.Tutor.Nome.Contains(termo, StringComparison.OrdinalIgnoreCase)) ||
+                    (e.CursoTurma != null && e.CursoTurma.Contains(termo, StringComparison.OrdinalIgnoreCase)) ||
+                    (e.SalaLab != null && e.SalaLab.Contains(termo, StringComparison.OrdinalIgnoreCase)));
+            }
 
             if (filtroUnidadeId > 0)
                 resultado = resultado.Where(e =>
                     e.Tutor != null && e.Tutor.UnidadeId == filtroUnidadeId);
 
-            return resultado;
+            if (!string.IsNullOrWhiteSpace(filtroMes))
+                resultado = resultado.Where(e =>
+                    e.MesAulaPratica.Contains(filtroMes.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (bool.TryParse(filtroAtivo, out var ativo))
+                resultado = resultado.Where(e => e.Ativo == ativo);
+
+            return resultado.AsQueryable();
         }
     }
 
@@ -154,6 +197,29 @@
             .AsNoTracking()
             .OrderBy(u => u.Nome)
             .ToListAsync();
+    }
+
+    private string NomeUnidadeFiltro =>
+        filtroUnidadeId == 0
+            ? "Todas"
+            : unidades.FirstOrDefault(u => u.Id == filtroUnidadeId)?.Nome ?? "—";
+
+    private string StatusFiltro => filtroAtivo switch
+    {
+        "true" => "Apenas Ativos",
+        "false" => "Apenas Inativos",
+        _ => "Todos"
+    };
+
+    private async Task ImprimirAsync()
+    {
+        var itensAnteriores = pagination.ItemsPerPage;
+        await pagination.SetCurrentPageIndexAsync(0);
+        pagination.ItemsPerPage = int.MaxValue;
+        StateHasChanged();
+        await Task.Yield();
+        await JS.InvokeVoidAsync("window.print");
+        pagination.ItemsPerPage = itensAnteriores;
     }
 
     private void Nova()

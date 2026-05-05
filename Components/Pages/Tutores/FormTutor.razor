@@ -35,7 +35,7 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Titulação</label>
                             <InputSelect class="form-select" @bind-Value="tutor.TitulacaoId">
                                 <option value="0">-- Selecione --</option>
@@ -46,13 +46,24 @@
                             </InputSelect>
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Unidade</label>
                             <InputSelect class="form-select" @bind-Value="tutor.UnidadeId">
                                 <option value="0">-- Selecione --</option>
                                 @foreach (var u in unidades)
                                 {
                                     <option value="@u.Id">@u.Codigo - @u.Nome</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Curso</label>
+                            <InputSelect class="form-select" @bind-Value="tutor.CursoId">
+                                <option value="0">-- Selecione --</option>
+                                @foreach (var c in cursos)
+                                {
+                                    <option value="@c.Id">@c.NomeCurso</option>
                                 }
                             </InputSelect>
                         </div>
@@ -149,6 +160,7 @@
     private Tutor tutor = new();
     private List<Titulacao> titulacoes = new();
     private List<Unidade> unidades = new();
+    private List<Curso> cursos = new();
     private bool carregando = true;
     private string? mensagemErro;
 
@@ -167,6 +179,11 @@
             .AsNoTracking()
             .Where(u => u.Ativa)
             .OrderBy(u => u.Nome)
+            .ToListAsync();
+
+        cursos = await context.Cursos
+            .AsNoTracking()
+            .OrderBy(c => c.NomeCurso)
             .ToListAsync();
 
         if (!IsNovo)
@@ -198,6 +215,12 @@
         if (tutor.UnidadeId == 0)
         {
             mensagemErro = "Selecione uma unidade.";
+            return;
+        }
+
+        if (tutor.CursoId == 0)
+        {
+            mensagemErro = "Selecione um curso.";
             return;
         }
 

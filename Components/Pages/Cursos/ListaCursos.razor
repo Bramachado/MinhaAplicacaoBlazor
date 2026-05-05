@@ -1,0 +1,139 @@
+@page "/cursos"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Cursos</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Cursos</h1>
+        <button class="btn btn-primary" @onclick="Novo">
+            Novo Curso
+        </button>
+    </div>
+
+    <div class="row mb-3 g-2">
+        <div class="col-md-6">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Pesquisar por nome..."
+                   @bind="filtroTexto"
+                   @bind:event="oninput" />
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="pagination.ItemsPerPage">
+                <option value="10">10 por página</option>
+                <option value="25">25 por página</option>
+                <option value="50">50 por página</option>
+                <option value="100">100 por página</option>
+            </select>
+        </div>
+    </div>
+
+    @if (cursos is null)
+    {
+        <p>Carregando...</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <QuickGrid Items="CursosFiltrados" Pagination="pagination" Class="table table-striped table-hover align-middle">
+                <PropertyColumn Property="@(c => c.NomeCurso)" Title="Nome do Curso" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
+                <PropertyColumn Property="@(c => c.CargaHorariaTotal)" Title="Carga Horária" Sortable="true" />
+                <PropertyColumn Property="@(c => c.TotalAnos)" Title="Total de Anos" Sortable="true" />
+                <TemplateColumn Title="Ações" Align="Align.End">
+                    <button class="btn btn-sm btn-secondary me-1"
+                            @onclick="() => Editar(context.Id)">
+                        Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger"
+                            @onclick="() => ExcluirAsync(context.Id)">
+                        Excluir
+                    </button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <small class="text-muted">@(CursosFiltrados.Count()) registro(s) encontrado(s)</small>
+            <Paginator State="pagination" />
+        </div>
+    }
+</div>
+
+@code {
+    private List<Curso>? cursos;
+    private string filtroTexto = string.Empty;
+    private readonly PaginationState pagination = new() { ItemsPerPage = 10 };
+
+    private IQueryable<Curso> CursosFiltrados
+    {
+        get
+        {
+            if (cursos is null)
+                return Enumerable.Empty<Curso>().AsQueryable();
+
+            IEnumerable<Curso> resultado = cursos;
+
+            if (!string.IsNullOrWhiteSpace(filtroTexto))
+            {
+                var termo = filtroTexto.Trim();
+                resultado = resultado.Where(c =>
+                    c.NomeCurso.Contains(termo, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return resultado.AsQueryable();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarDadosAsync();
+    }
+
+    private async Task CarregarDadosAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        cursos = await context.Cursos
+            .AsNoTracking()
+            .OrderBy(c => c.NomeCurso)
+            .ToListAsync();
+    }
+
+    private void Novo()
+    {
+        Navigation.NavigateTo("/cursos/novo");
+    }
+
+    private void Editar(int id)
+    {
+        Navigation.NavigateTo($"/cursos/editar/{id}");
+    }
+
+    private async Task ExcluirAsync(int id)
+    {
+        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir este curso?");
+
+        if (!confirmado)
+            return;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        var entidade = await context.Cursos.FindAsync(id);
+
+        if (entidade is not null)
+        {
+            context.Cursos.Remove(entidade);
+            await context.SaveChangesAsync();
+            await CarregarDadosAsync();
+        }
+    }
+}

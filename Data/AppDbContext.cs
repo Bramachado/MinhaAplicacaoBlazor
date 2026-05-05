@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<Titulacao> Titulacoes => Set<Titulacao>();
     public DbSet<EscalaAulaPratica> EscalasAulasPraticas => Set<EscalaAulaPratica>();
     public DbSet<Unidade> Unidades => Set<Unidade>();
+    public DbSet<Curso> Cursos => Set<Curso>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +48,12 @@ public class AppDbContext : DbContext
             .HasOne(x => x.Unidade)
             .WithMany(x => x.Tutores)
             .HasForeignKey(x => x.UnidadeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Tutor>()
+            .HasOne(x => x.Curso)
+            .WithMany(x => x.Tutores)
+            .HasForeignKey(x => x.CursoId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<EscalaAulaPratica>()
