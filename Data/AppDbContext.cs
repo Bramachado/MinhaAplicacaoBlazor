@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MinhaAplicacaoBlazor.Models;
+using MinhaAplicacaoBlazor.Models.Cnab;
 using MinhaAplicacaoBlazor.Data;
 
 
@@ -28,6 +29,12 @@ public class AppDbContext : DbContext
     public DbSet<FolhaColaboradorItem> FolhasColaboradoresItens => Set<FolhaColaboradorItem>();
     public DbSet<FolhaTutor> FolhasTutores => Set<FolhaTutor>();
     public DbSet<FolhaTutorItem> FolhasTutoresItens => Set<FolhaTutorItem>();
+    public DbSet<ConfiguracaoCnab> ConfiguracoesCnab => Set<ConfiguracaoCnab>();
+    public DbSet<FormaLancamentoCnab> FormasLancamentoCnab => Set<FormaLancamentoCnab>();
+    public DbSet<RemessaCnab> RemessasCnab => Set<RemessaCnab>();
+    public DbSet<RemessaCnabItem> RemessasCnabItens => Set<RemessaCnabItem>();
+    public DbSet<RetornoCnab> RetornosCnab => Set<RetornoCnab>();
+    public DbSet<RetornoCnabItem> RetornosCnabItens => Set<RetornoCnabItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -180,6 +187,10 @@ public class AppDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<LancamentoFinanceiro>()
+            .Property(x => x.FornecedorId)
+            .IsRequired(false);
+
+        modelBuilder.Entity<LancamentoFinanceiro>()
             .HasOne(x => x.Fornecedor)
             .WithMany()
             .HasForeignKey(x => x.FornecedorId)
@@ -248,5 +259,89 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(x => x.TutorId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // === CNAB ===
+        modelBuilder.Entity<ConfiguracaoCnab>()
+            .HasIndex(x => x.NomeConfiguracao)
+            .IsUnique();
+
+        modelBuilder.Entity<FormaLancamentoCnab>()
+            .HasIndex(x => x.Codigo)
+            .IsUnique();
+
+        modelBuilder.Entity<RemessaCnab>()
+            .HasIndex(x => x.NumeroSequencial);
+
+        modelBuilder.Entity<RemessaCnab>()
+            .HasIndex(x => x.NomeArquivo);
+
+        modelBuilder.Entity<RemessaCnab>()
+            .HasOne(x => x.ConfiguracaoCnab)
+            .WithMany()
+            .HasForeignKey(x => x.ConfiguracaoCnabId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<RemessaCnab>()
+            .HasOne(x => x.Competencia)
+            .WithMany()
+            .HasForeignKey(x => x.CompetenciaId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<RemessaCnabItem>()
+            .HasIndex(x => x.SeuNumero);
+
+        modelBuilder.Entity<RemessaCnabItem>()
+            .HasOne(x => x.RemessaCnab)
+            .WithMany(x => x.Itens)
+            .HasForeignKey(x => x.RemessaCnabId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RemessaCnabItem>()
+            .HasOne(x => x.FormaLancamentoCnab)
+            .WithMany()
+            .HasForeignKey(x => x.FormaLancamentoCnabId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<RemessaCnabItem>()
+            .HasOne(x => x.LancamentoFinanceiro)
+            .WithMany()
+            .HasForeignKey(x => x.LancamentoFinanceiroId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<RemessaCnabItem>()
+            .HasOne(x => x.FolhaColaboradorItem)
+            .WithMany()
+            .HasForeignKey(x => x.FolhaColaboradorItemId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<RemessaCnabItem>()
+            .HasOne(x => x.FolhaTutorItem)
+            .WithMany()
+            .HasForeignKey(x => x.FolhaTutorItemId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<RemessaCnabItem>()
+            .HasOne(x => x.Fornecedor)
+            .WithMany()
+            .HasForeignKey(x => x.FornecedorId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<RetornoCnab>()
+            .HasOne(x => x.RemessaCnab)
+            .WithMany()
+            .HasForeignKey(x => x.RemessaCnabId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<RetornoCnabItem>()
+            .HasOne(x => x.RetornoCnab)
+            .WithMany(x => x.Itens)
+            .HasForeignKey(x => x.RetornoCnabId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RetornoCnabItem>()
+            .HasOne(x => x.RemessaCnabItem)
+            .WithMany()
+            .HasForeignKey(x => x.RemessaCnabItemId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

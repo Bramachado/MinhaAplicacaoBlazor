@@ -20,10 +20,11 @@ public class Tutor
     [MaxLength(100)]
     public string? ChavePix { get; set; }
 
-    [MaxLength(100)]
-    public string? Banco { get; set; }
+    [MaxLength(50)]
+    
+    public string? NomeBanco { get; set; }
 
-    [MaxLength(10)]
+    [MaxLength(3)]
     public string? CodigoBanco { get; set; }
 
     [MaxLength(20)]

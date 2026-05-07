@@ -40,7 +40,7 @@ public class FolhaTutorItem
     [Column(TypeName = "decimal(12,2)")]
     public decimal ValorTotalReceber { get; set; }
 
-    [MaxLength(100)]
+    [MaxLength(3)]
     public string? Banco { get; set; }
 
     [MaxLength(30)]

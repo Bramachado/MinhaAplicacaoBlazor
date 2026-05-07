@@ -1,0 +1,741 @@
+@page "/relatorios-financeiros"
+@rendermode InteractiveServer
+
+@using MinhaAplicacaoBlazor.Models.Reports
+@using MinhaAplicacaoBlazor.Services
+
+@inject RelatorioFinanceiroService Service
+
+<PageTitle>Relatórios Financeiros</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Relatórios Financeiros</h1>
+    </div>
+
+    <div class="card mb-3 d-print-none">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Competência</label>
+                    <select class="form-select" @bind="competenciaSelecionadaId">
+                        <option value="0">-- Selecione --</option>
+                        @foreach (var c in competencias)
+                        {
+                            <option value="@c.Id">@c.TextoExibicao</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tipo de Relatório</label>
+                    <select class="form-select" @bind="tipoRelatorio">
+                        <option value="Geral">Geral de Despesas</option>
+                        <option value="Unidade">Por Unidade</option>
+                        <option value="PlanoConta">Por Plano de Contas</option>
+                        <option value="FormaPagamento">Por Forma de Pagamento</option>
+                        <option value="FolhaColaboradores">Folha de Colaboradores</option>
+                        <option value="FolhaTutores">Folha de Tutores</option>
+                        <option value="ResumoDespesaGeral">Resumo DESPESA GERAL</option>
+                    </select>
+                </div>
+                <div class="col-md-5 d-flex flex-wrap gap-2">
+                    <button class="btn btn-primary" @onclick="GerarAsync" disabled="@processando">
+                        @if (processando) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Gerar Relatório
+                    </button>
+                    <button class="btn btn-secondary" @onclick="Limpar">Limpar</button>
+                    <button class="btn btn-outline-success" @onclick="ImprimirAsync" disabled="@(!gerado)">Imprimir / PDF</button>
+                    <button class="btn btn-outline-success" disabled title="Em breve">Exportar Excel</button>
+                </div>
+            </div>
+            @if (!string.IsNullOrEmpty(mensagemErro))
+            {
+                <div class="alert alert-danger mt-3 mb-0">@mensagemErro</div>
+            }
+        </div>
+    </div>
+
+    @if (!gerado)
+    {
+        <div class="alert alert-info">Selecione uma competência para gerar o relatório.</div>
+    }
+    else
+    {
+        <div class="mb-2 d-none d-print-block">
+            <h4>@TituloRelatorio — Competência @CompetenciaTextoSelecionada</h4>
+        </div>
+
+        @switch (tipoRelatorio)
+        {
+            case "Geral":
+                @RenderRelatorioGeral();
+                break;
+            case "Unidade":
+                @RenderRelatorioUnidade();
+                break;
+            case "PlanoConta":
+                @RenderRelatorioPlanoConta();
+                break;
+            case "FormaPagamento":
+                @RenderRelatorioFormaPagamento();
+                break;
+            case "FolhaColaboradores":
+                @RenderRelatorioFolhaColaboradores();
+                break;
+            case "FolhaTutores":
+                @RenderRelatorioFolhaTutores();
+                break;
+            case "ResumoDespesaGeral":
+                @RenderResumoDespesaGeral();
+                break;
+        }
+    }
+</div>
+
+@code {
+    private List<CompetenciaSelecaoDto> competencias = new();
+    private int competenciaSelecionadaId;
+    private string tipoRelatorio = "Geral";
+    private bool processando;
+    private bool gerado;
+    private string? mensagemErro;
+
+    private RelatorioGeralDespesasDto? dadosGeral;
+    private RelatorioPorUnidadeDto? dadosUnidade;
+    private RelatorioPorPlanoContaDto? dadosPlanoConta;
+    private RelatorioPorFormaPagamentoDto? dadosFormaPagamento;
+    private RelatorioFolhaColaboradorDto? dadosFolhaColab;
+    private bool folhaColabNaoEncontrada;
+    private RelatorioFolhaTutorDto? dadosFolhaTutor;
+    private bool folhaTutorNaoEncontrada;
+    private ResumoDespesaGeralDto? dadosResumo;
+
+    private string CompetenciaTextoSelecionada =>
+        competencias.FirstOrDefault(c => c.Id == competenciaSelecionadaId)?.TextoExibicao ?? "";
+
+    private string TituloRelatorio => tipoRelatorio switch
+    {
+        "Geral" => "Relatório Geral de Despesas",
+        "Unidade" => "Relatório por Unidade",
+        "PlanoConta" => "Relatório por Plano de Contas",
+        "FormaPagamento" => "Relatório por Forma de Pagamento",
+        "FolhaColaboradores" => "Folha de Colaboradores",
+        "FolhaTutores" => "Folha de Tutores",
+        "ResumoDespesaGeral" => "Resumo DESPESA GERAL",
+        _ => "Relatório"
+    };
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        competencias = await Service.ObterCompetenciasAsync();
+        var atual = competencias.FirstOrDefault(c =>
+            c.Mes == DateTime.Today.Month && c.Ano == DateTime.Today.Year);
+        if (atual is not null)
+            competenciaSelecionadaId = atual.Id;
+    }
+
+    private async Task GerarAsync()
+    {
+        mensagemErro = null;
+        if (competenciaSelecionadaId == 0)
+        {
+            mensagemErro = "Selecione uma competência para gerar o relatório.";
+            gerado = false;
+            return;
+        }
+
+        processando = true;
+        try
+        {
+            ZerarResultados();
+
+            switch (tipoRelatorio)
+            {
+                case "Geral":
+                    dadosGeral = await Service.GerarRelatorioGeralDespesasAsync(competenciaSelecionadaId);
+                    break;
+                case "Unidade":
+                    dadosUnidade = await Service.GerarRelatorioPorUnidadeAsync(competenciaSelecionadaId);
+                    break;
+                case "PlanoConta":
+                    dadosPlanoConta = await Service.GerarRelatorioPorPlanoContaAsync(competenciaSelecionadaId);
+                    break;
+                case "FormaPagamento":
+                    dadosFormaPagamento = await Service.GerarRelatorioPorFormaPagamentoAsync(competenciaSelecionadaId);
+                    break;
+                case "FolhaColaboradores":
+                    dadosFolhaColab = await Service.GerarRelatorioFolhaColaboradoresAsync(competenciaSelecionadaId);
+                    folhaColabNaoEncontrada = dadosFolhaColab is null;
+                    break;
+                case "FolhaTutores":
+                    dadosFolhaTutor = await Service.GerarRelatorioFolhaTutoresAsync(competenciaSelecionadaId);
+                    folhaTutorNaoEncontrada = dadosFolhaTutor is null;
+                    break;
+                case "ResumoDespesaGeral":
+                    dadosResumo = await Service.GerarResumoDespesaGeralAsync(competenciaSelecionadaId);
+                    break;
+            }
+
+            gerado = true;
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = $"Erro ao gerar relatório: {ex.Message}";
+            gerado = false;
+        }
+        finally
+        {
+            processando = false;
+        }
+    }
+
+    private void Limpar()
+    {
+        ZerarResultados();
+        gerado = false;
+        mensagemErro = null;
+    }
+
+    private void ZerarResultados()
+    {
+        dadosGeral = null;
+        dadosUnidade = null;
+        dadosPlanoConta = null;
+        dadosFormaPagamento = null;
+        dadosFolhaColab = null;
+        folhaColabNaoEncontrada = false;
+        dadosFolhaTutor = null;
+        folhaTutorNaoEncontrada = false;
+        dadosResumo = null;
+    }
+
+    private async Task ImprimirAsync()
+    {
+        await JS.InvokeVoidAsync("window.print");
+    }
+
+    private static string Moeda(decimal v) => v.ToString("C");
+    private static string Data(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "—";
+
+    private static string StatusBadge(string status) => status switch
+    {
+        "Aberta" => "bg-warning text-dark",
+        "Aberto" => "bg-warning text-dark",
+        "Fechada" => "bg-success",
+        "Pago" => "bg-primary",
+        "Cancelado" => "bg-secondary",
+        "Cancelada" => "bg-secondary",
+        _ => "bg-light text-dark"
+    };
+
+    @* ============================ RELATÓRIO GERAL ============================ *@
+    private RenderFragment RenderRelatorioGeral() => __builder =>
+    {
+        if (dadosGeral is null) return;
+        if (dadosGeral.Itens.Count == 0)
+        {
+            <div class="alert alert-warning">Nenhum lançamento financeiro encontrado para esta competência.</div>
+            return;
+        }
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-3"><div class="card border-success h-100"><div class="card-body py-2"><small class="text-muted">Entradas</small><h4 class="mb-0 text-success">@Moeda(dadosGeral.TotalEntradas)</h4></div></div></div>
+            <div class="col-md-3"><div class="card border-danger h-100"><div class="card-body py-2"><small class="text-muted">Saídas</small><h4 class="mb-0 text-danger">@Moeda(dadosGeral.TotalSaidas)</h4></div></div></div>
+            <div class="col-md-2"><div class="card border-primary h-100"><div class="card-body py-2"><small class="text-muted">Saldo</small><h4 class="mb-0 @(dadosGeral.Saldo >= 0 ? "text-primary" : "text-danger")">@Moeda(dadosGeral.Saldo)</h4></div></div></div>
+            <div class="col-md-2"><div class="card border-info h-100"><div class="card-body py-2"><small class="text-muted">Despesas Fixas</small><h4 class="mb-0">@Moeda(dadosGeral.TotalDespesasFixas)</h4></div></div></div>
+            <div class="col-md-2"><div class="card border-info h-100"><div class="card-body py-2"><small class="text-muted">Despesas Variáveis</small><h4 class="mb-0">@Moeda(dadosGeral.TotalDespesasVariaveis)</h4></div></div></div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Vencimento</th>
+                        <th>Pagamento</th>
+                        <th>Unidade</th>
+                        <th>Plano de Conta</th>
+                        <th>Fornecedor</th>
+                        <th>Descrição</th>
+                        <th>Forma Pgto</th>
+                        <th>Tipo</th>
+                        <th>Despesa</th>
+                        <th class="text-end">Valor</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in dadosGeral.Itens)
+                    {
+                        <tr>
+                            <td>@Data(l.DataVencimento)</td>
+                            <td>@Data(l.DataPagamento)</td>
+                            <td>@l.Unidade</td>
+                            <td>@l.PlanoConta</td>
+                            <td>@l.Fornecedor</td>
+                            <td>@l.Descricao</td>
+                            <td>@l.FormaPagamento</td>
+                            <td>
+                                @if (l.TipoLancamento == "Entrada") { <span class="badge bg-success">Entrada</span> } else { <span class="badge bg-danger">Saída</span> }
+                            </td>
+                            <td>@l.TipoDespesa</td>
+                            <td class="text-end fw-semibold">@Moeda(l.Valor)</td>
+                            <td><span class="badge @StatusBadge(l.Status)">@l.Status</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    };
+
+    @* ============================ POR UNIDADE ============================ *@
+    private RenderFragment RenderRelatorioUnidade() => __builder =>
+    {
+        if (dadosUnidade is null) return;
+        if (dadosUnidade.Linhas.Count == 0)
+        {
+            <div class="alert alert-warning">Nenhum lançamento financeiro encontrado para esta competência.</div>
+            return;
+        }
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-3"><div class="card border-secondary h-100"><div class="card-body py-2"><small class="text-muted">Unidades</small><h4 class="mb-0">@dadosUnidade.Quantidade</h4></div></div></div>
+            <div class="col-md-3"><div class="card border-success h-100"><div class="card-body py-2"><small class="text-muted">Entradas</small><h4 class="mb-0 text-success">@Moeda(dadosUnidade.TotalEntradas)</h4></div></div></div>
+            <div class="col-md-3"><div class="card border-danger h-100"><div class="card-body py-2"><small class="text-muted">Saídas</small><h4 class="mb-0 text-danger">@Moeda(dadosUnidade.TotalSaidas)</h4></div></div></div>
+            <div class="col-md-3"><div class="card border-primary h-100"><div class="card-body py-2"><small class="text-muted">Saldo</small><h4 class="mb-0 @(dadosUnidade.Saldo >= 0 ? "text-primary" : "text-danger")">@Moeda(dadosUnidade.Saldo)</h4></div></div></div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Unidade</th>
+                        <th class="text-end">Entradas</th>
+                        <th class="text-end">Saídas</th>
+                        <th class="text-end">Saldo</th>
+                        <th class="text-end">Lançamentos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in dadosUnidade.Linhas)
+                    {
+                        <tr>
+                            <td>@l.Unidade</td>
+                            <td class="text-end text-success">@Moeda(l.TotalEntradas)</td>
+                            <td class="text-end text-danger">@Moeda(l.TotalSaidas)</td>
+                            <td class="text-end fw-semibold @(l.Saldo >= 0 ? "" : "text-danger")">@Moeda(l.Saldo)</td>
+                            <td class="text-end">@l.QuantidadeLancamentos</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <th>Total</th>
+                        <th class="text-end">@Moeda(dadosUnidade.TotalEntradas)</th>
+                        <th class="text-end">@Moeda(dadosUnidade.TotalSaidas)</th>
+                        <th class="text-end">@Moeda(dadosUnidade.Saldo)</th>
+                        <th class="text-end">@dadosUnidade.Linhas.Sum(x => x.QuantidadeLancamentos)</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    };
+
+    @* ============================ POR PLANO DE CONTA ============================ *@
+    private RenderFragment RenderRelatorioPlanoConta() => __builder =>
+    {
+        if (dadosPlanoConta is null) return;
+        if (dadosPlanoConta.Linhas.Count == 0)
+        {
+            <div class="alert alert-warning">Nenhum lançamento financeiro encontrado para esta competência.</div>
+            return;
+        }
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-3"><div class="card border-secondary h-100"><div class="card-body py-2"><small class="text-muted">Planos movimentados</small><h4 class="mb-0">@dadosPlanoConta.Quantidade</h4></div></div></div>
+            <div class="col-md-3"><div class="card border-success h-100"><div class="card-body py-2"><small class="text-muted">Entradas</small><h4 class="mb-0 text-success">@Moeda(dadosPlanoConta.TotalEntradas)</h4></div></div></div>
+            <div class="col-md-3"><div class="card border-danger h-100"><div class="card-body py-2"><small class="text-muted">Saídas</small><h4 class="mb-0 text-danger">@Moeda(dadosPlanoConta.TotalSaidas)</h4></div></div></div>
+            <div class="col-md-3"><div class="card border-primary h-100"><div class="card-body py-2"><small class="text-muted">Saldo</small><h4 class="mb-0 @(dadosPlanoConta.Saldo >= 0 ? "text-primary" : "text-danger")">@Moeda(dadosPlanoConta.Saldo)</h4></div></div></div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Plano de Conta</th>
+                        <th class="text-end">Entradas</th>
+                        <th class="text-end">Saídas</th>
+                        <th class="text-end">Saldo</th>
+                        <th class="text-end">Lançamentos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in dadosPlanoConta.Linhas)
+                    {
+                        <tr>
+                            <td>@l.PlanoConta</td>
+                            <td class="text-end text-success">@Moeda(l.TotalEntradas)</td>
+                            <td class="text-end text-danger">@Moeda(l.TotalSaidas)</td>
+                            <td class="text-end fw-semibold @(l.Saldo >= 0 ? "" : "text-danger")">@Moeda(l.Saldo)</td>
+                            <td class="text-end">@l.QuantidadeLancamentos</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <th>Total</th>
+                        <th class="text-end">@Moeda(dadosPlanoConta.TotalEntradas)</th>
+                        <th class="text-end">@Moeda(dadosPlanoConta.TotalSaidas)</th>
+                        <th class="text-end">@Moeda(dadosPlanoConta.Saldo)</th>
+                        <th class="text-end">@dadosPlanoConta.Linhas.Sum(x => x.QuantidadeLancamentos)</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    };
+
+    @* ============================ POR FORMA DE PAGAMENTO ============================ *@
+    private RenderFragment RenderRelatorioFormaPagamento() => __builder =>
+    {
+        if (dadosFormaPagamento is null) return;
+        if (dadosFormaPagamento.Linhas.Count == 0)
+        {
+            <div class="alert alert-warning">Nenhum lançamento financeiro encontrado para esta competência.</div>
+            return;
+        }
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-3"><div class="card border-secondary h-100"><div class="card-body py-2"><small class="text-muted">Formas usadas</small><h4 class="mb-0">@dadosFormaPagamento.Quantidade</h4></div></div></div>
+            <div class="col-md-3"><div class="card border-success h-100"><div class="card-body py-2"><small class="text-muted">Entradas</small><h4 class="mb-0 text-success">@Moeda(dadosFormaPagamento.TotalEntradas)</h4></div></div></div>
+            <div class="col-md-3"><div class="card border-danger h-100"><div class="card-body py-2"><small class="text-muted">Saídas</small><h4 class="mb-0 text-danger">@Moeda(dadosFormaPagamento.TotalSaidas)</h4></div></div></div>
+            <div class="col-md-3"><div class="card border-primary h-100"><div class="card-body py-2"><small class="text-muted">Saldo</small><h4 class="mb-0 @(dadosFormaPagamento.Saldo >= 0 ? "text-primary" : "text-danger")">@Moeda(dadosFormaPagamento.Saldo)</h4></div></div></div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Forma de Pagamento</th>
+                        <th class="text-end">Entradas</th>
+                        <th class="text-end">Saídas</th>
+                        <th class="text-end">Saldo</th>
+                        <th class="text-end">Lançamentos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in dadosFormaPagamento.Linhas)
+                    {
+                        <tr>
+                            <td>@l.FormaPagamento</td>
+                            <td class="text-end text-success">@Moeda(l.TotalEntradas)</td>
+                            <td class="text-end text-danger">@Moeda(l.TotalSaidas)</td>
+                            <td class="text-end fw-semibold @(l.Saldo >= 0 ? "" : "text-danger")">@Moeda(l.Saldo)</td>
+                            <td class="text-end">@l.QuantidadeLancamentos</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <th>Total</th>
+                        <th class="text-end">@Moeda(dadosFormaPagamento.TotalEntradas)</th>
+                        <th class="text-end">@Moeda(dadosFormaPagamento.TotalSaidas)</th>
+                        <th class="text-end">@Moeda(dadosFormaPagamento.Saldo)</th>
+                        <th class="text-end">@dadosFormaPagamento.Linhas.Sum(x => x.QuantidadeLancamentos)</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    };
+
+    @* ============================ FOLHA COLABORADORES ============================ *@
+    private RenderFragment RenderRelatorioFolhaColaboradores() => __builder =>
+    {
+        if (folhaColabNaoEncontrada)
+        {
+            <div class="alert alert-warning">Nenhuma folha de colaboradores encontrada para esta competência.</div>
+            return;
+        }
+        if (dadosFolhaColab is null) return;
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3"><strong>Competência:</strong> @dadosFolhaColab.CompetenciaTexto</div>
+                    <div class="col-md-3"><strong>Status:</strong> <span class="badge @StatusBadge(dadosFolhaColab.Status)">@dadosFolhaColab.Status</span></div>
+                    <div class="col-md-3"><strong>Fechamento:</strong> @(dadosFolhaColab.DataFechamento?.ToString("dd/MM/yyyy HH:mm") ?? "—")</div>
+                    <div class="col-md-3"><strong>Valor Total:</strong> @Moeda(dadosFolhaColab.ValorTotal)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-2"><div class="card border-secondary h-100"><div class="card-body py-2"><small class="text-muted">Colaboradores</small><h4 class="mb-0">@dadosFolhaColab.QuantidadeColaboradores</h4></div></div></div>
+            <div class="col-md-3"><div class="card border-success h-100"><div class="card-body py-2"><small class="text-muted">Total Proventos</small><h4 class="mb-0 text-success">@Moeda(dadosFolhaColab.TotalProventos)</h4></div></div></div>
+            <div class="col-md-3"><div class="card border-danger h-100"><div class="card-body py-2"><small class="text-muted">Total Descontos</small><h4 class="mb-0 text-danger">@Moeda(dadosFolhaColab.TotalDescontos)</h4></div></div></div>
+            <div class="col-md-2"><div class="card border-primary h-100"><div class="card-body py-2"><small class="text-muted">Total Líquido</small><h4 class="mb-0">@Moeda(dadosFolhaColab.TotalLiquido)</h4></div></div></div>
+            <div class="col-md-2"><div class="card border-info h-100"><div class="card-body py-2"><small class="text-muted">Receber PIX</small><h4 class="mb-0">@Moeda(dadosFolhaColab.TotalReceberPix)</h4></div></div></div>
+        </div>
+
+        @if (dadosFolhaColab.Itens.Count == 0)
+        {
+            <div class="alert alert-info">Esta folha não possui itens.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Colaborador</th>
+                            <th>Unidade</th>
+                            <th>Cargo</th>
+                            <th class="text-end">CH Sem.</th>
+                            <th class="text-end">Sal. Bruto</th>
+                            <th class="text-end">Ticket</th>
+                            <th class="text-end">Prem. Fixa</th>
+                            <th class="text-end">Prem. Var.</th>
+                            <th class="text-end">13º</th>
+                            <th class="text-end">Férias 1/3</th>
+                            <th class="text-end">Proventos</th>
+                            <th class="text-end">INSS</th>
+                            <th class="text-end">IR</th>
+                            <th class="text-end">Pl. Saúde</th>
+                            <th class="text-end">Vale/FGTS</th>
+                            <th class="text-end">Descontos</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-end">PIX</th>
+                            <th>Obs.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var i in dadosFolhaColab.Itens)
+                        {
+                            <tr>
+                                <td>@i.Colaborador</td>
+                                <td>@i.Unidade</td>
+                                <td>@i.Cargo</td>
+                                <td class="text-end">@(i.CargaHorariaSemanal?.ToString("0.##") ?? "—")</td>
+                                <td class="text-end">@Moeda(i.SalarioBruto)</td>
+                                <td class="text-end">@Moeda(i.TicketAlimentacao)</td>
+                                <td class="text-end">@Moeda(i.PremiacaoFixa)</td>
+                                <td class="text-end">@Moeda(i.PremiacaoVariavel)</td>
+                                <td class="text-end">@Moeda(i.DecimoTerceiro)</td>
+                                <td class="text-end">@Moeda(i.FeriasUmTerco)</td>
+                                <td class="text-end text-success">@Moeda(i.TotalProventos)</td>
+                                <td class="text-end">@Moeda(i.DescontoINSS)</td>
+                                <td class="text-end">@Moeda(i.DescontoIR)</td>
+                                <td class="text-end">@Moeda(i.PlanoSaude)</td>
+                                <td class="text-end">@Moeda(i.ValeConsignadoFGTS)</td>
+                                <td class="text-end text-danger">@Moeda(i.TotalDescontos)</td>
+                                <td class="text-end fw-semibold">@Moeda(i.ValorTotal)</td>
+                                <td class="text-end">@Moeda(i.ValorReceberPix)</td>
+                                <td>@i.Observacao</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    };
+
+    @* ============================ FOLHA TUTORES ============================ *@
+    private RenderFragment RenderRelatorioFolhaTutores() => __builder =>
+    {
+        if (folhaTutorNaoEncontrada)
+        {
+            <div class="alert alert-warning">Nenhuma folha de tutores encontrada para esta competência.</div>
+            return;
+        }
+        if (dadosFolhaTutor is null) return;
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3"><strong>Competência:</strong> @dadosFolhaTutor.CompetenciaTexto</div>
+                    <div class="col-md-3"><strong>Status:</strong> <span class="badge @StatusBadge(dadosFolhaTutor.Status)">@dadosFolhaTutor.Status</span></div>
+                    <div class="col-md-3"><strong>Fechamento:</strong> @(dadosFolhaTutor.DataFechamento?.ToString("dd/MM/yyyy HH:mm") ?? "—")</div>
+                    <div class="col-md-3"><strong>Valor Total:</strong> @Moeda(dadosFolhaTutor.ValorTotal)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-2"><div class="card border-secondary h-100"><div class="card-body py-2"><small class="text-muted">Tutores</small><h4 class="mb-0">@dadosFolhaTutor.QuantidadeTutores</h4></div></div></div>
+            <div class="col-md-2"><div class="card border-info h-100"><div class="card-body py-2"><small class="text-muted">Hs Normais</small><h4 class="mb-0">@dadosFolhaTutor.TotalHorasNormais.ToString("0.##")</h4></div></div></div>
+            <div class="col-md-2"><div class="card border-info h-100"><div class="card-body py-2"><small class="text-muted">Hs Práticas</small><h4 class="mb-0">@dadosFolhaTutor.TotalHorasPraticas.ToString("0.##")</h4></div></div></div>
+            <div class="col-md-3"><div class="card border-primary h-100"><div class="card-body py-2"><small class="text-muted">Total Horas</small><h4 class="mb-0">@dadosFolhaTutor.TotalHoras.ToString("0.##")</h4></div></div></div>
+            <div class="col-md-3"><div class="card border-success h-100"><div class="card-body py-2"><small class="text-muted">Total a Pagar</small><h4 class="mb-0 text-success">@Moeda(dadosFolhaTutor.TotalAPagar)</h4></div></div></div>
+        </div>
+
+        @if (dadosFolhaTutor.Itens.Count == 0)
+        {
+            <div class="alert alert-info">Esta folha não possui itens.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Tutor</th>
+                            <th>Unidade</th>
+                            <th>Titulação</th>
+                            <th>Cargo</th>
+                            <th>Status Pgto</th>
+                            <th class="text-end">Hs Norm.</th>
+                            <th class="text-end">Hs Prát.</th>
+                            <th class="text-end">V. Hora N.</th>
+                            <th class="text-end">V. Hora P.</th>
+                            <th class="text-end">V. Aulas N.</th>
+                            <th class="text-end">V. Aulas P.</th>
+                            <th class="text-end">Total Receber</th>
+                            <th>Banco</th>
+                            <th>Ag.</th>
+                            <th>Conta</th>
+                            <th>PIX</th>
+                            <th>Titular</th>
+                            <th>Obs.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var i in dadosFolhaTutor.Itens)
+                        {
+                            <tr>
+                                <td>@i.Tutor</td>
+                                <td>@i.Unidade</td>
+                                <td>@i.Titulacao</td>
+                                <td>@i.Cargo</td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(i.StatusPagamento))
+                                    {
+                                        <span class="badge @StatusBadge(i.StatusPagamento!)">@i.StatusPagamento</span>
+                                    }
+                                </td>
+                                <td class="text-end">@i.TotalHorasNormais.ToString("0.##")</td>
+                                <td class="text-end">@i.TotalHorasPraticas.ToString("0.##")</td>
+                                <td class="text-end">@Moeda(i.ValorHoraNormal)</td>
+                                <td class="text-end">@Moeda(i.ValorHoraPratica)</td>
+                                <td class="text-end">@Moeda(i.ValorAulaNormal)</td>
+                                <td class="text-end">@Moeda(i.ValorAulaPratica)</td>
+                                <td class="text-end fw-semibold">@Moeda(i.ValorTotalReceber)</td>
+                                <td>@i.Banco</td>
+                                <td>@i.Agencia</td>
+                                <td>@i.Conta</td>
+                                <td>@i.ChavePix</td>
+                                <td>@i.NomeTitularConta</td>
+                                <td>@i.Observacao</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    };
+
+    @* ============================ RESUMO DESPESA GERAL ============================ *@
+    private RenderFragment RenderResumoDespesaGeral() => __builder =>
+    {
+        if (dadosResumo is null) return;
+
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white"><strong>Bloco 1 — Entradas</strong></div>
+            <div class="card-body">
+                @if (dadosResumo.Entradas.Count == 0)
+                {
+                    <div class="text-muted">Nenhuma entrada registrada.</div>
+                }
+                else
+                {
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                            @foreach (var e in dadosResumo.Entradas)
+                            {
+                                <tr>
+                                    <td>@e.Descricao</td>
+                                    <td class="text-end">@Moeda(e.Valor)</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th>Total de Entradas</th>
+                                <th class="text-end text-success">@Moeda(dadosResumo.TotalEntradas)</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header bg-danger text-white"><strong>Bloco 2 — Saídas / Despesas</strong></div>
+            <div class="card-body">
+                @if (dadosResumo.SaidasPorPlanoConta.Count == 0)
+                {
+                    <div class="text-muted">Nenhuma saída registrada.</div>
+                }
+                else
+                {
+                    @foreach (var grupo in dadosResumo.SaidasPorPlanoConta)
+                    {
+                        <h6 class="mt-3 mb-2">@grupo.PlanoConta</h6>
+                        <table class="table table-sm mb-2">
+                            <tbody>
+                                @foreach (var l in grupo.Lancamentos)
+                                {
+                                    <tr>
+                                        <td>@l.Descricao</td>
+                                        <td class="text-end">@Moeda(l.Valor)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th>Subtotal @grupo.PlanoConta</th>
+                                    <th class="text-end">@Moeda(grupo.Total)</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    }
+                    <div class="text-end fw-bold border-top pt-2">
+                        Total de Saídas: <span class="text-danger">@Moeda(dadosResumo.TotalSaidas)</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white"><strong>Bloco 3 — Folhas</strong></div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr>
+                            <td>Folha de Colaboradores</td>
+                            <td class="text-end">@Moeda(dadosResumo.TotalFolhaColaboradores)</td>
+                        </tr>
+                        <tr>
+                            <td>Folha de Tutores</td>
+                            <td class="text-end">@Moeda(dadosResumo.TotalFolhaTutores)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card mb-3 border-dark">
+            <div class="card-header bg-dark text-white"><strong>Bloco 4 — Resumo Final</strong></div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4"><div class="card border-success h-100"><div class="card-body py-2"><small class="text-muted">Total Entradas</small><h4 class="mb-0 text-success">@Moeda(dadosResumo.TotalEntradas)</h4></div></div></div>
+                    <div class="col-md-4"><div class="card border-danger h-100"><div class="card-body py-2"><small class="text-muted">Total Saídas</small><h4 class="mb-0 text-danger">@Moeda(dadosResumo.TotalSaidas)</h4></div></div></div>
+                    <div class="col-md-4"><div class="card border-primary h-100"><div class="card-body py-2"><small class="text-muted">Saldo Final</small><h4 class="mb-0 @(dadosResumo.SaldoFinal >= 0 ? "text-primary" : "text-danger")">@Moeda(dadosResumo.SaldoFinal)</h4></div></div></div>
+                    <div class="col-md-3"><div class="card border-info h-100"><div class="card-body py-2"><small class="text-muted">Despesas Fixas</small><h5 class="mb-0">@Moeda(dadosResumo.TotalDespesasFixas)</h5></div></div></div>
+                    <div class="col-md-3"><div class="card border-info h-100"><div class="card-body py-2"><small class="text-muted">Despesas Variáveis</small><h5 class="mb-0">@Moeda(dadosResumo.TotalDespesasVariaveis)</h5></div></div></div>
+                    <div class="col-md-3"><div class="card border-warning h-100"><div class="card-body py-2"><small class="text-muted">Folha Colaboradores</small><h5 class="mb-0">@Moeda(dadosResumo.TotalFolhaColaboradores)</h5></div></div></div>
+                    <div class="col-md-3"><div class="card border-warning h-100"><div class="card-body py-2"><small class="text-muted">Folha Tutores</small><h5 class="mb-0">@Moeda(dadosResumo.TotalFolhaTutores)</h5></div></div></div>
+                </div>
+            </div>
+        </div>
+    };
+}

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MinhaAplicacaoBlazor.Data;
 
@@ -11,9 +12,11 @@ using MinhaAplicacaoBlazor.Data;
 namespace MinhaAplicacaoBlazor.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260507040910_AddCnabPagamentos")]
+    partial class AddCnabPagamentos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -261,8 +264,8 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasColumnType("nvarchar(5)");
 
                     b.Property<string>("BancoFavorecido")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
 
                     b.Property<string>("CPF_CNPJ_Favorecido")
                         .HasMaxLength(20)
@@ -822,8 +825,8 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasColumnType("nvarchar(30)");
 
                     b.Property<string>("Banco")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Cargo")
                         .HasMaxLength(100)
@@ -1142,13 +1145,17 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.Property<bool>("Ativo")
                         .HasColumnType("bit");
 
+                    b.Property<string>("Banco")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("ChavePix")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("CodigoBanco")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("Conta")
                         .HasMaxLength(30)
@@ -1173,10 +1180,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("NomeBanco")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("NomeTitular")
                         .HasMaxLength(150)

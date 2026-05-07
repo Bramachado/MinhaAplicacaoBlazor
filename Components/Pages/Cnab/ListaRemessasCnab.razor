@@ -1,0 +1,170 @@
+@page "/financeiro/cnab/remessas"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+@using MinhaAplicacaoBlazor.Models.Cnab
+@using MinhaAplicacaoBlazor.Services.Cnab
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject ICnabPagamentoService Service
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Remessas CNAB</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Remessas CNAB</h1>
+        <button class="btn btn-primary" @onclick="@(() => Navigation.NavigateTo("/financeiro/cnab/nova-remessa"))">Nova Remessa</button>
+    </div>
+
+    <div class="row mb-3 g-2">
+        <div class="col-md-3">
+            <select class="form-select" @bind="filtroCompetenciaId">
+                <option value="0">Todas as Competências</option>
+                @foreach (var c in competencias)
+                {
+                    <option value="@c.Id">@($"{c.Mes:00}/{c.Ano}")</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="filtroStatus">
+                <option value="">Todos os Status</option>
+                <option value="Gerada">Gerada</option>
+                <option value="Enviada">Enviada</option>
+                <option value="Aceita">Aceita</option>
+                <option value="Rejeitada">Rejeitada</option>
+                <option value="Processada">Processada</option>
+                <option value="Cancelada">Cancelada</option>
+            </select>
+        </div>
+        <div class="col-md-3"><input type="date" class="form-control" @bind="dataInicial" /></div>
+        <div class="col-md-3"><input type="date" class="form-control" @bind="dataFinal" /></div>
+    </div>
+
+    @if (remessas is null)
+    {
+        <p>Carregando...</p>
+    }
+    else if (RemessasFiltradas.Count == 0)
+    {
+        <div class="alert alert-info">Nenhuma remessa encontrada.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>NSA</th>
+                        <th>Arquivo</th>
+                        <th>Geração</th>
+                        <th>Competência</th>
+                        <th class="text-end">Pagamentos</th>
+                        <th class="text-end">Valor Total</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in RemessasFiltradas)
+                    {
+                        <tr>
+                            <td>@r.NumeroSequencial</td>
+                            <td>@r.NomeArquivo</td>
+                            <td>@r.DataGeracao.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@(r.Competencia is not null ? $"{r.Competencia.Mes:00}/{r.Competencia.Ano}" : "—")</td>
+                            <td class="text-end">@r.QuantidadePagamentos</td>
+                            <td class="text-end fw-semibold">@r.ValorTotal.ToString("C")</td>
+                            <td><span class="badge @StatusBadge(r.Status)">@r.Status</span></td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => VerDetalhes(r.Id)">Detalhes</button>
+                                <button class="btn btn-sm btn-outline-success me-1" @onclick="() => BaixarAsync(r.Id, r.NomeArquivo)">Baixar</button>
+                                @if (r.Status == "Gerada")
+                                {
+                                    <button class="btn btn-sm btn-outline-info me-1" @onclick="() => MarcarEnviadaAsync(r.Id)">Enviada</button>
+                                }
+                                @if (r.Status != "Cancelada" && r.Status != "Processada")
+                                {
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => CancelarAsync(r.Id)">Cancelar</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<RemessaCnab>? remessas;
+    private List<Competencia> competencias = new();
+    private int filtroCompetenciaId;
+    private string filtroStatus = string.Empty;
+    private DateTime? dataInicial;
+    private DateTime? dataFinal;
+
+    private List<RemessaCnab> RemessasFiltradas
+    {
+        get
+        {
+            if (remessas is null) return new();
+            IEnumerable<RemessaCnab> q = remessas;
+            if (filtroCompetenciaId > 0) q = q.Where(r => r.CompetenciaId == filtroCompetenciaId);
+            if (!string.IsNullOrEmpty(filtroStatus)) q = q.Where(r => r.Status == filtroStatus);
+            if (dataInicial.HasValue) q = q.Where(r => r.DataGeracao >= dataInicial.Value);
+            if (dataFinal.HasValue) q = q.Where(r => r.DataGeracao <= dataFinal.Value.AddDays(1));
+            return q.ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var ctx = await DbFactory.CreateDbContextAsync();
+        remessas = await ctx.RemessasCnab.AsNoTracking()
+            .Include(r => r.Competencia)
+            .OrderByDescending(r => r.DataGeracao)
+            .ToListAsync();
+        competencias = await ctx.Competencias.AsNoTracking()
+            .OrderByDescending(c => c.Ano).ThenByDescending(c => c.Mes).ToListAsync();
+    }
+
+    private async Task BaixarAsync(int id, string nome)
+    {
+        var bytes = await Service.BaixarArquivoRemessaAsync(id);
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("eval",
+            $"(function(){{var a=document.createElement('a');a.href='data:application/octet-stream;base64,{base64}';a.download='{nome}';document.body.appendChild(a);a.click();a.remove();}})()");
+    }
+
+    private async Task MarcarEnviadaAsync(int id)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "Marcar esta remessa como enviada?")) return;
+        try { await Service.MarcarComoEnviadaAsync(id); await OnInitializedAsync(); }
+        catch (Exception ex) { await JS.InvokeVoidAsync("alert", ex.Message); }
+    }
+
+    private async Task CancelarAsync(int id)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "Deseja cancelar esta remessa? Os pagamentos serão liberados para nova remessa.")) return;
+        try { await Service.CancelarRemessaAsync(id); await OnInitializedAsync(); }
+        catch (Exception ex) { await JS.InvokeVoidAsync("alert", ex.Message); }
+    }
+
+    private void VerDetalhes(int id) => Navigation.NavigateTo($"/financeiro/cnab/remessas/{id}");
+
+    private static string StatusBadge(string s) => s switch
+    {
+        "Gerada" => "bg-warning text-dark",
+        "Enviada" => "bg-info text-dark",
+        "Aceita" => "bg-success",
+        "Processada" => "bg-primary",
+        "Rejeitada" => "bg-danger",
+        "Cancelada" => "bg-secondary",
+        _ => "bg-light text-dark"
+    };
+}

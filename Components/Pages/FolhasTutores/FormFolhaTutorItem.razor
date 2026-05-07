@@ -237,7 +237,7 @@
         if (tutor is null) return;
 
         item.Cargo ??= tutor.Titulacao?.Nome;
-        item.Banco ??= tutor.Banco;
+        item.Banco ??= tutor.CodigoBanco;
         item.Agencia ??= tutor.Agencia;
         item.Conta ??= tutor.Conta;
         item.ChavePix ??= tutor.ChavePix;

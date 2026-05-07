@@ -1,0 +1,139 @@
+@page "/financeiro/cnab/importar-retorno"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models.Cnab
+@using MinhaAplicacaoBlazor.Models.Cnab.Dtos
+@using MinhaAplicacaoBlazor.Services.Cnab
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject ICnabPagamentoService Service
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Importar Retorno CNAB</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Importar Retorno CNAB</h1>
+        <button class="btn btn-secondary" @onclick="@(() => Navigation.NavigateTo("/financeiro/cnab/remessas"))">Voltar</button>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <label class="form-label">Remessa (opcional)</label>
+                    <select class="form-select" @bind="remessaId">
+                        <option value="0">-- Vincular automaticamente pelo Seu Número --</option>
+                        @foreach (var r in remessas)
+                        {
+                            <option value="@r.Id">@r.NumeroSequencial - @r.NomeArquivo (@r.DataGeracao.ToString("dd/MM/yyyy"))</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Arquivo de Retorno</label>
+                    <InputFile class="form-control" OnChange="OnArquivoSelecionado" />
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-3">
+                <button class="btn btn-primary" @onclick="ImportarAsync" disabled="@(arquivoSelecionado is null)">Importar</button>
+                @if (resultado is { Sucesso: true } && resultado.RetornoCnabId is not null)
+                {
+                    <button class="btn btn-success" @onclick="ProcessarAsync">Processar / Atualizar status dos pagamentos</button>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (resultado is not null)
+    {
+        <div class="alert @(resultado.Sucesso ? "alert-success" : "alert-danger")">
+            <h5>@(resultado.Sucesso ? "Retorno importado" : "Falha na importação")</h5>
+            <ul class="mb-0">
+                @foreach (var m in resultado.Mensagens)
+                {
+                    <li>@m</li>
+                }
+            </ul>
+        </div>
+
+        @if (resultado.Sucesso)
+        {
+            <div class="row g-3 mb-3">
+                <div class="col-md-3"><div class="card border-secondary"><div class="card-body py-2"><small>Total registros</small><h4 class="mb-0">@resultado.TotalRegistros</h4></div></div></div>
+                <div class="col-md-3"><div class="card border-info"><div class="card-body py-2"><small>Processados</small><h4 class="mb-0">@resultado.TotalProcessados</h4></div></div></div>
+                <div class="col-md-3"><div class="card border-success"><div class="card-body py-2"><small>Aceitos</small><h4 class="mb-0 text-success">@resultado.TotalAceitos</h4></div></div></div>
+                <div class="col-md-3"><div class="card border-danger"><div class="card-body py-2"><small>Rejeitados</small><h4 class="mb-0 text-danger">@resultado.TotalRejeitados</h4></div></div></div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<RemessaCnab> remessas = new();
+    private int remessaId;
+    private IBrowserFile? arquivoSelecionado;
+    private ResultadoImportacaoRetornoCnabDto? resultado;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var ctx = await DbFactory.CreateDbContextAsync();
+        remessas = await ctx.RemessasCnab.AsNoTracking()
+            .OrderByDescending(r => r.DataGeracao)
+            .Take(50)
+            .ToListAsync();
+
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        if (query.TryGetValue("remessaId", out var v) && int.TryParse(v, out var id))
+            remessaId = id;
+    }
+
+    private void OnArquivoSelecionado(InputFileChangeEventArgs e)
+    {
+        arquivoSelecionado = e.File;
+        resultado = null;
+    }
+
+    private async Task ImportarAsync()
+    {
+        if (arquivoSelecionado is null) return;
+        try
+        {
+            await using var stream = arquivoSelecionado.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            ms.Position = 0;
+            resultado = await Service.ImportarRetornoAsync(ms, arquivoSelecionado.Name, remessaId == 0 ? null : remessaId);
+        }
+        catch (Exception ex)
+        {
+            resultado = new ResultadoImportacaoRetornoCnabDto
+            {
+                Sucesso = false,
+                Mensagens = new List<string> { ex.Message }
+            };
+        }
+    }
+
+    private async Task ProcessarAsync()
+    {
+        if (resultado?.RetornoCnabId is not int id) return;
+        if (!await JS.InvokeAsync<bool>("confirm", "Atualizar o status dos pagamentos com base neste retorno?")) return;
+
+        try
+        {
+            await Service.AtualizarStatusPagamentoPeloRetornoAsync(id);
+            await JS.InvokeVoidAsync("alert", "Status dos pagamentos atualizados.");
+            Navigation.NavigateTo("/financeiro/cnab/remessas");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", ex.Message);
+        }
+    }
+}
