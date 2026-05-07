@@ -1,0 +1,357 @@
+@page "/folhas-colaboradores/novo"
+@page "/folhas-colaboradores/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+@using MinhaAplicacaoBlazor.Services
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject FolhaColaboradorService FolhaService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>@(IsNovo ? "Nova Folha" : "Editar Folha")</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">@(IsNovo ? "Nova Folha de Colaboradores" : "Editar Folha de Colaboradores")</h3>
+            <button class="btn btn-secondary" @onclick="Voltar">Voltar</button>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                @if (!IsNovo && FolhaFechada)
+                {
+                    <div class="alert alert-info d-flex align-items-center gap-2 mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0"/>
+                            <path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z"/>
+                        </svg>
+                        <strong>Folha fechada.</strong>&nbsp;Reabra a folha para realizar alterações.
+                    </div>
+                }
+
+                <EditForm Model="folha" OnValidSubmit="SalvarAsync" FormName="form-folha">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Competência <span class="text-danger">*</span></label>
+                            <InputSelect class="form-select" @bind-Value="folha.CompetenciaId" disabled="@(!IsNovo)">
+                                <option value="0">-- Selecione --</option>
+                                @foreach (var c in competencias)
+                                {
+                                    <option value="@c.Id">@($"{c.Mes:00}/{c.Ano}")</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Status</label>
+                            <input type="text" class="form-control" value="@folha.Status" readonly />
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data Fechamento</label>
+                            <input type="text" class="form-control"
+                                   value="@(folha.DataFechamento?.ToString("dd/MM/yyyy HH:mm") ?? "—")" readonly />
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Valor Total</label>
+                            <input type="text" class="form-control text-end fw-semibold"
+                                   value="@folha.ValorTotal.ToString("C")" readonly />
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+                    @if (!string.IsNullOrEmpty(mensagemSucesso))
+                    {
+                        <div class="alert alert-success">@mensagemSucesso</div>
+                    }
+
+                    <div class="d-flex gap-2 flex-wrap">
+                        @if (IsNovo)
+                        {
+                            <button type="submit" class="btn btn-primary">Salvar</button>
+                            <button type="button" class="btn btn-secondary" @onclick="Voltar">Cancelar</button>
+                        }
+                        else if (!FolhaFechada)
+                        {
+                            <button type="button" class="btn btn-success" @onclick="FecharFolhaAsync" disabled="@processando">
+                                @if (processando) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                Fechar Folha
+                            </button>
+                            <button type="button" class="btn btn-secondary" @onclick="Voltar">Voltar</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-warning" @onclick="ReabrirFolhaAsync" disabled="@processando">
+                                @if (processando) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                Reabrir Folha
+                            </button>
+                            <button type="button" class="btn btn-secondary" @onclick="Voltar">Voltar</button>
+                        }
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+
+    @if (!carregando && !IsNovo)
+    {
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Itens da Folha</h4>
+                <button class="btn btn-success" @onclick="NovoItem" disabled="@FolhaFechada">Adicionar Colaborador</button>
+            </div>
+            <div class="card-body">
+                @if (folha.Itens.Count == 0)
+                {
+                    <div class="alert alert-info mb-0">
+                        Nenhum colaborador adicionado a esta folha. Clique em "Adicionar Colaborador" para começar.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Colaborador</th>
+                                    <th>Cargo</th>
+                                    <th class="text-end">Sal. Bruto</th>
+                                    <th class="text-end">Proventos</th>
+                                    <th class="text-end">Descontos</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-end">Receber PIX</th>
+                                    <th class="text-end">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in folha.Itens.OrderBy(i => i.Colaborador?.Nome))
+                                {
+                                    <tr>
+                                        <td>@item.Colaborador?.Nome</td>
+                                        <td>@item.Cargo</td>
+                                        <td class="text-end">@item.SalarioBruto.ToString("C")</td>
+                                        <td class="text-end text-success">@item.TotalProventos.ToString("C")</td>
+                                        <td class="text-end text-danger">@item.TotalDescontos.ToString("C")</td>
+                                        <td class="text-end fw-semibold">@item.ValorTotal.ToString("C")</td>
+                                        <td class="text-end">@item.ValorReceberPix.ToString("C")</td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-secondary me-1" title="@(FolhaFechada ? "Folha fechada" : "Editar")"
+                                                    @onclick="() => EditarItem(item.Id)" disabled="@FolhaFechada">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                                                </svg>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" title="@(FolhaFechada ? "Folha fechada" : "Remover")"
+                                                    @onclick="() => RemoverItemAsync(item.Id)" disabled="@FolhaFechada">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                                    <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                                                </svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="3" class="text-end">Totais:</th>
+                                    <th class="text-end text-success">@folha.Itens.Sum(i => i.TotalProventos).ToString("C")</th>
+                                    <th class="text-end text-danger">@folha.Itens.Sum(i => i.TotalDescontos).ToString("C")</th>
+                                    <th class="text-end">@folha.Itens.Sum(i => i.ValorTotal).ToString("C")</th>
+                                    <th class="text-end">@folha.Itens.Sum(i => i.ValorReceberPix).ToString("C")</th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private FolhaColaborador folha = new();
+    private List<Competencia> competencias = new();
+    private bool carregando = true;
+    private bool processando;
+    private string? mensagemErro;
+    private string? mensagemSucesso;
+
+    private bool IsNovo => Id is null or 0;
+    private bool FolhaFechada => !IsNovo && folha.Status != "Aberta";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        competencias = await context.Competencias
+            .AsNoTracking()
+            .OrderByDescending(c => c.Ano).ThenByDescending(c => c.Mes)
+            .ToListAsync();
+
+        if (!IsNovo)
+        {
+            var existente = await context.FolhasColaboradores
+                .AsNoTracking()
+                .Include(f => f.Itens)
+                    .ThenInclude(i => i.Colaborador)
+                .FirstOrDefaultAsync(f => f.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo("/folhas-colaboradores");
+                return;
+            }
+
+            folha = existente;
+        }
+        else
+        {
+            var atual = competencias.FirstOrDefault(c =>
+                c.Mes == DateTime.Today.Month && c.Ano == DateTime.Today.Year);
+            if (atual is not null)
+                folha.CompetenciaId = atual.Id;
+        }
+
+        carregando = false;
+    }
+
+    private async Task SalvarAsync()
+    {
+        if (!IsNovo) return;
+
+        if (folha.CompetenciaId == 0)
+        {
+            mensagemErro = "Selecione uma competência.";
+            return;
+        }
+
+        mensagemErro = null;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        var jaExiste = await context.FolhasColaboradores
+            .AsNoTracking()
+            .AnyAsync(f => f.CompetenciaId == folha.CompetenciaId);
+
+        if (jaExiste)
+        {
+            mensagemErro = "Já existe uma folha para esta competência.";
+            return;
+        }
+
+        folha.ValorTotal = 0;
+        folha.Status = "Aberta";
+        context.FolhasColaboradores.Add(folha);
+        await context.SaveChangesAsync();
+        Navigation.NavigateTo($"/folhas-colaboradores/editar/{folha.Id}");
+    }
+
+    private async Task FecharFolhaAsync()
+    {
+        var confirmado = await JS.InvokeAsync<bool>("confirm",
+            "Deseja realmente fechar esta folha? Após o fechamento, os registros não poderão ser alterados.");
+        if (!confirmado) return;
+
+        processando = true;
+        mensagemErro = null;
+        mensagemSucesso = null;
+
+        try
+        {
+            await FolhaService.FecharFolhaAsync(folha.Id);
+            mensagemSucesso = "Folha fechada com sucesso.";
+            Navigation.NavigateTo($"/folhas-colaboradores/editar/{folha.Id}", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = ex.Message;
+        }
+        finally
+        {
+            processando = false;
+        }
+    }
+
+    private async Task ReabrirFolhaAsync()
+    {
+        var confirmado = await JS.InvokeAsync<bool>("confirm",
+            "Deseja realmente reabrir esta folha? Após reabrir, os registros poderão ser alterados novamente.");
+        if (!confirmado) return;
+
+        processando = true;
+        mensagemErro = null;
+        mensagemSucesso = null;
+
+        try
+        {
+            await FolhaService.ReabrirFolhaAsync(folha.Id);
+            mensagemSucesso = "Folha reaberta com sucesso.";
+            Navigation.NavigateTo($"/folhas-colaboradores/editar/{folha.Id}", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = ex.Message;
+        }
+        finally
+        {
+            processando = false;
+        }
+    }
+
+    private void NovoItem() => Navigation.NavigateTo($"/folhas-colaboradores/{folha.Id}/itens/novo");
+    private void EditarItem(int itemId) => Navigation.NavigateTo($"/folhas-colaboradores/{folha.Id}/itens/editar/{itemId}");
+
+    private async Task RemoverItemAsync(int itemId)
+    {
+        if (!await FolhaService.ValidarFolhaAbertaAsync(folha.Id))
+        {
+            mensagemErro = "Esta folha está fechada. Reabra a folha para realizar alterações.";
+            return;
+        }
+
+        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja remover este item da folha?");
+        if (!confirmado) return;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+        var item = await context.FolhasColaboradoresItens.FindAsync(itemId);
+
+        if (item is not null)
+        {
+            context.FolhasColaboradoresItens.Remove(item);
+            await context.SaveChangesAsync();
+
+            var folhaEntity = await context.FolhasColaboradores.FindAsync(folha.Id);
+            if (folhaEntity is not null)
+            {
+                folhaEntity.ValorTotal = await context.FolhasColaboradoresItens
+                    .Where(i => i.FolhaColaboradorId == folha.Id)
+                    .SumAsync(i => (decimal?)i.ValorTotal) ?? 0m;
+                await context.SaveChangesAsync();
+            }
+
+            Navigation.NavigateTo($"/folhas-colaboradores/editar/{folha.Id}", forceLoad: true);
+        }
+    }
+
+    private void Voltar() => Navigation.NavigateTo("/folhas-colaboradores");
+}

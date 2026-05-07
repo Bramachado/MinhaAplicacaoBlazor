@@ -1,0 +1,176 @@
+@page "/competencias/novo"
+@page "/competencias/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNovo ? "Nova Competência" : "Editar Competência")</PageTitle>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">@(IsNovo ? "Nova Competência" : "Editar Competência")</h3>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                <EditForm Model="competencia" OnValidSubmit="SalvarAsync" FormName="form-competencia">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Mês</label>
+                            <InputSelect class="form-select" @bind-Value="competencia.Mes">
+                                <option value="0">-- Selecione --</option>
+                                @for (int m = 1; m <= 12; m++)
+                                {
+                                    <option value="@m">@($"{m:00}") - @NomeMes(m)</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Ano</label>
+                            <InputNumber class="form-control" @bind-Value="competencia.Ano" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Data Início</label>
+                            <InputDate class="form-control" @bind-Value="competencia.DataInicio" />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Data Fim</label>
+                            <InputDate class="form-control" @bind-Value="competencia.DataFim" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <InputSelect class="form-select" @bind-Value="competencia.Status">
+                                <option value="Aberta">Aberta</option>
+                                <option value="Em Processamento">Em Processamento</option>
+                                <option value="Fechada">Fechada</option>
+                                <option value="Cancelada">Cancelada</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private Competencia competencia = new()
+    {
+        Mes = DateTime.Today.Month,
+        Ano = DateTime.Today.Year,
+        DataInicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1),
+        DataFim = new DateTime(DateTime.Today.Year, DateTime.Today.Month,
+            DateTime.DaysInMonth(DateTime.Today.Year, DateTime.Today.Month)),
+        Status = "Aberta"
+    };
+
+    private bool carregando = true;
+    private string? mensagemErro;
+
+    private bool IsNovo => Id is null or 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!IsNovo)
+        {
+            await using var context = await DbFactory.CreateDbContextAsync();
+
+            var existente = await context.Competencias
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo("/competencias");
+                return;
+            }
+
+            competencia = existente;
+        }
+
+        carregando = false;
+    }
+
+    private async Task SalvarAsync()
+    {
+        if (competencia.Mes < 1 || competencia.Mes > 12)
+        {
+            mensagemErro = "Selecione um mês válido.";
+            return;
+        }
+
+        if (competencia.DataFim < competencia.DataInicio)
+        {
+            mensagemErro = "A data final deve ser maior ou igual à data inicial.";
+            return;
+        }
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        var jaExiste = await context.Competencias
+            .AsNoTracking()
+            .AnyAsync(c => c.Mes == competencia.Mes
+                        && c.Ano == competencia.Ano
+                        && c.Id != competencia.Id);
+
+        if (jaExiste)
+        {
+            mensagemErro = "Já existe uma competência cadastrada para este mês/ano.";
+            return;
+        }
+
+        mensagemErro = null;
+
+        if (IsNovo)
+            context.Competencias.Add(competencia);
+        else
+            context.Competencias.Update(competencia);
+
+        await context.SaveChangesAsync();
+
+        Navigation.NavigateTo("/competencias");
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/competencias");
+
+    private static string NomeMes(int mes) => mes switch
+    {
+        1 => "Janeiro", 2 => "Fevereiro", 3 => "Março", 4 => "Abril",
+        5 => "Maio", 6 => "Junho", 7 => "Julho", 8 => "Agosto",
+        9 => "Setembro", 10 => "Outubro", 11 => "Novembro", 12 => "Dezembro",
+        _ => "—"
+    };
+}

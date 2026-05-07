@@ -1,0 +1,224 @@
+@page "/colaboradores/novo"
+@page "/colaboradores/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNovo ? "Novo Colaborador" : "Editar Colaborador")</PageTitle>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">@(IsNovo ? "Novo Colaborador" : "Editar Colaborador")</h3>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                <EditForm Model="colaborador" OnValidSubmit="SalvarAsync" FormName="form-colaborador">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Nome</label>
+                            <InputText class="form-control" @bind-Value="colaborador.Nome" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Unidade</label>
+                            <InputSelect class="form-select" @bind-Value="colaborador.UnidadeId">
+                                <option value="0">-- Selecione --</option>
+                                @foreach (var u in unidades)
+                                {
+                                    <option value="@u.Id">@u.Codigo - @u.Nome</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">CPF</label>
+                            <InputText class="form-control" @bind-Value="colaborador.Cpf" />
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">RG</label>
+                            <InputText class="form-control" @bind-Value="colaborador.Rg" />
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Chave PIX</label>
+                            <InputText class="form-control" @bind-Value="colaborador.ChavePix" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            <InputText type="email" class="form-control" @bind-Value="colaborador.Email" />
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Telefone</label>
+                            <InputText class="form-control" @bind-Value="colaborador.Telefone" />
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data de Nascimento</label>
+                            <InputDate class="form-control" @bind-Value="colaborador.DataNascimento" />
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h5>Dados Profissionais</h5>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cargo</label>
+                            <InputText class="form-control" @bind-Value="colaborador.Cargo" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Carga Horária Semanal</label>
+                            <InputNumber class="form-control text-end" @bind-Value="colaborador.CargaHorariaSemanal" step="0.01" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Salário Base</label>
+                            <InputNumber class="form-control text-end" @bind-Value="colaborador.SalarioBase" step="0.01" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Ticket Alimentação</label>
+                            <InputNumber class="form-control text-end" @bind-Value="colaborador.TicketAlimentacao" step="0.01" />
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h5>Dados Bancários</h5>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Banco</label>
+                            <InputText class="form-control" @bind-Value="colaborador.Banco" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Código</label>
+                            <InputText class="form-control" @bind-Value="colaborador.CodigoBanco" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Agência</label>
+                            <InputText class="form-control" @bind-Value="colaborador.Agencia" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Conta</label>
+                            <InputText class="form-control" @bind-Value="colaborador.Conta" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-9 mb-3">
+                            <label class="form-label">Nome do Titular</label>
+                            <InputText class="form-control" @bind-Value="colaborador.NomeTitular" />
+                        </div>
+
+                        <div class="col-md-3 mb-3 d-flex align-items-end">
+                            <div class="form-check">
+                                <InputCheckbox class="form-check-input" id="ativo-colaborador" @bind-Value="colaborador.Ativo" />
+                                <label class="form-check-label" for="ativo-colaborador">Ativo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private Colaborador colaborador = new();
+    private List<Unidade> unidades = new();
+    private bool carregando = true;
+    private string? mensagemErro;
+
+    private bool IsNovo => Id is null or 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        unidades = await context.Unidades
+            .AsNoTracking()
+            .Where(u => u.Ativa)
+            .OrderBy(u => u.Nome)
+            .ToListAsync();
+
+        if (!IsNovo)
+        {
+            var existente = await context.Colaboradores
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo("/colaboradores");
+                return;
+            }
+
+            colaborador = existente;
+        }
+
+        carregando = false;
+    }
+
+    private async Task SalvarAsync()
+    {
+        if (colaborador.UnidadeId == 0)
+        {
+            mensagemErro = "Selecione uma unidade.";
+            return;
+        }
+
+        mensagemErro = null;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        if (IsNovo)
+            context.Colaboradores.Add(colaborador);
+        else
+            context.Colaboradores.Update(colaborador);
+
+        await context.SaveChangesAsync();
+
+        Navigation.NavigateTo("/colaboradores");
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/colaboradores");
+}

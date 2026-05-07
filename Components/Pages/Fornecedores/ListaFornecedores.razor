@@ -1,4 +1,4 @@
-@page "/escalas-aulas-praticas"
+@page "/fornecedores"
 @rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
@@ -9,18 +9,14 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
-<PageTitle>Escalas de Aula Prática</PageTitle>
+<PageTitle>Fornecedores</PageTitle>
 
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1>Escalas de Aula Prática</h1>
+        <h1>Fornecedores</h1>
         <div class="d-flex gap-2 d-print-none">
-            <button class="btn btn-outline-primary" @onclick="ImprimirAsync">
-                Imprimir
-            </button>
-            <button class="btn btn-primary" @onclick="Nova">
-                Nova Escala
-            </button>
+            <button class="btn btn-outline-primary" @onclick="ImprimirAsync">Imprimir</button>
+            <button class="btn btn-primary" @onclick="Novo">Novo Fornecedor</button>
         </div>
     </div>
 
@@ -29,9 +25,9 @@
         <div>
             <strong>Pesquisa:</strong> @(string.IsNullOrWhiteSpace(filtroTexto) ? "—" : filtroTexto) &nbsp;|&nbsp;
             <strong>Unidade:</strong> @NomeUnidadeFiltro &nbsp;|&nbsp;
-            <strong>Mês:</strong> @(string.IsNullOrWhiteSpace(filtroMes) ? "—" : filtroMes) &nbsp;|&nbsp;
+            <strong>Categoria:</strong> @NomeCategoriaFiltro &nbsp;|&nbsp;
             <strong>Status:</strong> @StatusFiltro &nbsp;|&nbsp;
-            <strong>Total:</strong> @EscalasFiltradas.Count() registro(s)
+            <strong>Total:</strong> @FornecedoresFiltrados.Count() registro(s)
         </div>
     </div>
 
@@ -39,7 +35,7 @@
         <div class="col-md-4">
             <input type="text"
                    class="form-control"
-                   placeholder="Pesquisar por tutor, curso/turma ou sala..."
+                   placeholder="Pesquisar por nome, fantasia ou CPF/CNPJ..."
                    @bind="filtroTexto"
                    @bind:event="oninput" />
         </div>
@@ -52,18 +48,20 @@
                 }
             </select>
         </div>
-        <div class="col-md-2">
-            <input type="text"
-                   class="form-control"
-                   placeholder="Mês (MM/AAAA)"
-                   @bind="filtroMes"
-                   @bind:event="oninput" />
+        <div class="col-md-3">
+            <select class="form-select" @bind="filtroCategoriaId">
+                <option value="0">Todas as Categorias</option>
+                @foreach (var c in categorias)
+                {
+                    <option value="@c.Id">@c.Nome</option>
+                }
+            </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-1">
             <select class="form-select" @bind="filtroAtivo">
-                <option value="">Ativos e Inativos</option>
-                <option value="true">Apenas Ativos</option>
-                <option value="false">Apenas Inativos</option>
+                <option value="">Todos</option>
+                <option value="true">Ativos</option>
+                <option value="false">Inativos</option>
             </select>
         </div>
         <div class="col-md-1">
@@ -76,26 +74,21 @@
         </div>
     </div>
 
-    @if (escalas is null)
+    @if (fornecedores is null)
     {
         <p>Carregando...</p>
     }
     else
     {
         <div class="table-responsive">
-            <QuickGrid Items="EscalasFiltradas" Pagination="pagination" Class="table table-striped table-hover align-middle imprimivel-sem-acoes">
-                <PropertyColumn Property="@(e => e.Tutor!.Nome)" Title="Tutor" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
-                <PropertyColumn Property="@(e => e.Tutor!.Unidade!.Nome)" Title="Unidade" Sortable="true" />
-                <PropertyColumn Property="@(e => e.MesAulaPratica)" Title="Mês Aula Prática" Sortable="true" />
-                <PropertyColumn Property="@(e => e.CursoTurma)" Title="Curso/Turma" Sortable="true" />
-                <PropertyColumn Property="@(e => e.SalaLab)" Title="Sala/Lab" Sortable="true" />
-                <PropertyColumn Property="@(e => e.DiaSemana)" Title="Dia da Semana" Sortable="true" />
-                <TemplateColumn Title="Hora Início" Sortable="true" SortBy="@sortPorHoraInicio">
-                    @context.HoraInicio.ToString(@"hh\:mm")
-                </TemplateColumn>
-                <TemplateColumn Title="Hora Fim" Sortable="true" SortBy="@sortPorHoraFim">
-                    @context.HoraFim.ToString(@"hh\:mm")
-                </TemplateColumn>
+            <QuickGrid Items="FornecedoresFiltrados" Pagination="pagination" Class="table table-striped table-hover align-middle imprimivel-sem-acoes">
+                <PropertyColumn Property="@(f => f.NomeRazaoSocial)" Title="Nome / Razão Social" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
+                <PropertyColumn Property="@(f => f.NomeFantasia)" Title="Fantasia" Sortable="true" />
+                <PropertyColumn Property="@(f => f.CpfCnpj)" Title="CPF/CNPJ" />
+                <PropertyColumn Property="@(f => f.CategoriaFornecedor!.Nome)" Title="Categoria" Sortable="true" />
+                <PropertyColumn Property="@(f => f.Unidade!.Nome)" Title="Unidade" Sortable="true" />
+                <PropertyColumn Property="@(f => f.NomeContato)" Title="Contato" />
+                <PropertyColumn Property="@(f => f.Telefone)" Title="Telefone" />
                 <TemplateColumn Title="Ativo" Sortable="true" SortBy="@sortPorAtivo" Align="Align.Center">
                     @if (context.Ativo)
                     {
@@ -127,56 +120,50 @@
         </div>
 
         <div class="d-flex justify-content-between align-items-center mt-2 d-print-none">
-            <small class="text-muted">
-                @(EscalasFiltradas.Count()) registro(s) encontrado(s)
-            </small>
+            <small class="text-muted">@(FornecedoresFiltrados.Count()) registro(s) encontrado(s)</small>
             <Paginator State="pagination" />
         </div>
     }
 </div>
 
 @code {
-    private List<EscalaAulaPratica>? escalas;
+    private List<Fornecedor>? fornecedores;
     private List<Unidade> unidades = new();
+    private List<CategoriaFornecedor> categorias = new();
     private string filtroTexto = string.Empty;
     private int filtroUnidadeId;
-    private string filtroMes = string.Empty;
+    private int filtroCategoriaId;
     private string filtroAtivo = string.Empty;
-
     private readonly PaginationState pagination = new() { ItemsPerPage = 10 };
 
-    private readonly GridSort<EscalaAulaPratica> sortPorHoraInicio = GridSort<EscalaAulaPratica>.ByAscending(e => e.HoraInicio);
-    private readonly GridSort<EscalaAulaPratica> sortPorHoraFim = GridSort<EscalaAulaPratica>.ByAscending(e => e.HoraFim);
-    private readonly GridSort<EscalaAulaPratica> sortPorAtivo = GridSort<EscalaAulaPratica>.ByAscending(e => e.Ativo);
+    private readonly GridSort<Fornecedor> sortPorAtivo = GridSort<Fornecedor>.ByAscending(f => f.Ativo);
 
-    private IQueryable<EscalaAulaPratica> EscalasFiltradas
+    private IQueryable<Fornecedor> FornecedoresFiltrados
     {
         get
         {
-            if (escalas is null)
-                return Enumerable.Empty<EscalaAulaPratica>().AsQueryable();
+            if (fornecedores is null)
+                return Enumerable.Empty<Fornecedor>().AsQueryable();
 
-            IEnumerable<EscalaAulaPratica> resultado = escalas;
+            IEnumerable<Fornecedor> resultado = fornecedores;
 
             if (!string.IsNullOrWhiteSpace(filtroTexto))
             {
                 var termo = filtroTexto.Trim();
-                resultado = resultado.Where(e =>
-                    (e.Tutor != null && e.Tutor.Nome.Contains(termo, StringComparison.OrdinalIgnoreCase)) ||
-                    (e.CursoTurma != null && e.CursoTurma.Contains(termo, StringComparison.OrdinalIgnoreCase)) ||
-                    (e.SalaLab != null && e.SalaLab.Contains(termo, StringComparison.OrdinalIgnoreCase)));
+                resultado = resultado.Where(f =>
+                    f.NomeRazaoSocial.Contains(termo, StringComparison.OrdinalIgnoreCase) ||
+                    (f.NomeFantasia != null && f.NomeFantasia.Contains(termo, StringComparison.OrdinalIgnoreCase)) ||
+                    (f.CpfCnpj != null && f.CpfCnpj.Contains(termo, StringComparison.OrdinalIgnoreCase)));
             }
 
             if (filtroUnidadeId > 0)
-                resultado = resultado.Where(e =>
-                    e.Tutor != null && e.Tutor.UnidadeId == filtroUnidadeId);
+                resultado = resultado.Where(f => f.UnidadeId == filtroUnidadeId);
 
-            if (!string.IsNullOrWhiteSpace(filtroMes))
-                resultado = resultado.Where(e =>
-                    e.MesAulaPratica.Contains(filtroMes.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (filtroCategoriaId > 0)
+                resultado = resultado.Where(f => f.CategoriaFornecedorId == filtroCategoriaId);
 
             if (bool.TryParse(filtroAtivo, out var ativo))
-                resultado = resultado.Where(e => e.Ativo == ativo);
+                resultado = resultado.Where(f => f.Ativo == ativo);
 
             return resultado.AsQueryable();
         }
@@ -191,25 +178,29 @@
     {
         await using var context = await DbFactory.CreateDbContextAsync();
 
-        escalas = await context.EscalasAulasPraticas
+        fornecedores = await context.Fornecedores
             .AsNoTracking()
-            .Include(e => e.Tutor)
-                .ThenInclude(t => t!.Unidade)
-            .OrderBy(e => e.Tutor!.Nome)
-            .ThenBy(e => e.MesAulaPratica)
-            .ThenBy(e => e.DiaSemana)
+            .Include(f => f.Unidade)
+            .Include(f => f.CategoriaFornecedor)
+            .OrderBy(f => f.NomeRazaoSocial)
             .ToListAsync();
 
         unidades = await context.Unidades
             .AsNoTracking()
             .OrderBy(u => u.Nome)
             .ToListAsync();
+
+        categorias = await context.CategoriasFornecedores
+            .AsNoTracking()
+            .OrderBy(c => c.Nome)
+            .ToListAsync();
     }
 
     private string NomeUnidadeFiltro =>
-        filtroUnidadeId == 0
-            ? "Todas"
-            : unidades.FirstOrDefault(u => u.Id == filtroUnidadeId)?.Nome ?? "—";
+        filtroUnidadeId == 0 ? "Todas" : unidades.FirstOrDefault(u => u.Id == filtroUnidadeId)?.Nome ?? "—";
+
+    private string NomeCategoriaFiltro =>
+        filtroCategoriaId == 0 ? "Todas" : categorias.FirstOrDefault(c => c.Id == filtroCategoriaId)?.Nome ?? "—";
 
     private string StatusFiltro => filtroAtivo switch
     {
@@ -220,39 +211,29 @@
 
     private async Task ImprimirAsync()
     {
-        var itensAnteriores = pagination.ItemsPerPage;
+        var anteriores = pagination.ItemsPerPage;
         await pagination.SetCurrentPageIndexAsync(0);
         pagination.ItemsPerPage = int.MaxValue;
         StateHasChanged();
         await Task.Yield();
         await JS.InvokeVoidAsync("window.print");
-        pagination.ItemsPerPage = itensAnteriores;
+        pagination.ItemsPerPage = anteriores;
     }
 
-    private void Nova()
-    {
-        Navigation.NavigateTo("/escalas-aulas-praticas/novo");
-    }
-
-    private void Editar(int id)
-    {
-        Navigation.NavigateTo($"/escalas-aulas-praticas/editar/{id}");
-    }
+    private void Novo() => Navigation.NavigateTo("/fornecedores/novo");
+    private void Editar(int id) => Navigation.NavigateTo($"/fornecedores/editar/{id}");
 
     private async Task ExcluirAsync(int id)
     {
-        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta escala?");
-
-        if (!confirmado)
-            return;
+        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir este fornecedor?");
+        if (!confirmado) return;
 
         await using var context = await DbFactory.CreateDbContextAsync();
-
-        var entidade = await context.EscalasAulasPraticas.FindAsync(id);
+        var entidade = await context.Fornecedores.FindAsync(id);
 
         if (entidade is not null)
         {
-            context.EscalasAulasPraticas.Remove(entidade);
+            context.Fornecedores.Remove(entidade);
             await context.SaveChangesAsync();
             await CarregarDadosAsync();
         }

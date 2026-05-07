@@ -1,0 +1,177 @@
+@page "/competencias"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Competências</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Competências</h1>
+        <button class="btn btn-primary" @onclick="Nova">
+            Nova Competência
+        </button>
+    </div>
+
+    <div class="row mb-3 g-2">
+        <div class="col-md-3">
+            <select class="form-select" @bind="filtroAno">
+                <option value="0">Todos os Anos</option>
+                @foreach (var ano in AnosDisponiveis)
+                {
+                    <option value="@ano">@ano</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="filtroStatus">
+                <option value="">Todos os Status</option>
+                <option value="Aberta">Aberta</option>
+                <option value="Fechada">Fechada</option>
+                <option value="Em Processamento">Em Processamento</option>
+                <option value="Cancelada">Cancelada</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="pagination.ItemsPerPage">
+                <option value="10">10 por página</option>
+                <option value="25">25 por página</option>
+                <option value="50">50 por página</option>
+                <option value="100">100 por página</option>
+            </select>
+        </div>
+    </div>
+
+    @if (competencias is null)
+    {
+        <p>Carregando...</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <QuickGrid Items="CompetenciasFiltradas" Pagination="pagination" Class="table table-striped table-hover align-middle">
+                <PropertyColumn Property="@(c => c.Ano)" Title="Ano" Sortable="true" InitialSortDirection="SortDirection.Descending" IsDefaultSortColumn="true" />
+                <TemplateColumn Title="Mês" Sortable="true" SortBy="@sortPorMes">
+                    @($"{context.Mes:00}") - @NomeMes(context.Mes)
+                </TemplateColumn>
+                <PropertyColumn Property="@(c => c.DataInicio)" Format="dd/MM/yyyy" Title="Data Início" Sortable="true" />
+                <PropertyColumn Property="@(c => c.DataFim)" Format="dd/MM/yyyy" Title="Data Fim" Sortable="true" />
+                <TemplateColumn Title="Status" Sortable="true" SortBy="@sortPorStatus" Align="Align.Center">
+                    <span class="badge @StatusBadge(context.Status)">@context.Status</span>
+                </TemplateColumn>
+                <TemplateColumn Title="Ações" Align="Align.End">
+                    <button class="btn btn-sm btn-outline-secondary me-1"
+                            title="Editar"
+                            @onclick="() => Editar(context.Id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                        </svg>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger"
+                            title="Excluir"
+                            @onclick="() => ExcluirAsync(context.Id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                            <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                        </svg>
+                    </button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <small class="text-muted">@(CompetenciasFiltradas.Count()) registro(s) encontrado(s)</small>
+            <Paginator State="pagination" />
+        </div>
+    }
+</div>
+
+@code {
+    private List<Competencia>? competencias;
+    private int filtroAno;
+    private string filtroStatus = string.Empty;
+    private readonly PaginationState pagination = new() { ItemsPerPage = 10 };
+
+    private readonly GridSort<Competencia> sortPorMes = GridSort<Competencia>.ByAscending(c => c.Mes);
+    private readonly GridSort<Competencia> sortPorStatus = GridSort<Competencia>.ByAscending(c => c.Status);
+
+    private IEnumerable<int> AnosDisponiveis =>
+        competencias?.Select(c => c.Ano).Distinct().OrderByDescending(a => a) ?? Enumerable.Empty<int>();
+
+    private IQueryable<Competencia> CompetenciasFiltradas
+    {
+        get
+        {
+            if (competencias is null)
+                return Enumerable.Empty<Competencia>().AsQueryable();
+
+            IEnumerable<Competencia> resultado = competencias;
+
+            if (filtroAno > 0)
+                resultado = resultado.Where(c => c.Ano == filtroAno);
+
+            if (!string.IsNullOrWhiteSpace(filtroStatus))
+                resultado = resultado.Where(c => c.Status == filtroStatus);
+
+            return resultado.AsQueryable();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarDadosAsync();
+    }
+
+    private async Task CarregarDadosAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        competencias = await context.Competencias
+            .AsNoTracking()
+            .OrderByDescending(c => c.Ano)
+            .ThenByDescending(c => c.Mes)
+            .ToListAsync();
+    }
+
+    private static string NomeMes(int mes) => mes switch
+    {
+        1 => "Janeiro", 2 => "Fevereiro", 3 => "Março", 4 => "Abril",
+        5 => "Maio", 6 => "Junho", 7 => "Julho", 8 => "Agosto",
+        9 => "Setembro", 10 => "Outubro", 11 => "Novembro", 12 => "Dezembro",
+        _ => "—"
+    };
+
+    private static string StatusBadge(string status) => status switch
+    {
+        "Aberta" => "bg-success",
+        "Fechada" => "bg-secondary",
+        "Em Processamento" => "bg-warning text-dark",
+        "Cancelada" => "bg-danger",
+        _ => "bg-light text-dark"
+    };
+
+    private void Nova() => Navigation.NavigateTo("/competencias/novo");
+    private void Editar(int id) => Navigation.NavigateTo($"/competencias/editar/{id}");
+
+    private async Task ExcluirAsync(int id)
+    {
+        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta competência?");
+        if (!confirmado) return;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+        var entidade = await context.Competencias.FindAsync(id);
+
+        if (entidade is not null)
+        {
+            context.Competencias.Remove(entidade);
+            await context.SaveChangesAsync();
+            await CarregarDadosAsync();
+        }
+    }
+}

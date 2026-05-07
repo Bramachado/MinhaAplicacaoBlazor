@@ -1,0 +1,181 @@
+@page "/categorias-fornecedores"
+@rendermode InteractiveServer
+
+@using MinhaAplicacaoBlazor.Models
+@using MinhaAplicacaoBlazor.Services
+
+@inject CategoriaFornecedorService Service
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Categorias de Fornecedores</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Categorias de Fornecedores</h1>
+        <button class="btn btn-primary" @onclick="Nova">
+            Nova Categoria
+        </button>
+    </div>
+
+    <div class="row mb-3 g-2">
+        <div class="col-md-6">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Pesquisar por nome ou descrição..."
+                   @bind="filtroTexto"
+                   @bind:event="oninput" />
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="filtroSituacao">
+                <option value="">Ativas e Inativas</option>
+                <option value="true">Apenas Ativas</option>
+                <option value="false">Apenas Inativas</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="pagination.ItemsPerPage">
+                <option value="10">10 por página</option>
+                <option value="25">25 por página</option>
+                <option value="50">50 por página</option>
+                <option value="100">100 por página</option>
+            </select>
+        </div>
+    </div>
+
+    @if (categorias is null)
+    {
+        <p>Carregando...</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <QuickGrid Items="CategoriasFiltradas" Pagination="pagination" Class="table table-striped table-hover align-middle">
+                <PropertyColumn Property="@(c => c.Nome)" Title="Nome" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
+                <PropertyColumn Property="@(c => c.Descricao)" Title="Descrição" Sortable="true" />
+                <TemplateColumn Title="Situação" Sortable="true" SortBy="@sortPorAtiva" Align="Align.Center">
+                    @if (context.Ativa)
+                    {
+                        <span class="badge bg-success">Ativa</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Inativa</span>
+                    }
+                </TemplateColumn>
+                <PropertyColumn Property="@(c => c.DataCadastro)" Format="dd/MM/yyyy HH:mm" Title="Data de Cadastro" Sortable="true" />
+                <TemplateColumn Title="Fornecedores" Align="Align.Center">
+                    <span class="badge bg-info text-dark">@(GetQuantidade(context.Id))</span>
+                </TemplateColumn>
+                <TemplateColumn Title="Ações" Align="Align.End">
+                    <button class="btn btn-sm btn-outline-secondary me-1"
+                            title="Editar"
+                            @onclick="() => Editar(context.Id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                        </svg>
+                    </button>
+                    <button class="btn btn-sm btn-outline-info me-1"
+                            title="Detalhes"
+                            @onclick="() => Detalhes(context.Id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+                        </svg>
+                    </button>
+                    @if (context.Ativa)
+                    {
+                        <button class="btn btn-sm btn-outline-warning"
+                                title="Inativar"
+                                @onclick="() => AlternarSituacaoAsync(context.Id, false)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                            </svg>
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-sm btn-outline-success"
+                                title="Ativar"
+                                @onclick="() => AlternarSituacaoAsync(context.Id, true)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                            </svg>
+                        </button>
+                    }
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <small class="text-muted">@(CategoriasFiltradas.Count()) registro(s) encontrado(s)</small>
+            <Paginator State="pagination" />
+        </div>
+    }
+</div>
+
+@code {
+    private List<CategoriaFornecedor>? categorias;
+    private Dictionary<int, int> quantidadeFornecedores = new();
+    private string filtroTexto = string.Empty;
+    private string filtroSituacao = string.Empty;
+    private readonly PaginationState pagination = new() { ItemsPerPage = 10 };
+
+    private readonly GridSort<CategoriaFornecedor> sortPorAtiva = GridSort<CategoriaFornecedor>.ByAscending(c => c.Ativa);
+
+    private IQueryable<CategoriaFornecedor> CategoriasFiltradas
+    {
+        get
+        {
+            if (categorias is null)
+                return Enumerable.Empty<CategoriaFornecedor>().AsQueryable();
+
+            IEnumerable<CategoriaFornecedor> resultado = categorias;
+
+            if (!string.IsNullOrWhiteSpace(filtroTexto))
+            {
+                var termo = filtroTexto.Trim();
+                resultado = resultado.Where(c =>
+                    c.Nome.Contains(termo, StringComparison.OrdinalIgnoreCase) ||
+                    (c.Descricao != null && c.Descricao.Contains(termo, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (bool.TryParse(filtroSituacao, out var ativa))
+                resultado = resultado.Where(c => c.Ativa == ativa);
+
+            return resultado.AsQueryable();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarDadosAsync();
+    }
+
+    private async Task CarregarDadosAsync()
+    {
+        categorias = await Service.ListarAsync();
+        quantidadeFornecedores = new Dictionary<int, int>();
+        foreach (var c in categorias)
+        {
+            quantidadeFornecedores[c.Id] = await Service.ContarFornecedoresVinculadosAsync(c.Id);
+        }
+    }
+
+    private int GetQuantidade(int id) =>
+        quantidadeFornecedores.TryGetValue(id, out var q) ? q : 0;
+
+    private void Nova() => Navigation.NavigateTo("/categorias-fornecedores/novo");
+    private void Editar(int id) => Navigation.NavigateTo($"/categorias-fornecedores/editar/{id}");
+    private void Detalhes(int id) => Navigation.NavigateTo($"/categorias-fornecedores/detalhes/{id}");
+
+    private async Task AlternarSituacaoAsync(int id, bool ativar)
+    {
+        var msg = ativar ? "Deseja ativar esta categoria?" : "Deseja inativar esta categoria?";
+        var confirmado = await JS.InvokeAsync<bool>("confirm", msg);
+        if (!confirmado) return;
+
+        await Service.AtivarInativarAsync(id);
+        await CarregarDadosAsync();
+    }
+}

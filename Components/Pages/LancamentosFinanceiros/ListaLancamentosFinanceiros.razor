@@ -1,0 +1,339 @@
+@page "/lancamentos-financeiros"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Lançamentos Financeiros</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Lançamentos Financeiros</h1>
+        <div class="d-flex gap-2 d-print-none">
+            <button class="btn btn-outline-primary" @onclick="ImprimirAsync">Imprimir</button>
+            <button class="btn btn-primary" @onclick="Novo">Novo Lançamento</button>
+        </div>
+    </div>
+
+    @if (lancamentos is not null)
+    {
+        <div class="row mb-3 g-3 d-print-none">
+            <div class="col-md-3">
+                <div class="card border-success h-100">
+                    <div class="card-body py-2">
+                        <small class="text-muted">Entradas</small>
+                        <h4 class="mb-0 text-success">@TotalEntradas.ToString("C")</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-danger h-100">
+                    <div class="card-body py-2">
+                        <small class="text-muted">Saídas</small>
+                        <h4 class="mb-0 text-danger">@TotalSaidas.ToString("C")</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-primary h-100">
+                    <div class="card-body py-2">
+                        <small class="text-muted">Saldo</small>
+                        <h4 class="mb-0 @(Saldo >= 0 ? "text-primary" : "text-danger")">@Saldo.ToString("C")</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-secondary h-100">
+                    <div class="card-body py-2">
+                        <small class="text-muted">Registros</small>
+                        <h4 class="mb-0">@LancamentosFiltrados.Count()</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="d-none d-print-block mb-3">
+        <h5 class="mb-1">Filtros aplicados</h5>
+        <div>
+            <strong>Pesquisa:</strong> @(string.IsNullOrWhiteSpace(filtroTexto) ? "—" : filtroTexto) &nbsp;|&nbsp;
+            <strong>Competência:</strong> @NomeCompetenciaFiltro &nbsp;|&nbsp;
+            <strong>Unidade:</strong> @NomeUnidadeFiltro &nbsp;|&nbsp;
+            <strong>Plano:</strong> @NomePlanoFiltro &nbsp;|&nbsp;
+            <strong>Tipo:</strong> @(string.IsNullOrWhiteSpace(filtroTipo) ? "Todos" : filtroTipo) &nbsp;|&nbsp;
+            <strong>Status:</strong> @(string.IsNullOrWhiteSpace(filtroStatus) ? "Todos" : filtroStatus)
+        </div>
+    </div>
+
+    <div class="row mb-3 g-2 d-print-none">
+        <div class="col-md-3">
+            <input type="text" class="form-control"
+                   placeholder="Pesquisar descrição/observação..."
+                   @bind="filtroTexto" @bind:event="oninput" />
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="filtroCompetenciaId">
+                <option value="0">Todas as Competências</option>
+                @foreach (var c in competencias)
+                {
+                    <option value="@c.Id">@($"{c.Mes:00}/{c.Ano}")</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="filtroUnidadeId">
+                <option value="0">Todas as Unidades</option>
+                @foreach (var u in unidades)
+                {
+                    <option value="@u.Id">@u.Nome</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="filtroPlanoContaId">
+                <option value="0">Todos os Planos</option>
+                @foreach (var p in planosContas)
+                {
+                    <option value="@p.Id">@p.Nome</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-1">
+            <select class="form-select" @bind="filtroTipo">
+                <option value="">Tipo</option>
+                <option value="Entrada">Entrada</option>
+                <option value="Saida">Saída</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <select class="form-select" @bind="filtroStatus">
+                <option value="">Status</option>
+                <option value="Aberto">Aberto</option>
+                <option value="Pago">Pago</option>
+                <option value="Cancelado">Cancelado</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <select class="form-select" @bind="pagination.ItemsPerPage">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+        </div>
+    </div>
+
+    @if (lancamentos is null)
+    {
+        <p>Carregando...</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <QuickGrid Items="LancamentosFiltrados" Pagination="pagination" Class="table table-striped table-hover align-middle imprimivel-sem-acoes">
+                <TemplateColumn Title="Competência" Sortable="true" SortBy="@sortPorCompetencia">
+                    @if (context.Competencia is not null)
+                    {
+                        @($"{context.Competencia.Mes:00}/{context.Competencia.Ano}")
+                    }
+                </TemplateColumn>
+                <PropertyColumn Property="@(l => l.DataVencimento)" Format="dd/MM/yyyy" Title="Vencimento" Sortable="true" />
+                <PropertyColumn Property="@(l => l.DataPagamento)" Format="dd/MM/yyyy" Title="Pagamento" Sortable="true" />
+                <PropertyColumn Property="@(l => l.Descricao)" Title="Descrição" Sortable="true" />
+                <PropertyColumn Property="@(l => l.PlanoConta!.Nome)" Title="Plano de Conta" Sortable="true" />
+                <PropertyColumn Property="@(l => l.Fornecedor!.NomeRazaoSocial)" Title="Fornecedor" Sortable="true" />
+                <PropertyColumn Property="@(l => l.Unidade!.Nome)" Title="Unidade" Sortable="true" />
+                <TemplateColumn Title="Tipo" Sortable="true" SortBy="@sortPorTipo" Align="Align.Center">
+                    @if (context.TipoLancamento == "Entrada")
+                    {
+                        <span class="badge bg-success">Entrada</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Saída</span>
+                    }
+                </TemplateColumn>
+                <TemplateColumn Title="Valor" Sortable="true" SortBy="@sortPorValor" Align="Align.End">
+                    <span class="@(context.TipoLancamento == "Entrada" ? "text-success" : "text-danger") fw-semibold">
+                        @context.Valor.ToString("C")
+                    </span>
+                </TemplateColumn>
+                <TemplateColumn Title="Status" Sortable="true" SortBy="@sortPorStatus" Align="Align.Center">
+                    <span class="badge @StatusBadge(context.Status)">@context.Status</span>
+                </TemplateColumn>
+                <TemplateColumn Title="Ações" Align="Align.End">
+                    <button class="btn btn-sm btn-outline-secondary me-1" title="Editar"
+                            @onclick="() => Editar(context.Id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                        </svg>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" title="Excluir"
+                            @onclick="() => ExcluirAsync(context.Id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                            <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                        </svg>
+                    </button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-2 d-print-none">
+            <small class="text-muted">@(LancamentosFiltrados.Count()) registro(s) encontrado(s)</small>
+            <Paginator State="pagination" />
+        </div>
+    }
+</div>
+
+@code {
+    private List<LancamentoFinanceiro>? lancamentos;
+    private List<Competencia> competencias = new();
+    private List<Unidade> unidades = new();
+    private List<PlanoConta> planosContas = new();
+
+    private string filtroTexto = string.Empty;
+    private int filtroCompetenciaId;
+    private int filtroUnidadeId;
+    private int filtroPlanoContaId;
+    private string filtroTipo = string.Empty;
+    private string filtroStatus = string.Empty;
+
+    private readonly PaginationState pagination = new() { ItemsPerPage = 25 };
+
+    private readonly GridSort<LancamentoFinanceiro> sortPorCompetencia =
+        GridSort<LancamentoFinanceiro>.ByDescending(l => l.Competencia!.Ano).ThenDescending(l => l.Competencia!.Mes);
+    private readonly GridSort<LancamentoFinanceiro> sortPorTipo = GridSort<LancamentoFinanceiro>.ByAscending(l => l.TipoLancamento);
+    private readonly GridSort<LancamentoFinanceiro> sortPorValor = GridSort<LancamentoFinanceiro>.ByAscending(l => l.Valor);
+    private readonly GridSort<LancamentoFinanceiro> sortPorStatus = GridSort<LancamentoFinanceiro>.ByAscending(l => l.Status);
+
+    private IQueryable<LancamentoFinanceiro> LancamentosFiltrados
+    {
+        get
+        {
+            if (lancamentos is null)
+                return Enumerable.Empty<LancamentoFinanceiro>().AsQueryable();
+
+            IEnumerable<LancamentoFinanceiro> resultado = lancamentos;
+
+            if (!string.IsNullOrWhiteSpace(filtroTexto))
+            {
+                var termo = filtroTexto.Trim();
+                resultado = resultado.Where(l =>
+                    l.Descricao.Contains(termo, StringComparison.OrdinalIgnoreCase) ||
+                    (l.Observacao != null && l.Observacao.Contains(termo, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (filtroCompetenciaId > 0)
+                resultado = resultado.Where(l => l.CompetenciaId == filtroCompetenciaId);
+
+            if (filtroUnidadeId > 0)
+                resultado = resultado.Where(l => l.UnidadeId == filtroUnidadeId);
+
+            if (filtroPlanoContaId > 0)
+                resultado = resultado.Where(l => l.PlanoContaId == filtroPlanoContaId);
+
+            if (!string.IsNullOrWhiteSpace(filtroTipo))
+                resultado = resultado.Where(l => l.TipoLancamento == filtroTipo);
+
+            if (!string.IsNullOrWhiteSpace(filtroStatus))
+                resultado = resultado.Where(l => l.Status == filtroStatus);
+
+            return resultado.AsQueryable();
+        }
+    }
+
+    private decimal TotalEntradas => LancamentosFiltrados.Where(l => l.TipoLancamento == "Entrada").Sum(l => l.Valor);
+    private decimal TotalSaidas => LancamentosFiltrados.Where(l => l.TipoLancamento == "Saida").Sum(l => l.Valor);
+    private decimal Saldo => TotalEntradas - TotalSaidas;
+
+    private string NomeCompetenciaFiltro =>
+        filtroCompetenciaId == 0 ? "Todas" :
+        competencias.FirstOrDefault(c => c.Id == filtroCompetenciaId) is { } cmp ? $"{cmp.Mes:00}/{cmp.Ano}" : "—";
+
+    private string NomeUnidadeFiltro =>
+        filtroUnidadeId == 0 ? "Todas" : unidades.FirstOrDefault(u => u.Id == filtroUnidadeId)?.Nome ?? "—";
+
+    private string NomePlanoFiltro =>
+        filtroPlanoContaId == 0 ? "Todos" : planosContas.FirstOrDefault(p => p.Id == filtroPlanoContaId)?.Nome ?? "—";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarDadosAsync();
+    }
+
+    private async Task CarregarDadosAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        lancamentos = await context.LancamentosFinanceiros
+            .AsNoTracking()
+            .Include(l => l.Competencia)
+            .Include(l => l.Unidade)
+            .Include(l => l.PlanoConta)
+            .Include(l => l.FormaPagamento)
+            .Include(l => l.Fornecedor)
+            .OrderByDescending(l => l.DataVencimento)
+            .ThenByDescending(l => l.Id)
+            .ToListAsync();
+
+        competencias = await context.Competencias
+            .AsNoTracking()
+            .OrderByDescending(c => c.Ano)
+            .ThenByDescending(c => c.Mes)
+            .ToListAsync();
+
+        unidades = await context.Unidades
+            .AsNoTracking()
+            .OrderBy(u => u.Nome)
+            .ToListAsync();
+
+        planosContas = await context.PlanosContas
+            .AsNoTracking()
+            .OrderBy(p => p.Nome)
+            .ToListAsync();
+    }
+
+    private static string StatusBadge(string status) => status switch
+    {
+        "Aberto" => "bg-warning text-dark",
+        "Pago" => "bg-success",
+        "Cancelado" => "bg-secondary",
+        _ => "bg-light text-dark"
+    };
+
+    private async Task ImprimirAsync()
+    {
+        var anteriores = pagination.ItemsPerPage;
+        await pagination.SetCurrentPageIndexAsync(0);
+        pagination.ItemsPerPage = int.MaxValue;
+        StateHasChanged();
+        await Task.Yield();
+        await JS.InvokeVoidAsync("window.print");
+        pagination.ItemsPerPage = anteriores;
+    }
+
+    private void Novo() => Navigation.NavigateTo("/lancamentos-financeiros/novo");
+    private void Editar(int id) => Navigation.NavigateTo($"/lancamentos-financeiros/editar/{id}");
+
+    private async Task ExcluirAsync(int id)
+    {
+        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir este lançamento?");
+        if (!confirmado) return;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+        var entidade = await context.LancamentosFinanceiros.FindAsync(id);
+
+        if (entidade is not null)
+        {
+            context.LancamentosFinanceiros.Remove(entidade);
+            await context.SaveChangesAsync();
+            await CarregarDadosAsync();
+        }
+    }
+}

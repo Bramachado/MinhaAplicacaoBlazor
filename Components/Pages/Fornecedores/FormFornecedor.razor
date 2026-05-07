@@ -1,0 +1,234 @@
+@page "/fornecedores/novo"
+@page "/fornecedores/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNovo ? "Novo Fornecedor" : "Editar Fornecedor")</PageTitle>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">@(IsNovo ? "Novo Fornecedor" : "Editar Fornecedor")</h3>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else if (categorias.Count == 0)
+            {
+                <div class="alert alert-warning">
+                    Nenhuma categoria de fornecedor ativa cadastrada.
+                    <a href="/categorias-fornecedores/novo" class="alert-link">Cadastre uma categoria</a> antes de criar um fornecedor.
+                </div>
+                <button type="button" class="btn btn-secondary" @onclick="Cancelar">Voltar</button>
+            }
+            else
+            {
+                <EditForm Model="fornecedor" OnValidSubmit="SalvarAsync" FormName="form-fornecedor">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Nome / Razão Social <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="fornecedor.NomeRazaoSocial" />
+                            <ValidationMessage For="@(() => fornecedor.NomeRazaoSocial)" class="text-danger small" />
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">CPF / CNPJ</label>
+                            <InputText class="form-control" @bind-Value="fornecedor.CpfCnpj" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Nome Fantasia</label>
+                            <InputText class="form-control" @bind-Value="fornecedor.NomeFantasia" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Unidade</label>
+                            <InputSelect class="form-select" @bind-Value="fornecedor.UnidadeId">
+                                <option value="0">-- Selecione --</option>
+                                @foreach (var u in unidades)
+                                {
+                                    <option value="@u.Id">@u.Codigo - @u.Nome</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Categoria</label>
+                            <InputSelect class="form-select" @bind-Value="fornecedor.CategoriaFornecedorId">
+                                <option value="0">-- Selecione --</option>
+                                @foreach (var c in categorias)
+                                {
+                                    <option value="@c.Id">@c.Nome</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Endereço</label>
+                            <InputText class="form-control" @bind-Value="fornecedor.Endereco" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nome do Contato</label>
+                            <InputText class="form-control" @bind-Value="fornecedor.NomeContato" />
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Telefone</label>
+                            <InputText class="form-control" @bind-Value="fornecedor.Telefone" />
+                        </div>
+
+                        <div class="col-md-3 mb-3 d-flex align-items-end">
+                            <div class="form-check">
+                                <InputCheckbox class="form-check-input" id="ativo-fornecedor" @bind-Value="fornecedor.Ativo" />
+                                <label class="form-check-label" for="ativo-fornecedor">Ativo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h5>Dados Bancários</h5>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Chave PIX</label>
+                            <InputText class="form-control" @bind-Value="fornecedor.ChavePix" />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nome do Titular da Conta</label>
+                            <InputText class="form-control" @bind-Value="fornecedor.NomeTitularConta" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Banco</label>
+                            <InputText class="form-control" @bind-Value="fornecedor.Banco" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Código</label>
+                            <InputText class="form-control" @bind-Value="fornecedor.CodigoBanco" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Agência</label>
+                            <InputText class="form-control" @bind-Value="fornecedor.Agencia" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Conta</label>
+                            <InputText class="form-control" @bind-Value="fornecedor.Conta" />
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private Fornecedor fornecedor = new();
+    private List<Unidade> unidades = new();
+    private List<CategoriaFornecedor> categorias = new();
+    private bool carregando = true;
+    private string? mensagemErro;
+
+    private bool IsNovo => Id is null or 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        unidades = await context.Unidades
+            .AsNoTracking()
+            .Where(u => u.Ativa)
+            .OrderBy(u => u.Nome)
+            .ToListAsync();
+
+        categorias = await context.CategoriasFornecedores
+            .AsNoTracking()
+            .Where(c => c.Ativa)
+            .OrderBy(c => c.Nome)
+            .ToListAsync();
+
+        if (!IsNovo)
+        {
+            var existente = await context.Fornecedores
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo("/fornecedores");
+                return;
+            }
+
+            fornecedor = existente;
+        }
+
+        carregando = false;
+    }
+
+    private async Task SalvarAsync()
+    {
+        if (fornecedor.UnidadeId == 0)
+        {
+            mensagemErro = "Selecione uma unidade.";
+            return;
+        }
+
+        if (fornecedor.CategoriaFornecedorId == 0)
+        {
+            mensagemErro = "Selecione uma categoria.";
+            return;
+        }
+
+        mensagemErro = null;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        if (IsNovo)
+            context.Fornecedores.Add(fornecedor);
+        else
+            context.Fornecedores.Update(fornecedor);
+
+        await context.SaveChangesAsync();
+
+        Navigation.NavigateTo("/fornecedores");
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/fornecedores");
+}

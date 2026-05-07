@@ -1,0 +1,119 @@
+@page "/planos-contas/novo"
+@page "/planos-contas/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNovo ? "Novo Plano de Conta" : "Editar Plano de Conta")</PageTitle>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">@(IsNovo ? "Novo Plano de Conta" : "Editar Plano de Conta")</h3>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                <EditForm Model="plano" OnValidSubmit="SalvarAsync" FormName="form-plano-conta">
+                    <DataAnnotationsValidator />
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Nome <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="plano.Nome" />
+                            <ValidationMessage For="@(() => plano.Nome)" class="text-danger small" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check">
+                                <InputCheckbox class="form-check-input" id="ativo-plano-conta" @bind-Value="plano.Ativo" />
+                                <label class="form-check-label" for="ativo-plano-conta">Ativo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private PlanoConta plano = new();
+    private bool carregando = true;
+    private string? mensagemErro;
+
+    private bool IsNovo => Id is null or 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!IsNovo)
+        {
+            await using var context = await DbFactory.CreateDbContextAsync();
+
+            var existente = await context.PlanosContas
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo("/planos-contas");
+                return;
+            }
+
+            plano = existente;
+        }
+
+        carregando = false;
+    }
+
+    private async Task SalvarAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        var jaExiste = await context.PlanosContas
+            .AsNoTracking()
+            .AnyAsync(p => p.Nome == plano.Nome && p.Id != plano.Id);
+
+        if (jaExiste)
+        {
+            mensagemErro = "Já existe um plano de conta com este nome.";
+            return;
+        }
+
+        mensagemErro = null;
+
+        if (IsNovo)
+            context.PlanosContas.Add(plano);
+        else
+            context.PlanosContas.Update(plano);
+
+        await context.SaveChangesAsync();
+
+        Navigation.NavigateTo("/planos-contas");
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/planos-contas");
+}

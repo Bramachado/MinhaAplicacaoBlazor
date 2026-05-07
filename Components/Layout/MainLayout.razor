@@ -1,4 +1,6 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+
+<input type="checkbox" id="sidebar-collapse-toggle" class="sidebar-collapse-toggle" />
 
 <div class="page">
     <div class="sidebar">
@@ -7,6 +9,11 @@
 
     <main>
         <div class="top-row px-4">
+            <label for="sidebar-collapse-toggle" class="sidebar-collapse-btn" title="Recolher/Expandir menu" aria-label="Recolher ou expandir o menu">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"/>
+                </svg>
+            </label>
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
         </div>
 

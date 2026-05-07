@@ -1,0 +1,302 @@
+@page "/folhas-colaboradores/{FolhaId:int}/itens/novo"
+@page "/folhas-colaboradores/{FolhaId:int}/itens/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+@using MinhaAplicacaoBlazor.Services
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject FolhaColaboradorService FolhaService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>@(IsNovo ? "Novo Item da Folha" : "Editar Item da Folha")</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">
+                @(IsNovo ? "Novo Item da Folha" : "Editar Item da Folha")
+                @if (folha is not null && folha.Competencia is not null)
+                {
+                    <small class="text-muted">— Competência @($"{folha.Competencia.Mes:00}/{folha.Competencia.Ano}")</small>
+                }
+            </h3>
+            <button class="btn btn-secondary" @onclick="Voltar">Voltar</button>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                <EditForm Model="item" OnValidSubmit="SalvarAsync" FormName="form-item-folha">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Colaborador <span class="text-danger">*</span></label>
+                            <InputSelect class="form-select" @bind-Value="item.ColaboradorId" disabled="@(!IsNovo)">
+                                <option value="0">-- Selecione --</option>
+                                @foreach (var c in colaboradores)
+                                {
+                                    <option value="@c.Id">@c.Nome</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Cargo</label>
+                            <InputText class="form-control" @bind-Value="item.Cargo" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Carga Hor. Sem.</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.CargaHorariaSemanal" step="0.01" />
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h5>Proventos</h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Salário Bruto</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.SalarioBruto" step="0.01" @oninput="Recalcular" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Ticket Alimentação</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.TicketAlimentacao" step="0.01" @oninput="Recalcular" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Salário Líquido Base</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.SalarioLiquidoBase" step="0.01" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Salário Família</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.SalarioFamilia" step="0.01" @oninput="Recalcular" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Premiação Fixa</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.PremiacaoFixa" step="0.01" @oninput="Recalcular" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Premiação Variável</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.PremiacaoVariavel" step="0.01" @oninput="Recalcular" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">13º Salário</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.DecimoTerceiro" step="0.01" @oninput="Recalcular" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Férias 1/3</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.FeriasUmTerco" step="0.01" @oninput="Recalcular" />
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h5>Faltas e Descontos</h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Valor Hora</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.ValorHora" step="0.01" @oninput="Recalcular" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Horas Falta</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.HorasFalta" step="0.01" @oninput="Recalcular" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Valor Faltas (calc.)</label>
+                            <input type="text" class="form-control text-end" value="@item.ValorFaltas.ToString("C")" readonly />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Desconto INSS</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.DescontoINSS" step="0.01" @oninput="Recalcular" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Desconto IR</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.DescontoIR" step="0.01" @oninput="Recalcular" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Plano de Saúde</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.PlanoSaude" step="0.01" @oninput="Recalcular" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Vale/Consignado/FGTS</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.ValeConsignadoFGTS" step="0.01" @oninput="Recalcular" />
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h5>Resumo</h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Total de Proventos</label>
+                            <input type="text" class="form-control text-end fw-semibold text-success" value="@item.TotalProventos.ToString("C")" readonly />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Total de Descontos</label>
+                            <input type="text" class="form-control text-end fw-semibold text-danger" value="@item.TotalDescontos.ToString("C")" readonly />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Valor Total</label>
+                            <input type="text" class="form-control text-end fw-semibold" value="@item.ValorTotal.ToString("C")" readonly />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Valor Receber PIX</label>
+                            <input type="text" class="form-control text-end fw-semibold text-primary" value="@item.ValorReceberPix.ToString("C")" readonly />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Observação</label>
+                            <InputTextArea class="form-control" rows="2" @bind-Value="item.Observacao" />
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Voltar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int FolhaId { get; set; }
+    [Parameter] public int? Id { get; set; }
+
+    private FolhaColaboradorItem item = new();
+    private FolhaColaborador? folha;
+    private List<Colaborador> colaboradores = new();
+    private bool carregando = true;
+    private string? mensagemErro;
+
+    private bool IsNovo => Id is null or 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        folha = await context.FolhasColaboradores
+            .AsNoTracking()
+            .Include(f => f.Competencia)
+            .FirstOrDefaultAsync(f => f.Id == FolhaId);
+
+        if (folha is null)
+        {
+            Navigation.NavigateTo("/folhas-colaboradores");
+            return;
+        }
+
+        if (folha.Status != "Aberta")
+        {
+            await JS.InvokeVoidAsync("alert", "Esta folha está fechada. Reabra a folha para realizar alterações.");
+            Navigation.NavigateTo($"/folhas-colaboradores/editar/{FolhaId}");
+            return;
+        }
+
+        var idsJaNaFolha = await context.FolhasColaboradoresItens
+            .Where(i => i.FolhaColaboradorId == FolhaId && (Id == null || i.Id != Id))
+            .Select(i => i.ColaboradorId)
+            .ToListAsync();
+
+        colaboradores = await context.Colaboradores
+            .AsNoTracking()
+            .Where(c => c.Ativo && !idsJaNaFolha.Contains(c.Id))
+            .OrderBy(c => c.Nome)
+            .ToListAsync();
+
+        if (!IsNovo)
+        {
+            var existente = await context.FolhasColaboradoresItens
+                .AsNoTracking()
+                .FirstOrDefaultAsync(i => i.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo($"/folhas-colaboradores/editar/{FolhaId}");
+                return;
+            }
+
+            item = existente;
+        }
+
+        carregando = false;
+    }
+
+    private void Recalcular()
+    {
+        item.Recalcular();
+    }
+
+    private async Task SalvarAsync()
+    {
+        if (!await FolhaService.ValidarFolhaAbertaAsync(FolhaId))
+        {
+            mensagemErro = "Esta folha está fechada. Reabra a folha para realizar alterações.";
+            return;
+        }
+
+        if (item.ColaboradorId == 0)
+        {
+            mensagemErro = "Selecione um colaborador.";
+            return;
+        }
+
+        item.FolhaColaboradorId = FolhaId;
+        item.Recalcular();
+        mensagemErro = null;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        if (IsNovo)
+        {
+            var jaExiste = await context.FolhasColaboradoresItens
+                .AsNoTracking()
+                .AnyAsync(i => i.FolhaColaboradorId == FolhaId && i.ColaboradorId == item.ColaboradorId);
+
+            if (jaExiste)
+            {
+                mensagemErro = "Este colaborador já está nesta folha.";
+                return;
+            }
+
+            context.FolhasColaboradoresItens.Add(item);
+        }
+        else
+        {
+            context.FolhasColaboradoresItens.Update(item);
+        }
+
+        await context.SaveChangesAsync();
+
+        var folhaEntity = await context.FolhasColaboradores.FindAsync(FolhaId);
+        if (folhaEntity is not null)
+        {
+            folhaEntity.ValorTotal = await context.FolhasColaboradoresItens
+                .Where(i => i.FolhaColaboradorId == FolhaId)
+                .SumAsync(i => (decimal?)i.ValorTotal) ?? 0m;
+            await context.SaveChangesAsync();
+        }
+
+        Navigation.NavigateTo($"/folhas-colaboradores/editar/{FolhaId}");
+    }
+
+    private void Voltar() => Navigation.NavigateTo($"/folhas-colaboradores/editar/{FolhaId}");
+}

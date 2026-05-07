@@ -1,0 +1,130 @@
+@page "/categorias-fornecedores/novo"
+@page "/categorias-fornecedores/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using MinhaAplicacaoBlazor.Models
+@using MinhaAplicacaoBlazor.Services
+
+@inject CategoriaFornecedorService Service
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNovo ? "Nova Categoria de Fornecedor" : "Editar Categoria de Fornecedor")</PageTitle>
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h3 class="mb-0">@(IsNovo ? "Nova Categoria de Fornecedor" : "Editar Categoria de Fornecedor")</h3>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                <EditForm Model="categoria" OnValidSubmit="SalvarAsync" FormName="form-categoria-fornecedor">
+                    <DataAnnotationsValidator />
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Nome <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="categoria.Nome" />
+                            <ValidationMessage For="@(() => categoria.Nome)" class="text-danger small" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Descrição</label>
+                            <InputTextArea class="form-control" rows="3" @bind-Value="categoria.Descricao" />
+                            <ValidationMessage For="@(() => categoria.Descricao)" class="text-danger small" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check">
+                                <InputCheckbox class="form-check-input" id="ativa-cat-forn" @bind-Value="categoria.Ativa" />
+                                <label class="form-check-label" for="ativa-cat-forn">Categoria ativa</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" disabled="@salvando">
+                            @(salvando ? "Salvando..." : "Salvar")
+                        </button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private CategoriaFornecedor categoria = new();
+    private bool carregando = true;
+    private bool salvando;
+    private string? mensagemErro;
+
+    private bool IsNovo => Id is null or 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!IsNovo)
+        {
+            var existente = await Service.ObterPorIdAsync(Id!.Value);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo("/categorias-fornecedores");
+                return;
+            }
+
+            categoria = existente;
+        }
+
+        carregando = false;
+    }
+
+    private async Task SalvarAsync()
+    {
+        mensagemErro = null;
+
+        var idIgnorar = IsNovo ? (int?)null : categoria.Id;
+        if (await Service.ExisteNomeAsync(categoria.Nome, idIgnorar))
+        {
+            mensagemErro = "Já existe uma categoria com este nome.";
+            return;
+        }
+
+        salvando = true;
+        try
+        {
+            if (IsNovo)
+                await Service.CriarAsync(categoria);
+            else
+                await Service.AtualizarAsync(categoria);
+
+            Navigation.NavigateTo("/categorias-fornecedores");
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = $"Erro ao salvar: {ex.Message}";
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/categorias-fornecedores");
+}

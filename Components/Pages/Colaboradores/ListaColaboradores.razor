@@ -1,4 +1,4 @@
-@page "/escalas-aulas-praticas"
+@page "/colaboradores"
 @rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
@@ -9,17 +9,17 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
-<PageTitle>Escalas de Aula Prática</PageTitle>
+<PageTitle>Colaboradores</PageTitle>
 
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1>Escalas de Aula Prática</h1>
+        <h1>Colaboradores</h1>
         <div class="d-flex gap-2 d-print-none">
             <button class="btn btn-outline-primary" @onclick="ImprimirAsync">
                 Imprimir
             </button>
-            <button class="btn btn-primary" @onclick="Nova">
-                Nova Escala
+            <button class="btn btn-primary" @onclick="NovoColaborador">
+                Novo Colaborador
             </button>
         </div>
     </div>
@@ -29,17 +29,16 @@
         <div>
             <strong>Pesquisa:</strong> @(string.IsNullOrWhiteSpace(filtroTexto) ? "—" : filtroTexto) &nbsp;|&nbsp;
             <strong>Unidade:</strong> @NomeUnidadeFiltro &nbsp;|&nbsp;
-            <strong>Mês:</strong> @(string.IsNullOrWhiteSpace(filtroMes) ? "—" : filtroMes) &nbsp;|&nbsp;
             <strong>Status:</strong> @StatusFiltro &nbsp;|&nbsp;
-            <strong>Total:</strong> @EscalasFiltradas.Count() registro(s)
+            <strong>Total:</strong> @ColaboradoresFiltrados.Count() registro(s)
         </div>
     </div>
 
     <div class="row mb-3 g-2 d-print-none">
-        <div class="col-md-4">
+        <div class="col-md-5">
             <input type="text"
                    class="form-control"
-                   placeholder="Pesquisar por tutor, curso/turma ou sala..."
+                   placeholder="Pesquisar por nome ou CPF..."
                    @bind="filtroTexto"
                    @bind:event="oninput" />
         </div>
@@ -53,49 +52,39 @@
             </select>
         </div>
         <div class="col-md-2">
-            <input type="text"
-                   class="form-control"
-                   placeholder="Mês (MM/AAAA)"
-                   @bind="filtroMes"
-                   @bind:event="oninput" />
-        </div>
-        <div class="col-md-2">
             <select class="form-select" @bind="filtroAtivo">
                 <option value="">Ativos e Inativos</option>
                 <option value="true">Apenas Ativos</option>
                 <option value="false">Apenas Inativos</option>
             </select>
         </div>
-        <div class="col-md-1">
+        <div class="col-md-2">
             <select class="form-select" @bind="pagination.ItemsPerPage">
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
+                <option value="10">10 por página</option>
+                <option value="25">25 por página</option>
+                <option value="50">50 por página</option>
+                <option value="100">100 por página</option>
             </select>
         </div>
     </div>
 
-    @if (escalas is null)
+    @if (colaboradores is null)
     {
         <p>Carregando...</p>
     }
     else
     {
         <div class="table-responsive">
-            <QuickGrid Items="EscalasFiltradas" Pagination="pagination" Class="table table-striped table-hover align-middle imprimivel-sem-acoes">
-                <PropertyColumn Property="@(e => e.Tutor!.Nome)" Title="Tutor" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
-                <PropertyColumn Property="@(e => e.Tutor!.Unidade!.Nome)" Title="Unidade" Sortable="true" />
-                <PropertyColumn Property="@(e => e.MesAulaPratica)" Title="Mês Aula Prática" Sortable="true" />
-                <PropertyColumn Property="@(e => e.CursoTurma)" Title="Curso/Turma" Sortable="true" />
-                <PropertyColumn Property="@(e => e.SalaLab)" Title="Sala/Lab" Sortable="true" />
-                <PropertyColumn Property="@(e => e.DiaSemana)" Title="Dia da Semana" Sortable="true" />
-                <TemplateColumn Title="Hora Início" Sortable="true" SortBy="@sortPorHoraInicio">
-                    @context.HoraInicio.ToString(@"hh\:mm")
-                </TemplateColumn>
-                <TemplateColumn Title="Hora Fim" Sortable="true" SortBy="@sortPorHoraFim">
-                    @context.HoraFim.ToString(@"hh\:mm")
-                </TemplateColumn>
+            <QuickGrid Items="ColaboradoresFiltrados" Pagination="pagination" Class="table table-striped table-hover align-middle imprimivel-sem-acoes">
+                <PropertyColumn Property="@(c => c.Nome)" Title="Nome" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
+                <PropertyColumn Property="@(c => c.Cpf)" Title="CPF" Sortable="true" />
+                <PropertyColumn Property="@(c => c.Cargo)" Title="Cargo" Sortable="true" />
+                <PropertyColumn Property="@(c => c.Unidade!.Nome)" Title="Unidade" Sortable="true" />
+                <PropertyColumn Property="@(c => c.Telefone)" Title="Telefone" />
+                <PropertyColumn Property="@(c => c.Email)" Title="Email" Sortable="true" />
+                <PropertyColumn Property="@(c => c.Banco)" Title="Banco" Sortable="true" />
+                <PropertyColumn Property="@(c => c.Agencia)" Title="Agência" />
+                <PropertyColumn Property="@(c => c.Conta)" Title="Conta" />
                 <TemplateColumn Title="Ativo" Sortable="true" SortBy="@sortPorAtivo" Align="Align.Center">
                     @if (context.Ativo)
                     {
@@ -127,56 +116,45 @@
         </div>
 
         <div class="d-flex justify-content-between align-items-center mt-2 d-print-none">
-            <small class="text-muted">
-                @(EscalasFiltradas.Count()) registro(s) encontrado(s)
-            </small>
+            <small class="text-muted">@(ColaboradoresFiltrados.Count()) registro(s) encontrado(s)</small>
             <Paginator State="pagination" />
         </div>
     }
 </div>
 
 @code {
-    private List<EscalaAulaPratica>? escalas;
+    private List<Colaborador>? colaboradores;
     private List<Unidade> unidades = new();
     private string filtroTexto = string.Empty;
     private int filtroUnidadeId;
-    private string filtroMes = string.Empty;
     private string filtroAtivo = string.Empty;
 
     private readonly PaginationState pagination = new() { ItemsPerPage = 10 };
 
-    private readonly GridSort<EscalaAulaPratica> sortPorHoraInicio = GridSort<EscalaAulaPratica>.ByAscending(e => e.HoraInicio);
-    private readonly GridSort<EscalaAulaPratica> sortPorHoraFim = GridSort<EscalaAulaPratica>.ByAscending(e => e.HoraFim);
-    private readonly GridSort<EscalaAulaPratica> sortPorAtivo = GridSort<EscalaAulaPratica>.ByAscending(e => e.Ativo);
+    private readonly GridSort<Colaborador> sortPorAtivo = GridSort<Colaborador>.ByAscending(c => c.Ativo);
 
-    private IQueryable<EscalaAulaPratica> EscalasFiltradas
+    private IQueryable<Colaborador> ColaboradoresFiltrados
     {
         get
         {
-            if (escalas is null)
-                return Enumerable.Empty<EscalaAulaPratica>().AsQueryable();
+            if (colaboradores is null)
+                return Enumerable.Empty<Colaborador>().AsQueryable();
 
-            IEnumerable<EscalaAulaPratica> resultado = escalas;
+            IEnumerable<Colaborador> resultado = colaboradores;
 
             if (!string.IsNullOrWhiteSpace(filtroTexto))
             {
                 var termo = filtroTexto.Trim();
-                resultado = resultado.Where(e =>
-                    (e.Tutor != null && e.Tutor.Nome.Contains(termo, StringComparison.OrdinalIgnoreCase)) ||
-                    (e.CursoTurma != null && e.CursoTurma.Contains(termo, StringComparison.OrdinalIgnoreCase)) ||
-                    (e.SalaLab != null && e.SalaLab.Contains(termo, StringComparison.OrdinalIgnoreCase)));
+                resultado = resultado.Where(c =>
+                    c.Nome.Contains(termo, StringComparison.OrdinalIgnoreCase) ||
+                    c.Cpf.Contains(termo, StringComparison.OrdinalIgnoreCase));
             }
 
             if (filtroUnidadeId > 0)
-                resultado = resultado.Where(e =>
-                    e.Tutor != null && e.Tutor.UnidadeId == filtroUnidadeId);
-
-            if (!string.IsNullOrWhiteSpace(filtroMes))
-                resultado = resultado.Where(e =>
-                    e.MesAulaPratica.Contains(filtroMes.Trim(), StringComparison.OrdinalIgnoreCase));
+                resultado = resultado.Where(c => c.UnidadeId == filtroUnidadeId);
 
             if (bool.TryParse(filtroAtivo, out var ativo))
-                resultado = resultado.Where(e => e.Ativo == ativo);
+                resultado = resultado.Where(c => c.Ativo == ativo);
 
             return resultado.AsQueryable();
         }
@@ -191,13 +169,10 @@
     {
         await using var context = await DbFactory.CreateDbContextAsync();
 
-        escalas = await context.EscalasAulasPraticas
+        colaboradores = await context.Colaboradores
             .AsNoTracking()
-            .Include(e => e.Tutor)
-                .ThenInclude(t => t!.Unidade)
-            .OrderBy(e => e.Tutor!.Nome)
-            .ThenBy(e => e.MesAulaPratica)
-            .ThenBy(e => e.DiaSemana)
+            .Include(c => c.Unidade)
+            .OrderBy(c => c.Nome)
             .ToListAsync();
 
         unidades = await context.Unidades
@@ -229,30 +204,20 @@
         pagination.ItemsPerPage = itensAnteriores;
     }
 
-    private void Nova()
-    {
-        Navigation.NavigateTo("/escalas-aulas-praticas/novo");
-    }
-
-    private void Editar(int id)
-    {
-        Navigation.NavigateTo($"/escalas-aulas-praticas/editar/{id}");
-    }
+    private void NovoColaborador() => Navigation.NavigateTo("/colaboradores/novo");
+    private void Editar(int id) => Navigation.NavigateTo($"/colaboradores/editar/{id}");
 
     private async Task ExcluirAsync(int id)
     {
-        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta escala?");
-
-        if (!confirmado)
-            return;
+        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir este colaborador?");
+        if (!confirmado) return;
 
         await using var context = await DbFactory.CreateDbContextAsync();
-
-        var entidade = await context.EscalasAulasPraticas.FindAsync(id);
+        var entidade = await context.Colaboradores.FindAsync(id);
 
         if (entidade is not null)
         {
-            context.EscalasAulasPraticas.Remove(entidade);
+            context.Colaboradores.Remove(entidade);
             await context.SaveChangesAsync();
             await CarregarDadosAsync();
         }

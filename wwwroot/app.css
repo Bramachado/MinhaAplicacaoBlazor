@@ -59,10 +59,125 @@ h1:focus {
     text-align: start;
 }
 
+/* === Submenu agrupado no sidebar === */
+.nav-group-toggle {
+    display: none;
+}
+
+.nav-group-title {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    padding: 0.7rem 1rem 0.25rem;
+    user-select: none;
+    margin: 0;
+}
+
+.nav-group-title:hover {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.nav-group-title::before {
+    content: "";
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid currentColor;
+    margin-right: 0.5rem;
+    transition: transform 0.15s ease-in-out;
+}
+
+.nav-group-toggle:not(:checked) + .nav-group-title::before {
+    transform: rotate(-90deg);
+}
+
+.nav-group-toggle:not(:checked) ~ .nav-group-items {
+    display: none;
+}
+
+@media (min-width: 641px) {
+    .sidebar-collapse-toggle:checked ~ .page .sidebar .nav-group-title {
+        display: none !important;
+    }
+
+    .sidebar-collapse-toggle:checked ~ .page .sidebar .nav-group-items {
+        display: block !important;
+    }
+}
+
+/* === Sidebar recolhível === */
+.sidebar-collapse-toggle {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+}
+
+.sidebar-collapse-btn {
+    cursor: pointer;
+    padding: 0.35rem 0.6rem;
+    margin-right: auto;
+    color: #444;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    user-select: none;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.sidebar-collapse-btn:hover {
+    background-color: rgba(0,0,0,0.06);
+    border-color: rgba(0,0,0,0.1);
+}
+
+@media (min-width: 641px) {
+    .sidebar {
+        transition: width 0.2s ease-in-out;
+        overflow: hidden;
+    }
+
+    .sidebar-collapse-toggle:checked ~ .page .sidebar {
+        width: 64px !important;
+    }
+
+    .sidebar-collapse-toggle:checked ~ .page .sidebar .nav-text {
+        display: none !important;
+    }
+
+    .sidebar-collapse-toggle:checked ~ .page .sidebar .navbar-brand {
+        padding: 0 !important;
+    }
+
+    .sidebar-collapse-toggle:checked ~ .page .sidebar .nav-link {
+        justify-content: center;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .sidebar-collapse-toggle:checked ~ .page .sidebar .nav-link svg {
+        margin-right: 0 !important;
+    }
+
+    .sidebar-collapse-toggle:checked ~ .page .sidebar .top-row {
+        padding-left: 0 !important;
+        justify-content: center;
+    }
+}
+
 @media print {
     .sidebar,
     .top-row,
     #blazor-error-ui,
+    .sidebar-collapse-btn,
     .no-print {
         display: none !important;
     }

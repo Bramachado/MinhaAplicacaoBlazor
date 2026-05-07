@@ -1,0 +1,311 @@
+@page "/folhas-tutores/{FolhaId:int}/itens/novo"
+@page "/folhas-tutores/{FolhaId:int}/itens/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+@using MinhaAplicacaoBlazor.Services
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject FolhaTutorService FolhaService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>@(IsNovo ? "Novo Item da Folha" : "Editar Item da Folha")</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">
+                @(IsNovo ? "Novo Item da Folha de Tutor" : "Editar Item da Folha de Tutor")
+                @if (folha is not null && folha.Competencia is not null)
+                {
+                    <small class="text-muted">— Competência @($"{folha.Competencia.Mes:00}/{folha.Competencia.Ano}")</small>
+                }
+            </h3>
+            <button class="btn btn-secondary" @onclick="Voltar">Voltar</button>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                <EditForm Model="item" OnValidSubmit="SalvarAsync" FormName="form-item-folha-tutor">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tutor <span class="text-danger">*</span></label>
+                            <InputSelect class="form-select" @bind-Value="TutorIdValue" disabled="@(!IsNovo)">
+                                <option value="0">-- Selecione --</option>
+                                @foreach (var t in tutores)
+                                {
+                                    <option value="@t.Id">@t.Nome</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Cargo</label>
+                            <InputText class="form-control" @bind-Value="item.Cargo" />
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Status Pagamento</label>
+                            <InputSelect class="form-select" @bind-Value="item.StatusPagamento">
+                                <option value="">-- Não definido --</option>
+                                <option value="Pendente">Pendente</option>
+                                <option value="Pago">Pago</option>
+                                <option value="Cancelado">Cancelado</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h5>Aulas</h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Total Horas Normais</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.TotalHorasNormais" step="0.01" @oninput="Recalcular" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Valor Hora Normal</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.ValorHoraNormal" step="0.01" @oninput="Recalcular" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Total Horas Práticas</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.TotalHorasPraticas" step="0.01" @oninput="Recalcular" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Valor Hora Prática</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.ValorHoraPratica" step="0.01" @oninput="Recalcular" />
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h5>Resumo</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Valor Aulas Normais</label>
+                            <input type="text" class="form-control text-end" value="@item.ValorAulaNormal.ToString("C")" readonly />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Valor Aulas Práticas</label>
+                            <input type="text" class="form-control text-end" value="@item.ValorAulaPratica.ToString("C")" readonly />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Valor Total a Receber</label>
+                            <input type="text" class="form-control text-end fw-semibold text-primary" value="@item.ValorTotalReceber.ToString("C")" readonly />
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h5>Dados Bancários (snapshot do mês)</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Chave PIX</label>
+                            <InputText class="form-control" @bind-Value="item.ChavePix" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nome do Titular</label>
+                            <InputText class="form-control" @bind-Value="item.NomeTitularConta" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Banco</label>
+                            <InputText class="form-control" @bind-Value="item.Banco" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Agência</label>
+                            <InputText class="form-control" @bind-Value="item.Agencia" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Conta</label>
+                            <InputText class="form-control" @bind-Value="item.Conta" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Observação</label>
+                            <InputTextArea class="form-control" rows="2" @bind-Value="item.Observacao" />
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Voltar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int FolhaId { get; set; }
+    [Parameter] public int? Id { get; set; }
+
+    private FolhaTutorItem item = new();
+    private FolhaTutor? folha;
+    private List<Tutor> tutores = new();
+    private bool carregando = true;
+    private string? mensagemErro;
+
+    private bool IsNovo => Id is null or 0;
+
+    private int TutorIdValue
+    {
+        get => item.TutorId;
+        set
+        {
+            item.TutorId = value;
+            if (IsNovo && value > 0)
+                AplicarSnapshotTutor(value);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        folha = await context.FolhasTutores
+            .AsNoTracking()
+            .Include(f => f.Competencia)
+            .FirstOrDefaultAsync(f => f.Id == FolhaId);
+
+        if (folha is null)
+        {
+            Navigation.NavigateTo("/folhas-tutores");
+            return;
+        }
+
+        if (folha.Status != "Aberta")
+        {
+            await JS.InvokeVoidAsync("alert", "Esta folha está fechada. Reabra a folha para realizar alterações.");
+            Navigation.NavigateTo($"/folhas-tutores/editar/{FolhaId}");
+            return;
+        }
+
+        var idsJaNaFolha = await context.FolhasTutoresItens
+            .Where(i => i.FolhaTutorId == FolhaId && (Id == null || i.Id != Id))
+            .Select(i => i.TutorId)
+            .ToListAsync();
+
+        tutores = await context.Tutores
+            .AsNoTracking()
+            .Include(t => t.Titulacao)
+            .Where(t => t.Ativo && !idsJaNaFolha.Contains(t.Id))
+            .OrderBy(t => t.Nome)
+            .ToListAsync();
+
+        if (!IsNovo)
+        {
+            var existente = await context.FolhasTutoresItens
+                .AsNoTracking()
+                .FirstOrDefaultAsync(i => i.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo($"/folhas-tutores/editar/{FolhaId}");
+                return;
+            }
+
+            item = existente;
+        }
+        else
+        {
+            item.StatusPagamento = "Pendente";
+        }
+
+        carregando = false;
+    }
+
+    private void AplicarSnapshotTutor(int tutorId)
+    {
+        var tutor = tutores.FirstOrDefault(t => t.Id == tutorId);
+        if (tutor is null) return;
+
+        item.Cargo ??= tutor.Titulacao?.Nome;
+        item.Banco ??= tutor.Banco;
+        item.Agencia ??= tutor.Agencia;
+        item.Conta ??= tutor.Conta;
+        item.ChavePix ??= tutor.ChavePix;
+        item.NomeTitularConta ??= tutor.NomeTitular;
+
+        if (tutor.Titulacao is not null)
+        {
+            if (item.ValorHoraNormal == 0) item.ValorHoraNormal = tutor.Titulacao.ValorHoraAulaNormal;
+            if (item.ValorHoraPratica == 0) item.ValorHoraPratica = tutor.Titulacao.ValorHoraAulaPratica;
+        }
+
+        item.Recalcular();
+    }
+
+    private void Recalcular() => item.Recalcular();
+
+    private async Task SalvarAsync()
+    {
+        if (!await FolhaService.ValidarFolhaAbertaAsync(FolhaId))
+        {
+            mensagemErro = "Esta folha está fechada. Reabra a folha para realizar alterações.";
+            return;
+        }
+
+        if (item.TutorId == 0)
+        {
+            mensagemErro = "Selecione um tutor.";
+            return;
+        }
+
+        item.FolhaTutorId = FolhaId;
+        item.Recalcular();
+        mensagemErro = null;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        if (IsNovo)
+        {
+            var jaExiste = await context.FolhasTutoresItens
+                .AsNoTracking()
+                .AnyAsync(i => i.FolhaTutorId == FolhaId && i.TutorId == item.TutorId);
+
+            if (jaExiste)
+            {
+                mensagemErro = "Este tutor já está nesta folha.";
+                return;
+            }
+
+            context.FolhasTutoresItens.Add(item);
+        }
+        else
+        {
+            context.FolhasTutoresItens.Update(item);
+        }
+
+        await context.SaveChangesAsync();
+
+        var folhaEntity = await context.FolhasTutores.FindAsync(FolhaId);
+        if (folhaEntity is not null)
+        {
+            folhaEntity.ValorTotal = await context.FolhasTutoresItens
+                .Where(i => i.FolhaTutorId == FolhaId)
+                .SumAsync(i => (decimal?)i.ValorTotalReceber) ?? 0m;
+            await context.SaveChangesAsync();
+        }
+
+        Navigation.NavigateTo($"/folhas-tutores/editar/{FolhaId}");
+    }
+
+    private void Voltar() => Navigation.NavigateTo($"/folhas-tutores/editar/{FolhaId}");
+}

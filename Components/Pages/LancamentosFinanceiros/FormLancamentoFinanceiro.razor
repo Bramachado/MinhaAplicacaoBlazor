@@ -1,0 +1,311 @@
+@page "/lancamentos-financeiros/novo"
+@page "/lancamentos-financeiros/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNovo ? "Novo Lançamento" : "Editar Lançamento")</PageTitle>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">@(IsNovo ? "Novo Lançamento Financeiro" : "Editar Lançamento Financeiro")</h3>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                <EditForm Model="lancamento" OnValidSubmit="SalvarAsync" FormName="form-lancamento">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Tipo de Lançamento <span class="text-danger">*</span></label>
+                            <InputSelect class="form-select" @bind-Value="lancamento.TipoLancamento">
+                                <option value="Saida">Saída</option>
+                                <option value="Entrada">Entrada</option>
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Tipo de Despesa</label>
+                            <InputSelect class="form-select" @bind-Value="lancamento.TipoDespesa"
+                                         disabled="@(lancamento.TipoLancamento != "Saida")">
+                                <option value="">-- Não se aplica --</option>
+                                <option value="Fixa">Fixa</option>
+                                <option value="Variavel">Variável</option>
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Origem</label>
+                            <InputSelect class="form-select" @bind-Value="lancamento.Origem">
+                                <option value="Manual">Manual</option>
+                                <option value="FolhaColaborador">Folha Colaborador</option>
+                                <option value="FolhaTutor">Folha Tutor</option>
+                                <option value="Reembolso">Reembolso</option>
+                                <option value="CaixaPolo">Caixa Polo</option>
+                                <option value="Marketing">Marketing</option>
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Status</label>
+                            <InputSelect class="form-select" @bind-Value="lancamento.Status">
+                                <option value="Aberto">Aberto</option>
+                                <option value="Pago">Pago</option>
+                                <option value="Cancelado">Cancelado</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Competência <span class="text-danger">*</span></label>
+                            <InputSelect class="form-select" @bind-Value="lancamento.CompetenciaId">
+                                <option value="0">-- Selecione --</option>
+                                @foreach (var c in competencias)
+                                {
+                                    <option value="@c.Id">@($"{c.Mes:00}/{c.Ano}") (@c.Status)</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Plano de Conta <span class="text-danger">*</span></label>
+                            <InputSelect class="form-select" @bind-Value="lancamento.PlanoContaId">
+                                <option value="0">-- Selecione --</option>
+                                @foreach (var p in planosContas)
+                                {
+                                    <option value="@p.Id">@p.Nome</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Unidade</label>
+                            <InputSelect class="form-select" @bind-Value="UnidadeIdValue">
+                                <option value="0">-- Sem unidade --</option>
+                                @foreach (var u in unidades)
+                                {
+                                    <option value="@u.Id">@u.Nome</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fornecedor</label>
+                            <InputSelect class="form-select" @bind-Value="FornecedorIdValue">
+                                <option value="0">-- Sem fornecedor --</option>
+                                @foreach (var f in fornecedores)
+                                {
+                                    <option value="@f.Id">@f.NomeRazaoSocial</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Forma de Pagamento</label>
+                            <InputSelect class="form-select" @bind-Value="FormaPagamentoIdValue">
+                                <option value="0">-- Não definida --</option>
+                                @foreach (var fp in formasPagamento)
+                                {
+                                    <option value="@fp.Id">@fp.Nome</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-9 mb-3">
+                            <label class="form-label">Descrição <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="lancamento.Descricao" />
+                            <ValidationMessage For="@(() => lancamento.Descricao)" class="text-danger small" />
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Valor <span class="text-danger">*</span></label>
+                            <InputNumber class="form-control text-end" @bind-Value="lancamento.Valor" step="0.01" />
+                            <ValidationMessage For="@(() => lancamento.Valor)" class="text-danger small" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Data de Vencimento</label>
+                            <InputDate class="form-control" @bind-Value="lancamento.DataVencimento" />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Data de Pagamento</label>
+                            <InputDate class="form-control" @bind-Value="lancamento.DataPagamento" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Observação</label>
+                            <InputTextArea class="form-control" rows="3" @bind-Value="lancamento.Observacao" />
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private LancamentoFinanceiro lancamento = new();
+    private List<Competencia> competencias = new();
+    private List<Unidade> unidades = new();
+    private List<PlanoConta> planosContas = new();
+    private List<FormaPagamento> formasPagamento = new();
+    private List<Fornecedor> fornecedores = new();
+
+    private bool carregando = true;
+    private string? mensagemErro;
+
+    private bool IsNovo => Id is null or 0;
+
+    private int UnidadeIdValue
+    {
+        get => lancamento.UnidadeId ?? 0;
+        set => lancamento.UnidadeId = value == 0 ? null : value;
+    }
+
+    private int FornecedorIdValue
+    {
+        get => lancamento.FornecedorId ?? 0;
+        set => lancamento.FornecedorId = value == 0 ? null : value;
+    }
+
+    private int FormaPagamentoIdValue
+    {
+        get => lancamento.FormaPagamentoId ?? 0;
+        set => lancamento.FormaPagamentoId = value == 0 ? null : value;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        competencias = await context.Competencias
+            .AsNoTracking()
+            .OrderByDescending(c => c.Ano).ThenByDescending(c => c.Mes)
+            .ToListAsync();
+
+        unidades = await context.Unidades
+            .AsNoTracking()
+            .Where(u => u.Ativa)
+            .OrderBy(u => u.Nome)
+            .ToListAsync();
+
+        planosContas = await context.PlanosContas
+            .AsNoTracking()
+            .Where(p => p.Ativo)
+            .OrderBy(p => p.Nome)
+            .ToListAsync();
+
+        formasPagamento = await context.FormasPagamento
+            .AsNoTracking()
+            .Where(f => f.Ativa)
+            .OrderBy(f => f.Nome)
+            .ToListAsync();
+
+        fornecedores = await context.Fornecedores
+            .AsNoTracking()
+            .Where(f => f.Ativo)
+            .OrderBy(f => f.NomeRazaoSocial)
+            .ToListAsync();
+
+        if (!IsNovo)
+        {
+            var existente = await context.LancamentosFinanceiros
+                .AsNoTracking()
+                .FirstOrDefaultAsync(l => l.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo("/lancamentos-financeiros");
+                return;
+            }
+
+            lancamento = existente;
+        }
+        else
+        {
+            var atual = competencias.FirstOrDefault(c =>
+                c.Mes == DateTime.Today.Month && c.Ano == DateTime.Today.Year);
+            if (atual is not null)
+                lancamento.CompetenciaId = atual.Id;
+
+            lancamento.DataVencimento = DateTime.Today;
+        }
+
+        carregando = false;
+    }
+
+    private async Task SalvarAsync()
+    {
+        if (lancamento.CompetenciaId == 0)
+        {
+            mensagemErro = "Selecione uma competência.";
+            return;
+        }
+
+        if (lancamento.PlanoContaId == 0)
+        {
+            mensagemErro = "Selecione um plano de conta.";
+            return;
+        }
+
+        if (lancamento.TipoLancamento != "Saida")
+            lancamento.TipoDespesa = null;
+
+        if (lancamento.Status == "Pago" && lancamento.DataPagamento is null)
+            lancamento.DataPagamento = DateTime.Today;
+
+        mensagemErro = null;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        if (IsNovo)
+        {
+            lancamento.CriadoEm = DateTime.Now;
+            context.LancamentosFinanceiros.Add(lancamento);
+        }
+        else
+        {
+            context.LancamentosFinanceiros.Update(lancamento);
+        }
+
+        await context.SaveChangesAsync();
+
+        Navigation.NavigateTo("/lancamentos-financeiros");
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/lancamentos-financeiros");
+}
