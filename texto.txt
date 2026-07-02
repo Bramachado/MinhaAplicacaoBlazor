@@ -1,4 +1,7 @@
 git status
 git add .
 git commit -m "Descrição da alteração"
-git push
+git push  //Envia para a nuvem do github
+
+
+git pull //baixa para o seu repositorio local

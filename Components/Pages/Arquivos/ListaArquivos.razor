@@ -1,0 +1,220 @@
+@page "/arquivos"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject IJSRuntime JS
+
+<PageTitle>Arquivos</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Arquivos / Comprovantes</h1>
+    </div>
+
+    <div class="mb-4">
+        <UploadArquivo Titulo="Enviar Comprovante / Nota" OnUploaded="CarregarDadosAsync" />
+    </div>
+
+    <div class="row mb-3 g-2">
+        <div class="col-md-4">
+            <input type="text" class="form-control" placeholder="Pesquisar por descrição ou nome do arquivo..."
+                   @bind="filtro" @bind:event="oninput" />
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="pagination.ItemsPerPage">
+                <option value="10">10 por página</option>
+                <option value="25">25 por página</option>
+                <option value="50">50 por página</option>
+            </select>
+        </div>
+    </div>
+
+    @if (arquivos is null)
+    {
+        <p>Carregando...</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <QuickGrid Items="ArquivosFiltrados" Pagination="pagination" Class="table table-striped table-hover align-middle">
+                <PropertyColumn Property="@(a => a.Data)" Format="dd/MM/yyyy HH:mm" Title="Data" Sortable="true"
+                                InitialSortDirection="SortDirection.Descending" IsDefaultSortColumn="true" />
+                <PropertyColumn Property="@(a => a.Descricao)" Title="Descrição" Sortable="true" />
+                <TemplateColumn Title="Arquivo" Sortable="true" SortBy="@sortPorNome">
+                    <span class="me-1">@IconeTipo(context.ContentType)</span> @context.NomeArquivo
+                </TemplateColumn>
+                <TemplateColumn Title="Tamanho" Align="Align.End">
+                    @FormatarTamanho(context.TamanhoBytes)
+                </TemplateColumn>
+                <TemplateColumn Title="Ações" Align="Align.End">
+                    <button class="btn btn-sm btn-outline-primary me-1" title="Visualizar"
+                            @onclick="() => VisualizarAsync(context.Id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
+                            <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
+                        </svg>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" title="Excluir"
+                            @onclick="() => ExcluirAsync(context.Id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                            <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                        </svg>
+                    </button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <small class="text-muted">@(ArquivosFiltrados.Count()) registro(s) encontrado(s)</small>
+            <Paginator State="pagination" />
+        </div>
+    }
+</div>
+
+@if (arquivoVisualizado is not null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        @arquivoVisualizado.Descricao
+                        <small class="text-muted d-block">@arquivoVisualizado.NomeArquivo</small>
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="FecharVisualizacao"></button>
+                </div>
+                <div class="modal-body text-center" style="min-height: 60vh;">
+                    @if (IsImagem(arquivoVisualizado.ContentType))
+                    {
+                        <img src="@dataUrl" alt="@arquivoVisualizado.NomeArquivo"
+                             class="img-fluid" style="max-height: 75vh;" />
+                    }
+                    else if (IsPdf(arquivoVisualizado.ContentType))
+                    {
+                        <iframe src="@dataUrl" style="width: 100%; height: 75vh; border: none;" title="@arquivoVisualizado.NomeArquivo"></iframe>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Pré-visualização não disponível para este tipo de arquivo.</p>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <a class="btn btn-outline-primary me-auto" href="@dataUrl" download="@arquivoVisualizado.NomeArquivo">
+                        Baixar
+                    </a>
+                    <button type="button" class="btn btn-secondary" @onclick="FecharVisualizacao">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Arquivo>? arquivos;
+    private string filtro = string.Empty;
+    private readonly PaginationState pagination = new() { ItemsPerPage = 10 };
+
+    private readonly GridSort<Arquivo> sortPorNome = GridSort<Arquivo>.ByAscending(a => a.NomeArquivo);
+
+    private Arquivo? arquivoVisualizado;
+    private string? dataUrl;
+
+    private IQueryable<Arquivo> ArquivosFiltrados
+    {
+        get
+        {
+            if (arquivos is null)
+                return Enumerable.Empty<Arquivo>().AsQueryable();
+
+            IEnumerable<Arquivo> resultado = arquivos;
+
+            if (!string.IsNullOrWhiteSpace(filtro))
+                resultado = resultado.Where(a =>
+                    a.Descricao.Contains(filtro, StringComparison.OrdinalIgnoreCase) ||
+                    a.NomeArquivo.Contains(filtro, StringComparison.OrdinalIgnoreCase));
+
+            return resultado.AsQueryable();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarDadosAsync();
+    }
+
+    private async Task CarregarDadosAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        // Projeta apenas os metadados (sem o conteúdo binário) para a listagem.
+        arquivos = await context.Arquivos
+            .AsNoTracking()
+            .OrderByDescending(a => a.Data)
+            .Select(a => new Arquivo
+            {
+                Id = a.Id,
+                Data = a.Data,
+                Descricao = a.Descricao,
+                NomeArquivo = a.NomeArquivo,
+                ContentType = a.ContentType,
+                TamanhoBytes = a.TamanhoBytes,
+                Conteudo = Array.Empty<byte>()
+            })
+            .ToListAsync();
+    }
+
+    private async Task VisualizarAsync(int id)
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+        var arquivo = await context.Arquivos.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id);
+
+        if (arquivo is null)
+            return;
+
+        arquivoVisualizado = arquivo;
+        dataUrl = $"data:{arquivo.ContentType};base64,{Convert.ToBase64String(arquivo.Conteudo)}";
+    }
+
+    private void FecharVisualizacao()
+    {
+        arquivoVisualizado = null;
+        dataUrl = null;
+    }
+
+    private async Task ExcluirAsync(int id)
+    {
+        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir este arquivo?");
+        if (!confirmado) return;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+        var entidade = await context.Arquivos.FindAsync(id);
+
+        if (entidade is not null)
+        {
+            context.Arquivos.Remove(entidade);
+            await context.SaveChangesAsync();
+            await CarregarDadosAsync();
+        }
+    }
+
+    private static bool IsImagem(string contentType) =>
+        contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsPdf(string contentType) =>
+        contentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase);
+
+    private static string IconeTipo(string contentType) =>
+        IsPdf(contentType) ? "📄" : IsImagem(contentType) ? "🖼️" : "📎";
+
+    private static string FormatarTamanho(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024d:0.#} KB";
+        return $"{bytes / (1024d * 1024d):0.#} MB";
+    }
+}

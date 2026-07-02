@@ -1,0 +1,262 @@
+@page "/entradas"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Entradas</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Entradas Financeiras</h1>
+        <div class="d-flex gap-2 d-print-none">
+            <button class="btn btn-outline-primary" @onclick="ImprimirAsync">Imprimir</button>
+            <button class="btn btn-primary" @onclick="Novo">Nova Entrada</button>
+        </div>
+    </div>
+
+    <div class="d-none d-print-block mb-3">
+        <h5 class="mb-1">Filtros aplicados</h5>
+        <div>
+            <strong>Pesquisa:</strong> @(string.IsNullOrWhiteSpace(filtroTexto) ? "—" : filtroTexto) &nbsp;|&nbsp;
+            <strong>Fornecedor:</strong> @NomeFornecedorFiltro &nbsp;|&nbsp;
+            <strong>Competência:</strong> @NomeCompetenciaFiltro &nbsp;|&nbsp;
+            <strong>Situação:</strong> @SituacaoFiltro &nbsp;|&nbsp;
+            <strong>Total:</strong> @EntradasFiltradas.Count() registro(s)
+        </div>
+    </div>
+
+    <div class="row mb-3 g-2 d-print-none">
+        <div class="col-md-3">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Pesquisar por fornecedor ou descrição..."
+                   @bind="filtroTexto"
+                   @bind:event="oninput" />
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="filtroFornecedorId">
+                <option value="0">Todos os Fornecedores</option>
+                @foreach (var f in fornecedores)
+                {
+                    <option value="@f.Id">@f.NomeRazaoSocial</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="filtroCompetenciaId">
+                <option value="0">Todas as Competências</option>
+                @foreach (var c in competencias)
+                {
+                    <option value="@c.Id">@($"{c.Mes:00}/{c.Ano}")</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="filtroSituacao">
+                <option value="">Todas</option>
+                <option value="pago">Pagas</option>
+                <option value="pendente">Pendentes</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="pagination.ItemsPerPage">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+        </div>
+    </div>
+
+    @if (entradas is null)
+    {
+        <p>Carregando...</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <QuickGrid Items="EntradasFiltradas" Pagination="pagination" Class="table table-striped table-hover align-middle imprimivel-sem-acoes">
+                <TemplateColumn Title="Competência" Sortable="true" SortBy="@sortPorCompetencia" Align="Align.Center">
+                    @if (context.Competencia is not null)
+                    {
+                        @($"{context.Competencia.Mes:00}/{context.Competencia.Ano}")
+                    }
+                </TemplateColumn>
+                <PropertyColumn Property="@(e => e.Fornecedor!.NomeRazaoSocial)" Title="Fornecedor" Sortable="true" />
+                <PropertyColumn Property="@(e => e.Descricao)" Title="Descrição" />
+                
+                <TemplateColumn Title="Valor Líquido" Sortable="true" SortBy="@sortPorLiquido" Align="Align.End">
+                    <span class="fw-semibold">@context.ValorLiquido.ToString("C")</span>
+                </TemplateColumn>
+                <TemplateColumn Title="Pagamento" Sortable="true" SortBy="@sortPorPagamento" Align="Align.Center">
+                    @if (context.DataPagamento is not null)
+                    {
+                        <span class="badge bg-success">@context.DataPagamento.Value.ToString("dd/MM/yyyy")</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">Pendente</span>
+                    }
+                </TemplateColumn>
+                <TemplateColumn Title="Ações" Align="Align.End">
+                    <button class="btn btn-sm btn-outline-secondary me-1" title="Editar"
+                            @onclick="() => Editar(context.Id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                        </svg>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" title="Excluir"
+                            @onclick="() => ExcluirAsync(context.Id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                            <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                        </svg>
+                    </button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-2 d-print-none">
+            <small class="text-muted">
+                @(EntradasFiltradas.Count()) registro(s) — Total líquido: <strong>@TotalLiquido.ToString("C")</strong>
+            </small>
+            <Paginator State="pagination" />
+        </div>
+    }
+</div>
+
+@code {
+    private List<Entrada>? entradas;
+    private List<Fornecedor> fornecedores = new();
+    private List<Competencia> competencias = new();
+    private string filtroTexto = string.Empty;
+    private int filtroFornecedorId;
+    private int filtroCompetenciaId;
+    private string filtroSituacao = string.Empty;
+    private readonly PaginationState pagination = new() { ItemsPerPage = 10 };
+
+    private readonly GridSort<Entrada> sortPorCompetencia =
+        GridSort<Entrada>.ByDescending(e => e.Competencia!.Ano).ThenDescending(e => e.Competencia!.Mes);
+    private readonly GridSort<Entrada> sortPorBruto = GridSort<Entrada>.ByAscending(e => e.ValorBruto);
+    private readonly GridSort<Entrada> sortPorLiquido = GridSort<Entrada>.ByAscending(e => e.ValorLiquido);
+    private readonly GridSort<Entrada> sortPorPagamento = GridSort<Entrada>.ByAscending(e => e.DataPagamento);
+
+    private IEnumerable<Entrada> EntradasBase
+    {
+        get
+        {
+            if (entradas is null)
+                return Enumerable.Empty<Entrada>();
+
+            IEnumerable<Entrada> resultado = entradas;
+
+            if (!string.IsNullOrWhiteSpace(filtroTexto))
+            {
+                var termo = filtroTexto.Trim();
+                resultado = resultado.Where(e =>
+                    (e.Fornecedor != null && e.Fornecedor.NomeRazaoSocial.Contains(termo, StringComparison.OrdinalIgnoreCase)) ||
+                    (e.Descricao != null && e.Descricao.Contains(termo, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (filtroFornecedorId > 0)
+                resultado = resultado.Where(e => e.FornecedorId == filtroFornecedorId);
+
+            if (filtroCompetenciaId > 0)
+                resultado = resultado.Where(e => e.CompetenciaId == filtroCompetenciaId);
+
+            if (filtroSituacao == "pago")
+                resultado = resultado.Where(e => e.DataPagamento is not null);
+            else if (filtroSituacao == "pendente")
+                resultado = resultado.Where(e => e.DataPagamento is null);
+
+            return resultado;
+        }
+    }
+
+    private IQueryable<Entrada> EntradasFiltradas => EntradasBase.AsQueryable();
+
+    private decimal TotalLiquido => EntradasBase.Sum(e => e.ValorLiquido);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarDadosAsync();
+    }
+
+    private async Task CarregarDadosAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        entradas = await context.Entradas
+            .AsNoTracking()
+            .Include(e => e.Fornecedor)
+            .Include(e => e.Competencia)
+            .OrderByDescending(e => e.DataEmissao)
+            .ToListAsync();
+
+        fornecedores = await context.Fornecedores
+            .AsNoTracking()
+            .OrderBy(f => f.NomeRazaoSocial)
+            .ToListAsync();
+
+        competencias = await context.Competencias
+            .AsNoTracking()
+            .OrderByDescending(c => c.Ano).ThenByDescending(c => c.Mes)
+            .ToListAsync();
+    }
+
+    private string NomeFornecedorFiltro =>
+        filtroFornecedorId == 0 ? "Todos" : fornecedores.FirstOrDefault(f => f.Id == filtroFornecedorId)?.NomeRazaoSocial ?? "—";
+
+    private string NomeCompetenciaFiltro
+    {
+        get
+        {
+            if (filtroCompetenciaId == 0) return "Todas";
+            var c = competencias.FirstOrDefault(x => x.Id == filtroCompetenciaId);
+            return c is null ? "—" : $"{c.Mes:00}/{c.Ano}";
+        }
+    }
+
+    private string SituacaoFiltro => filtroSituacao switch
+    {
+        "pago" => "Apenas Pagas",
+        "pendente" => "Apenas Pendentes",
+        _ => "Todas"
+    };
+
+    private async Task ImprimirAsync()
+    {
+        var anteriores = pagination.ItemsPerPage;
+        await pagination.SetCurrentPageIndexAsync(0);
+        pagination.ItemsPerPage = int.MaxValue;
+        StateHasChanged();
+        await Task.Yield();
+        await JS.InvokeVoidAsync("window.print");
+        pagination.ItemsPerPage = anteriores;
+    }
+
+    private void Novo() => Navigation.NavigateTo("/entradas/novo");
+    private void Editar(int id) => Navigation.NavigateTo($"/entradas/editar/{id}");
+
+    private async Task ExcluirAsync(int id)
+    {
+        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta entrada (e seus anexos)?");
+        if (!confirmado) return;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+        var entidade = await context.Entradas.FindAsync(id);
+
+        if (entidade is not null)
+        {
+            context.Entradas.Remove(entidade);
+            await context.SaveChangesAsync();
+            await CarregarDadosAsync();
+        }
+    }
+}

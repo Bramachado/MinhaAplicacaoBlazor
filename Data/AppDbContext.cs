@@ -25,11 +25,15 @@ public class AppDbContext : DbContext
     public DbSet<FormaPagamento> FormasPagamento => Set<FormaPagamento>();
     public DbSet<Fornecedor> Fornecedores => Set<Fornecedor>();
     public DbSet<ContaBancaria> ContasBancarias => Set<ContaBancaria>();
+    public DbSet<Arquivo> Arquivos => Set<Arquivo>();
+    public DbSet<Entrada> Entradas => Set<Entrada>();
     public DbSet<LancamentoFinanceiro> LancamentosFinanceiros => Set<LancamentoFinanceiro>();
     public DbSet<FolhaColaborador> FolhasColaboradores => Set<FolhaColaborador>();
     public DbSet<FolhaColaboradorItem> FolhasColaboradoresItens => Set<FolhaColaboradorItem>();
     public DbSet<FolhaTutor> FolhasTutores => Set<FolhaTutor>();
     public DbSet<FolhaTutorItem> FolhasTutoresItens => Set<FolhaTutorItem>();
+    public DbSet<FolhaFornecedor> FolhasFornecedores => Set<FolhaFornecedor>();
+    public DbSet<FolhaFornecedorItem> FolhasFornecedoresItens => Set<FolhaFornecedorItem>();
     public DbSet<ConfiguracaoCnab> ConfiguracoesCnab => Set<ConfiguracaoCnab>();
     public DbSet<FormaLancamentoCnab> FormasLancamentoCnab => Set<FormaLancamentoCnab>();
     public DbSet<RemessaCnab> RemessasCnab => Set<RemessaCnab>();
@@ -290,6 +294,62 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(x => x.TutorId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<FolhaFornecedor>()
+            .Property(x => x.Status)
+            .HasDefaultValue("Aberta");
+
+        modelBuilder.Entity<FolhaFornecedor>()
+            .Property(x => x.ValorTotal)
+            .HasDefaultValue(0m);
+
+        modelBuilder.Entity<FolhaFornecedor>()
+            .HasOne(x => x.Competencia)
+            .WithMany()
+            .HasForeignKey(x => x.CompetenciaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<FolhaFornecedor>()
+            .HasOne(x => x.LancamentoFinanceiro)
+            .WithMany()
+            .HasForeignKey(x => x.LancamentoFinanceiroId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<FolhaFornecedorItem>()
+            .HasOne(x => x.FolhaFornecedor)
+            .WithMany(x => x.Itens)
+            .HasForeignKey(x => x.FolhaFornecedorId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<FolhaFornecedorItem>()
+            .HasOne(x => x.Fornecedor)
+            .WithMany()
+            .HasForeignKey(x => x.FornecedorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Arquivo>()
+            .HasOne(x => x.FolhaFornecedorItem)
+            .WithMany(x => x.Arquivos)
+            .HasForeignKey(x => x.FolhaFornecedorItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Entrada>()
+            .HasOne(x => x.Fornecedor)
+            .WithMany()
+            .HasForeignKey(x => x.FornecedorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Entrada>()
+            .HasOne(x => x.Competencia)
+            .WithMany()
+            .HasForeignKey(x => x.CompetenciaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Arquivo>()
+            .HasOne(x => x.Entrada)
+            .WithMany(x => x.Arquivos)
+            .HasForeignKey(x => x.EntradaId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // === CNAB ===
         modelBuilder.Entity<ConfiguracaoCnab>()

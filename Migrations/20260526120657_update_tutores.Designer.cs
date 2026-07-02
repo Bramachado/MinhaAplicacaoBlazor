@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MinhaAplicacaoBlazor.Data;
 
@@ -11,9 +12,11 @@ using MinhaAplicacaoBlazor.Data;
 namespace MinhaAplicacaoBlazor.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260526120657_update_tutores")]
+    partial class update_tutores
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,54 +24,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Arquivo", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<byte[]>("Conteudo")
-                        .IsRequired()
-                        .HasColumnType("varbinary(max)");
-
-                    b.Property<DateTime>("Data")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Descricao")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<int?>("EntradaId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("FolhaFornecedorItemId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("NomeArquivo")
-                        .IsRequired()
-                        .HasMaxLength(260)
-                        .HasColumnType("nvarchar(260)");
-
-                    b.Property<long>("TamanhoBytes")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EntradaId");
-
-                    b.HasIndex("FolhaFornecedorItemId");
-
-                    b.ToTable("Arquivos");
-                });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.CategoriaFornecedor", b =>
                 {
@@ -504,8 +459,16 @@ namespace MinhaAplicacaoBlazor.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Agencia")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<bool>("Ativo")
                         .HasColumnType("bit");
+
+                    b.Property<string>("Banco")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<decimal?>("CargaHorariaSemanal")
                         .HasColumnType("decimal(10,2)");
@@ -514,8 +477,17 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
-                    b.Property<int?>("ContaBancariaId")
-                        .HasColumnType("int");
+                    b.Property<string>("ChavePix")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CodigoBanco")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Conta")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<string>("Cpf")
                         .IsRequired()
@@ -531,6 +503,10 @@ namespace MinhaAplicacaoBlazor.Migrations
 
                     b.Property<string>("Nome")
                         .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("NomeTitular")
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
@@ -552,10 +528,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ContaBancariaId")
-                        .IsUnique()
-                        .HasFilter("[ContaBancariaId] IS NOT NULL");
 
                     b.HasIndex("Cpf")
                         .IsUnique();
@@ -600,59 +572,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.ToTable("Competencias");
                 });
 
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.ContaBancaria", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Agencia")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("ChavePix")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("CodigoBanco")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
-
-                    b.Property<string>("Conta")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("CpfCnpj")
-                        .IsRequired()
-                        .HasMaxLength(18)
-                        .HasColumnType("nvarchar(18)");
-
-                    b.Property<string>("Forma")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<string>("NomeBanco")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("NomeTitular")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("TipoPessoa")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ContasBancarias");
-                });
-
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Curso", b =>
                 {
                     b.Property<int>("Id")
@@ -669,54 +588,12 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
-                    b.Property<double>("TotalAnos")
-                        .HasColumnType("float");
+                    b.Property<int>("TotalAnos")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.ToTable("Cursos");
-                });
-
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Entrada", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CompetenciaId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("DataEmissao")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DataPagamento")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("Desconto")
-                        .HasColumnType("decimal(12,2)");
-
-                    b.Property<string>("Descricao")
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<int>("FornecedorId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("ValorBruto")
-                        .HasColumnType("decimal(12,2)");
-
-                    b.Property<decimal>("ValorLiquido")
-                        .HasColumnType("decimal(12,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CompetenciaId");
-
-                    b.HasIndex("FornecedorId");
-
-                    b.ToTable("Entradas");
                 });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.EscalaAulaPratica", b =>
@@ -846,9 +723,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<decimal>("OutrosProventos")
-                        .HasColumnType("decimal(12,2)");
-
                     b.Property<decimal>("PlanoSaude")
                         .HasColumnType("decimal(12,2)");
 
@@ -858,10 +732,13 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.Property<decimal>("PremiacaoVariavel")
                         .HasColumnType("decimal(12,2)");
 
-                    b.Property<decimal>("SalarioBase")
+                    b.Property<decimal>("SalarioBruto")
                         .HasColumnType("decimal(12,2)");
 
                     b.Property<decimal>("SalarioFamilia")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<decimal>("SalarioLiquidoBase")
                         .HasColumnType("decimal(12,2)");
 
                     b.Property<decimal>("TicketAlimentacao")
@@ -895,115 +772,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.HasIndex("FolhaColaboradorId");
 
                     b.ToTable("FolhasColaboradoresItens");
-                });
-
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.FolhaFornecedor", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CompetenciaId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("DataFechamento")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("LancamentoFinanceiroId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
-                        .HasDefaultValue("Aberta");
-
-                    b.Property<decimal>("ValorTotal")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(12,2)")
-                        .HasDefaultValue(0m);
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CompetenciaId");
-
-                    b.HasIndex("LancamentoFinanceiroId");
-
-                    b.ToTable("FolhasFornecedores");
-                });
-
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.FolhaFornecedorItem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Agencia")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("Banco")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
-
-                    b.Property<string>("ChavePix")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("Conta")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime?>("DataVencimento")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Descricao")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<int>("FolhaFornecedorId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("FornecedorId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("NomeTitularConta")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("NumeroDocumento")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Observacao")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<decimal>("Quantidade")
-                        .HasColumnType("decimal(10,2)");
-
-                    b.Property<string>("StatusPagamento")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<decimal>("ValorTotalPagar")
-                        .HasColumnType("decimal(12,2)");
-
-                    b.Property<decimal>("ValorUnitario")
-                        .HasColumnType("decimal(12,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FolhaFornecedorId");
-
-                    b.HasIndex("FornecedorId");
-
-                    b.ToTable("FolhasFornecedoresItens");
                 });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.FolhaTutor", b =>
@@ -1154,16 +922,33 @@ namespace MinhaAplicacaoBlazor.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Agencia")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<bool>("Ativo")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
+                    b.Property<string>("Banco")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<int>("CategoriaFornecedorId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ContaBancariaId")
-                        .HasColumnType("int");
+                    b.Property<string>("ChavePix")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("CodigoBanco")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Conta")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("CpfCnpj")
                         .HasMaxLength(20)
@@ -1186,6 +971,10 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("NomeTitularConta")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("Telefone")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
@@ -1196,10 +985,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoriaFornecedorId");
-
-                    b.HasIndex("ContaBancariaId")
-                        .IsUnique()
-                        .HasFilter("[ContaBancariaId] IS NOT NULL");
 
                     b.HasIndex("UnidadeId");
 
@@ -1353,11 +1138,24 @@ namespace MinhaAplicacaoBlazor.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Agencia")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<bool>("Ativo")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("ContaBancariaId")
-                        .HasColumnType("int");
+                    b.Property<string>("ChavePix")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CodigoBanco")
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<string>("Conta")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<string>("Cpf")
                         .IsRequired()
@@ -1379,6 +1177,14 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<string>("NomeBanco")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("NomeTitular")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<string>("Rg")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
@@ -1394,10 +1200,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ContaBancariaId")
-                        .IsUnique()
-                        .HasFilter("[ContaBancariaId] IS NOT NULL");
 
                     b.HasIndex("Cpf")
                         .IsUnique();
@@ -1446,23 +1248,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .IsUnique();
 
                     b.ToTable("Unidades");
-                });
-
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Arquivo", b =>
-                {
-                    b.HasOne("MinhaAplicacaoBlazor.Models.Entrada", "Entrada")
-                        .WithMany("Arquivos")
-                        .HasForeignKey("EntradaId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("MinhaAplicacaoBlazor.Models.FolhaFornecedorItem", "FolhaFornecedorItem")
-                        .WithMany("Arquivos")
-                        .HasForeignKey("FolhaFornecedorItemId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("Entrada");
-
-                    b.Navigation("FolhaFornecedorItem");
                 });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Cnab.RemessaCnab", b =>
@@ -1560,39 +1345,13 @@ namespace MinhaAplicacaoBlazor.Migrations
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Colaborador", b =>
                 {
-                    b.HasOne("MinhaAplicacaoBlazor.Models.ContaBancaria", "ContaBancaria")
-                        .WithOne()
-                        .HasForeignKey("MinhaAplicacaoBlazor.Models.Colaborador", "ContaBancariaId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("MinhaAplicacaoBlazor.Models.Unidade", "Unidade")
                         .WithMany()
                         .HasForeignKey("UnidadeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("ContaBancaria");
-
                     b.Navigation("Unidade");
-                });
-
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Entrada", b =>
-                {
-                    b.HasOne("MinhaAplicacaoBlazor.Models.Competencia", "Competencia")
-                        .WithMany()
-                        .HasForeignKey("CompetenciaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("MinhaAplicacaoBlazor.Models.Fornecedor", "Fornecedor")
-                        .WithMany()
-                        .HasForeignKey("FornecedorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Competencia");
-
-                    b.Navigation("Fornecedor");
                 });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.EscalaAulaPratica", b =>
@@ -1643,43 +1402,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.Navigation("FolhaColaborador");
                 });
 
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.FolhaFornecedor", b =>
-                {
-                    b.HasOne("MinhaAplicacaoBlazor.Models.Competencia", "Competencia")
-                        .WithMany()
-                        .HasForeignKey("CompetenciaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("MinhaAplicacaoBlazor.Models.LancamentoFinanceiro", "LancamentoFinanceiro")
-                        .WithMany()
-                        .HasForeignKey("LancamentoFinanceiroId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Competencia");
-
-                    b.Navigation("LancamentoFinanceiro");
-                });
-
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.FolhaFornecedorItem", b =>
-                {
-                    b.HasOne("MinhaAplicacaoBlazor.Models.FolhaFornecedor", "FolhaFornecedor")
-                        .WithMany("Itens")
-                        .HasForeignKey("FolhaFornecedorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MinhaAplicacaoBlazor.Models.Fornecedor", "Fornecedor")
-                        .WithMany()
-                        .HasForeignKey("FornecedorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("FolhaFornecedor");
-
-                    b.Navigation("Fornecedor");
-                });
-
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.FolhaTutor", b =>
                 {
                     b.HasOne("MinhaAplicacaoBlazor.Models.Competencia", "Competencia")
@@ -1725,11 +1447,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("MinhaAplicacaoBlazor.Models.ContaBancaria", "ContaBancaria")
-                        .WithOne()
-                        .HasForeignKey("MinhaAplicacaoBlazor.Models.Fornecedor", "ContaBancariaId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("MinhaAplicacaoBlazor.Models.Unidade", "Unidade")
                         .WithMany()
                         .HasForeignKey("UnidadeId")
@@ -1737,8 +1454,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .IsRequired();
 
                     b.Navigation("CategoriaFornecedor");
-
-                    b.Navigation("ContaBancaria");
 
                     b.Navigation("Unidade");
                 });
@@ -1785,11 +1500,6 @@ namespace MinhaAplicacaoBlazor.Migrations
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Tutor", b =>
                 {
-                    b.HasOne("MinhaAplicacaoBlazor.Models.ContaBancaria", "ContaBancaria")
-                        .WithOne()
-                        .HasForeignKey("MinhaAplicacaoBlazor.Models.Tutor", "ContaBancariaId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("MinhaAplicacaoBlazor.Models.Curso", "Curso")
                         .WithMany("Tutores")
                         .HasForeignKey("CursoId")
@@ -1807,8 +1517,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasForeignKey("UnidadeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("ContaBancaria");
 
                     b.Navigation("Curso");
 
@@ -1832,24 +1540,9 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.Navigation("Tutores");
                 });
 
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Entrada", b =>
-                {
-                    b.Navigation("Arquivos");
-                });
-
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.FolhaColaborador", b =>
                 {
                     b.Navigation("Itens");
-                });
-
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.FolhaFornecedor", b =>
-                {
-                    b.Navigation("Itens");
-                });
-
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.FolhaFornecedorItem", b =>
-                {
-                    b.Navigation("Arquivos");
                 });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.FolhaTutor", b =>

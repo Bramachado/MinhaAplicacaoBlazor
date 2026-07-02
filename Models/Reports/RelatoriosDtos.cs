@@ -157,29 +157,91 @@ public class RelatorioFolhaTutorItemDto
     public string? Observacao { get; set; }
 }
 
+public class RelatorioPagamentosBancariosDto
+{
+    public string CompetenciaTexto { get; set; } = string.Empty;
+    public List<PagamentoBancarioLinhaDto> Linhas { get; set; } = new();
+    public decimal ValorTotal => Linhas.Sum(l => l.Valor);
+}
+
+public class PagamentoBancarioLinhaDto
+{
+    public string Origem { get; set; } = string.Empty; // Colaborador / Tutor / Fornecedor
+    public string? Unidade { get; set; }
+    public string CompetenciaTexto { get; set; } = string.Empty;
+    public string Nome { get; set; } = string.Empty;
+    public string? Cpf { get; set; }
+    public decimal Valor { get; set; }
+    public string? Forma { get; set; }
+    public string? TipoPessoa { get; set; }
+    public string? NomeTitular { get; set; }
+    public string? ChavePix { get; set; }
+    public string? Banco { get; set; }
+    public string? Codigo { get; set; }
+    public string? Agencia { get; set; }
+    public string? Conta { get; set; }
+}
+
 public class ResumoDespesaGeralDto
 {
     public string CompetenciaTexto { get; set; } = string.Empty;
-    public List<ResumoLinhaDto> Entradas { get; set; } = new();
-    public decimal TotalEntradas { get; set; }
-    public List<ResumoGrupoDto> SaidasPorPlanoConta { get; set; } = new();
-    public decimal TotalSaidas { get; set; }
-    public decimal TotalFolhaColaboradores { get; set; }
-    public decimal TotalFolhaTutores { get; set; }
+
+    // Bloco 1 — Entradas (entidade Entrada)
+    public List<ResumoEntradaDto> Entradas { get; set; } = new();
+    public decimal TotalEntradas => Entradas.Sum(e => e.ValorLiquido);
+
+    // Bloco 2 — Fornecedores (Folha de Fornecedores)
+    public RelatorioFolhaFornecedorDto? FolhaFornecedor { get; set; }
+    public decimal TotalFornecedores => FolhaFornecedor?.ValorTotal ?? 0m;
+
+    // Bloco 3 — Folha de Tutores
+    public RelatorioFolhaTutorDto? FolhaTutor { get; set; }
+    public decimal TotalTutores => FolhaTutor?.ValorTotal ?? 0m;
+
+    // Bloco 4 — Folha de Colaboradores
+    public RelatorioFolhaColaboradorDto? FolhaColaborador { get; set; }
+    public decimal TotalColaboradores => FolhaColaborador?.ValorTotal ?? 0m;
+
+    // Bloco 5 — Resumo
+    public decimal TotalSaidas => TotalFornecedores + TotalTutores + TotalColaboradores;
     public decimal SaldoFinal => TotalEntradas - TotalSaidas;
-    public decimal TotalDespesasFixas { get; set; }
-    public decimal TotalDespesasVariaveis { get; set; }
 }
 
-public class ResumoLinhaDto
+public class ResumoEntradaDto
 {
-    public string Descricao { get; set; } = string.Empty;
-    public decimal Valor { get; set; }
+    public string Fornecedor { get; set; } = string.Empty;
+    public string? Descricao { get; set; }
+    public DateTime DataEmissao { get; set; }
+    public DateTime? DataPagamento { get; set; }
+    public decimal ValorBruto { get; set; }
+    public decimal Desconto { get; set; }
+    public decimal ValorLiquido { get; set; }
 }
 
-public class ResumoGrupoDto
+public class RelatorioFolhaFornecedorDto
 {
-    public string PlanoConta { get; set; } = string.Empty;
-    public List<ResumoLinhaDto> Lancamentos { get; set; } = new();
-    public decimal Total { get; set; }
+    public string CompetenciaTexto { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public DateTime? DataFechamento { get; set; }
+    public decimal ValorTotal { get; set; }
+    public List<RelatorioFolhaFornecedorItemDto> Itens { get; set; } = new();
+    public int QuantidadeFornecedores => Itens.Count;
+}
+
+public class RelatorioFolhaFornecedorItemDto
+{
+    public string Fornecedor { get; set; } = string.Empty;
+    public string? Descricao { get; set; }
+    public string? NumeroDocumento { get; set; }
+    public DateTime? DataVencimento { get; set; }
+    public string? StatusPagamento { get; set; }
+    public decimal Quantidade { get; set; }
+    public decimal ValorUnitario { get; set; }
+    public decimal ValorTotalPagar { get; set; }
+    public string? Banco { get; set; }
+    public string? Agencia { get; set; }
+    public string? Conta { get; set; }
+    public string? ChavePix { get; set; }
+    public string? NomeTitularConta { get; set; }
+    public string? Observacao { get; set; }
 }

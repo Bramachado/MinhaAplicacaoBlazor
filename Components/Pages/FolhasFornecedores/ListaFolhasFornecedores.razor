@@ -1,0 +1,183 @@
+@page "/folhas-fornecedores"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Folha de Fornecedores</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Folha de Fornecedores</h1>
+        <button class="btn btn-primary" @onclick="Nova">Nova Folha</button>
+    </div>
+
+    <div class="row mb-3 g-2">
+        <div class="col-md-3">
+            <select class="form-select" @bind="filtroCompetenciaId">
+                <option value="0">Todas as Competências</option>
+                @foreach (var c in competencias)
+                {
+                    <option value="@c.Id">@($"{c.Mes:00}/{c.Ano}")</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="filtroStatus">
+                <option value="">Todos os Status</option>
+                <option value="Aberta">Aberta</option>
+                <option value="Fechada">Fechada</option>
+                <option value="Cancelada">Cancelada</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="pagination.ItemsPerPage">
+                <option value="10">10 por página</option>
+                <option value="25">25 por página</option>
+                <option value="50">50 por página</option>
+            </select>
+        </div>
+    </div>
+
+    @if (folhas is null)
+    {
+        <p>Carregando...</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <QuickGrid Items="FolhasFiltradas" Pagination="pagination" Class="table table-striped table-hover align-middle">
+                <TemplateColumn Title="Competência" Sortable="true" SortBy="@sortPorCompetencia" InitialSortDirection="SortDirection.Descending" IsDefaultSortColumn="true">
+                    @if (context.Competencia is not null)
+                    {
+                        @($"{context.Competencia.Mes:00}/{context.Competencia.Ano}")
+                    }
+                </TemplateColumn>
+                <TemplateColumn Title="Status" Sortable="true" SortBy="@sortPorStatus" Align="Align.Center">
+                    <span class="badge @StatusBadge(context.Status)">@context.Status</span>
+                </TemplateColumn>
+                <TemplateColumn Title="Fornecedores" Align="Align.Center">
+                    @(quantidadeItens.GetValueOrDefault(context.Id, 0))
+                </TemplateColumn>
+                <TemplateColumn Title="Valor Total" Sortable="true" SortBy="@sortPorValor" Align="Align.End">
+                    <span class="fw-semibold">@context.ValorTotal.ToString("C")</span>
+                </TemplateColumn>
+                <PropertyColumn Property="@(f => f.DataFechamento)" Format="dd/MM/yyyy HH:mm" Title="Fechamento" Sortable="true" />
+                <TemplateColumn Title="Ações" Align="Align.End">
+                    <button class="btn btn-sm btn-outline-secondary me-1" title="Editar"
+                            @onclick="() => Editar(context.Id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                        </svg>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" title="Excluir"
+                            @onclick="() => ExcluirAsync(context.Id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                            <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                        </svg>
+                    </button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <small class="text-muted">@(FolhasFiltradas.Count()) registro(s) encontrado(s)</small>
+            <Paginator State="pagination" />
+        </div>
+    }
+</div>
+
+@code {
+    private List<FolhaFornecedor>? folhas;
+    private List<Competencia> competencias = new();
+    private Dictionary<int, int> quantidadeItens = new();
+
+    private int filtroCompetenciaId;
+    private string filtroStatus = string.Empty;
+    private readonly PaginationState pagination = new() { ItemsPerPage = 10 };
+
+    private readonly GridSort<FolhaFornecedor> sortPorCompetencia =
+        GridSort<FolhaFornecedor>.ByDescending(f => f.Competencia!.Ano).ThenDescending(f => f.Competencia!.Mes);
+    private readonly GridSort<FolhaFornecedor> sortPorStatus = GridSort<FolhaFornecedor>.ByAscending(f => f.Status);
+    private readonly GridSort<FolhaFornecedor> sortPorValor = GridSort<FolhaFornecedor>.ByAscending(f => f.ValorTotal);
+
+    private IQueryable<FolhaFornecedor> FolhasFiltradas
+    {
+        get
+        {
+            if (folhas is null)
+                return Enumerable.Empty<FolhaFornecedor>().AsQueryable();
+
+            IEnumerable<FolhaFornecedor> resultado = folhas;
+
+            if (filtroCompetenciaId > 0)
+                resultado = resultado.Where(f => f.CompetenciaId == filtroCompetenciaId);
+
+            if (!string.IsNullOrWhiteSpace(filtroStatus))
+                resultado = resultado.Where(f => f.Status == filtroStatus);
+
+            return resultado.AsQueryable();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarDadosAsync();
+    }
+
+    private async Task CarregarDadosAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        folhas = await context.FolhasFornecedores
+            .AsNoTracking()
+            .Include(f => f.Competencia)
+            .OrderByDescending(f => f.Competencia!.Ano)
+            .ThenByDescending(f => f.Competencia!.Mes)
+            .ToListAsync();
+
+        competencias = await context.Competencias
+            .AsNoTracking()
+            .OrderByDescending(c => c.Ano).ThenByDescending(c => c.Mes)
+            .ToListAsync();
+
+        quantidadeItens = await context.FolhasFornecedoresItens
+            .AsNoTracking()
+            .GroupBy(i => i.FolhaFornecedorId)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Key, x => x.Count);
+    }
+
+    private static string StatusBadge(string status) => status switch
+    {
+        "Aberta" => "bg-warning text-dark",
+        "Fechada" => "bg-success",
+        "Cancelada" => "bg-secondary",
+        _ => "bg-light text-dark"
+    };
+
+    private void Nova() => Navigation.NavigateTo("/folhas-fornecedores/novo");
+    private void Editar(int id) => Navigation.NavigateTo($"/folhas-fornecedores/editar/{id}");
+
+    private async Task ExcluirAsync(int id)
+    {
+        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta folha (e seus itens)?");
+        if (!confirmado) return;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+        var entidade = await context.FolhasFornecedores.FindAsync(id);
+
+        if (entidade is not null)
+        {
+            context.FolhasFornecedores.Remove(entidade);
+            await context.SaveChangesAsync();
+            await CarregarDadosAsync();
+        }
+    }
+}

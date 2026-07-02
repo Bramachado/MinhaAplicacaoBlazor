@@ -1,5 +1,5 @@
-@page "/folhas-tutores/{FolhaId:int}/itens/novo"
-@page "/folhas-tutores/{FolhaId:int}/itens/editar/{Id:int}"
+@page "/folhas-fornecedores/{FolhaId:int}/itens/novo"
+@page "/folhas-fornecedores/{FolhaId:int}/itens/editar/{Id:int}"
 @rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
@@ -8,7 +8,7 @@
 @using MinhaAplicacaoBlazor.Services
 
 @inject IDbContextFactory<AppDbContext> DbFactory
-@inject FolhaTutorService FolhaService
+@inject FolhaFornecedorService FolhaService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -18,7 +18,7 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="mb-0">
-                @(IsNovo ? "Novo Item da Folha de Tutor" : "Editar Item da Folha de Tutor")
+                @(IsNovo ? "Novo Item da Folha de Fornecedor" : "Editar Item da Folha de Fornecedor")
                 @if (folha is not null && folha.Competencia is not null)
                 {
                     <small class="text-muted">— Competência @($"{folha.Competencia.Mes:00}/{folha.Competencia.Ano}")</small>
@@ -33,25 +33,19 @@
             }
             else
             {
-                <EditForm Model="item" OnValidSubmit="SalvarAsync" FormName="form-item-folha-tutor">
+                <EditForm Model="item" OnValidSubmit="SalvarAsync" FormName="form-item-folha-fornecedor">
                     <DataAnnotationsValidator />
                     <ValidationSummary class="text-danger" />
-
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Tutor <span class="text-danger">*</span></label>
-                            <InputSelect class="form-select" @bind-Value="TutorIdValue" disabled="@(!IsNovo)">
+                            <label class="form-label">Fornecedor <span class="text-danger">*</span></label>
+                            <InputSelect class="form-select" @bind-Value="FornecedorIdValue" disabled="@(!IsNovo)">
                                 <option value="0">-- Selecione --</option>
-                                @foreach (var t in tutores)
+                                @foreach (var f in fornecedores)
                                 {
-                                    <option value="@t.Id">@t.Nome</option>
+                                    <option value="@f.Id">@f.NomeRazaoSocial</option>
                                 }
                             </InputSelect>
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Cargo</label>
-                            <InputText class="form-control" @bind-Value="item.Cargo" />
                         </div>
 
                         <div class="col-md-3 mb-3">
@@ -63,60 +57,49 @@
                                 <option value="Cancelado">Cancelado</option>
                             </InputSelect>
                         </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data Vencimento</label>
+                            <InputDate class="form-control" @bind-Value="item.DataVencimento" />
+                        </div>
                     </div>
 
-                    <hr />
-                    <h5>Aulas</h5>
                     <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Total Horas Normais</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.TotalHorasNormais" step="0.01" @bind-Value:after="Recalcular" />
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Descrição</label>
+                            <InputText class="form-control" @bind-Value="item.Descricao" />
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Valor Hora Normal</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.ValorHoraNormal" step="0.01" @bind-Value:after="Recalcular" />
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Total Horas Práticas</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.TotalHorasPraticas" step="0.01" @bind-Value:after="Recalcular" />
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Valor Hora Prática</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.ValorHoraPratica" step="0.01" @bind-Value:after="Recalcular" />
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Nº Documento / NF</label>
+                            <InputText class="form-control" @bind-Value="item.NumeroDocumento" />
                         </div>
                     </div>
-
                     <hr />
-                    <h5>Resumo</h5>
+                    <h5>Valores</h5>
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Valor Aulas Normais</label>
-                            <input type="text" class="form-control text-end" value="@item.ValorAulaNormal.ToString("C")" readonly />
+                            <label class="form-label">Quantidade</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.Quantidade" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Valor Aulas Práticas</label>
-                            <input type="text" class="form-control text-end" value="@item.ValorAulaPratica.ToString("C")" readonly />
+                            <label class="form-label">Valor Unitário</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.ValorUnitario" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Valor Total a Receber</label>
-                            <input type="text" class="form-control text-end fw-semibold text-primary" value="@item.ValorTotalReceber.ToString("C")" readonly />
+                            <label class="form-label">Valor Total a Pagar</label>
+                            <input type="text" class="form-control text-end fw-semibold text-primary" value="@item.ValorTotalPagar.ToString("C")" readonly />
                         </div>
                     </div>
-
-                    <hr />     
-
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Observação</label>
                             <InputTextArea class="form-control" rows="2" @bind-Value="item.Observacao" />
                         </div>
                     </div>
-
+                    
                     @if (!string.IsNullOrEmpty(mensagemErro))
                     {
                         <div class="alert alert-danger">@mensagemErro</div>
                     }
-
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">Salvar</button>
                         <button type="button" class="btn btn-secondary" @onclick="Voltar">Cancelar</button>
@@ -125,28 +108,47 @@
             }
         </div>
     </div>
+
+    @if (!carregando && !IsNovo)
+    {
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Anexos (Comprovantes / Notas)</h4>
+                <AnexosFolhaFornecedorItem FolhaFornecedorItemId="Id!.Value" />
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-0">
+                    Clique em <strong>Anexos</strong> para abrir a janela e anexar um ou mais arquivos
+                    (PDF, JPG ou PNG) a este item.
+                </p>
+            </div>
+        </div>
+    }
+    else if (!carregando && IsNovo)
+    {
+        <div class="alert alert-info mt-3">
+            Salve o item primeiro para poder anexar comprovantes e notas.
+        </div>
+    }
 </div>
 
 @code {
     [Parameter] public int FolhaId { get; set; }
     [Parameter] public int? Id { get; set; }
-
-    private FolhaTutorItem item = new();
-    private FolhaTutor? folha;
-    private List<Tutor> tutores = new();
+    private FolhaFornecedorItem item = new();
+    private FolhaFornecedor? folha;
+    private List<Fornecedor> fornecedores = new();
     private bool carregando = true;
     private string? mensagemErro;
-
     private bool IsNovo => Id is null or 0;
-
-    private int TutorIdValue
+    private int FornecedorIdValue
     {
-        get => item.TutorId;
+        get => item.FornecedorId;
         set
         {
-            item.TutorId = value;
+            item.FornecedorId = value;
             if (IsNovo && value > 0)
-                AplicarSnapshotTutor(value);
+                AplicarSnapshotFornecedor(value);
         }
     }
 
@@ -154,46 +156,45 @@
     {
         await using var context = await DbFactory.CreateDbContextAsync();
 
-        folha = await context.FolhasTutores
+        folha = await context.FolhasFornecedores
             .AsNoTracking()
             .Include(f => f.Competencia)
             .FirstOrDefaultAsync(f => f.Id == FolhaId);
 
         if (folha is null)
         {
-            Navigation.NavigateTo("/folhas-tutores");
+            Navigation.NavigateTo("/folhas-fornecedores");
             return;
         }
 
         if (folha.Status != "Aberta")
         {
             await JS.InvokeVoidAsync("alert", "Esta folha está fechada. Reabra a folha para realizar alterações.");
-            Navigation.NavigateTo($"/folhas-tutores/editar/{FolhaId}");
+            Navigation.NavigateTo($"/folhas-fornecedores/editar/{FolhaId}");
             return;
         }
 
-        var idsJaNaFolha = await context.FolhasTutoresItens
-            .Where(i => i.FolhaTutorId == FolhaId && (Id == null || i.Id != Id))
-            .Select(i => i.TutorId)
+        var idsJaNaFolha = await context.FolhasFornecedoresItens
+            .Where(i => i.FolhaFornecedorId == FolhaId && (Id == null || i.Id != Id))
+            .Select(i => i.FornecedorId)
             .ToListAsync();
 
-        tutores = await context.Tutores
+        fornecedores = await context.Fornecedores
             .AsNoTracking()
-            .Include(t => t.Titulacao)
-            .Include(t => t.ContaBancaria)
-            .Where(t => t.Ativo && !idsJaNaFolha.Contains(t.Id))
-            .OrderBy(t => t.Nome)
+            .Include(f => f.ContaBancaria)
+            .Where(f => f.Ativo && !idsJaNaFolha.Contains(f.Id))
+            .OrderBy(f => f.NomeRazaoSocial)
             .ToListAsync();
 
         if (!IsNovo)
         {
-            var existente = await context.FolhasTutoresItens
+            var existente = await context.FolhasFornecedoresItens
                 .AsNoTracking()
                 .FirstOrDefaultAsync(i => i.Id == Id);
 
             if (existente is null)
             {
-                Navigation.NavigateTo($"/folhas-tutores/editar/{FolhaId}");
+                Navigation.NavigateTo($"/folhas-fornecedores/editar/{FolhaId}");
                 return;
             }
 
@@ -207,24 +208,17 @@
         carregando = false;
     }
 
-    private void AplicarSnapshotTutor(int tutorId)
+    private void AplicarSnapshotFornecedor(int fornecedorId)
     {
-        var tutor = tutores.FirstOrDefault(t => t.Id == tutorId);
-        if (tutor is null) return;
+        var fornecedor = fornecedores.FirstOrDefault(f => f.Id == fornecedorId);
+        if (fornecedor is null) return;
 
-        // Sobrescreve os campos automáticos a cada troca de tutor.
-        item.Cargo = tutor.Titulacao?.Nome;
-        item.Banco = tutor.ContaBancaria?.CodigoBanco;
-        item.Agencia = tutor.ContaBancaria?.Agencia;
-        item.Conta = tutor.ContaBancaria?.Conta;
-        item.ChavePix = tutor.ContaBancaria?.ChavePix;
-        item.NomeTitularConta = tutor.ContaBancaria?.NomeTitular;
-
-        if (tutor.Titulacao is not null)
-        {
-            item.ValorHoraNormal = tutor.Titulacao.ValorHoraAulaNormal;
-            item.ValorHoraPratica = tutor.Titulacao.ValorHoraAulaPratica;
-        }
+        // Sobrescreve os campos automáticos a cada troca de fornecedor.
+        item.Banco = fornecedor.ContaBancaria?.CodigoBanco;
+        item.Agencia = fornecedor.ContaBancaria?.Agencia;
+        item.Conta = fornecedor.ContaBancaria?.Conta;
+        item.ChavePix = fornecedor.ContaBancaria?.ChavePix;
+        item.NomeTitularConta = fornecedor.ContaBancaria?.NomeTitular;
 
         item.Recalcular();
     }
@@ -239,13 +233,13 @@
             return;
         }
 
-        if (item.TutorId == 0)
+        if (item.FornecedorId == 0)
         {
-            mensagemErro = "Selecione um tutor.";
+            mensagemErro = "Selecione um fornecedor.";
             return;
         }
 
-        item.FolhaTutorId = FolhaId;
+        item.FolhaFornecedorId = FolhaId;
         item.Recalcular();
         mensagemErro = null;
 
@@ -253,36 +247,36 @@
 
         if (IsNovo)
         {
-            var jaExiste = await context.FolhasTutoresItens
+            var jaExiste = await context.FolhasFornecedoresItens
                 .AsNoTracking()
-                .AnyAsync(i => i.FolhaTutorId == FolhaId && i.TutorId == item.TutorId);
+                .AnyAsync(i => i.FolhaFornecedorId == FolhaId && i.FornecedorId == item.FornecedorId);
 
             if (jaExiste)
             {
-                mensagemErro = "Este tutor já está nesta folha.";
+                mensagemErro = "Este fornecedor já está nesta folha.";
                 return;
             }
 
-            context.FolhasTutoresItens.Add(item);
+            context.FolhasFornecedoresItens.Add(item);
         }
         else
         {
-            context.FolhasTutoresItens.Update(item);
+            context.FolhasFornecedoresItens.Update(item);
         }
 
         await context.SaveChangesAsync();
 
-        var folhaEntity = await context.FolhasTutores.FindAsync(FolhaId);
+        var folhaEntity = await context.FolhasFornecedores.FindAsync(FolhaId);
         if (folhaEntity is not null)
         {
-            folhaEntity.ValorTotal = await context.FolhasTutoresItens
-                .Where(i => i.FolhaTutorId == FolhaId)
-                .SumAsync(i => (decimal?)i.ValorTotalReceber) ?? 0m;
+            folhaEntity.ValorTotal = await context.FolhasFornecedoresItens
+                .Where(i => i.FolhaFornecedorId == FolhaId)
+                .SumAsync(i => (decimal?)i.ValorTotalPagar) ?? 0m;
             await context.SaveChangesAsync();
         }
 
-        Navigation.NavigateTo($"/folhas-tutores/editar/{FolhaId}");
+        Navigation.NavigateTo($"/folhas-fornecedores/editar/{FolhaId}");
     }
 
-    private void Voltar() => Navigation.NavigateTo($"/folhas-tutores/editar/{FolhaId}");
+    private void Voltar() => Navigation.NavigateTo($"/folhas-fornecedores/editar/{FolhaId}");
 }

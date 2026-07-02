@@ -256,6 +256,50 @@ public class RelatorioFinanceiroService
         };
     }
 
+    public async Task<RelatorioFolhaFornecedorDto?> GerarRelatorioFolhaFornecedoresAsync(int competenciaId)
+    {
+        await using var ctx = await _dbFactory.CreateDbContextAsync();
+
+        var folha = await ctx.FolhasFornecedores
+            .AsNoTracking()
+            .Include(f => f.Competencia)
+            .Include(f => f.Itens)
+                .ThenInclude(i => i.Fornecedor)
+            .FirstOrDefaultAsync(f => f.CompetenciaId == competenciaId);
+
+        if (folha is null) return null;
+
+        return new RelatorioFolhaFornecedorDto
+        {
+            CompetenciaTexto = folha.Competencia is not null
+                ? $"{folha.Competencia.Mes:00}/{folha.Competencia.Ano}"
+                : string.Empty,
+            Status = folha.Status,
+            DataFechamento = folha.DataFechamento,
+            ValorTotal = folha.ValorTotal,
+            Itens = folha.Itens
+                .OrderBy(i => i.Fornecedor != null ? i.Fornecedor.NomeRazaoSocial : string.Empty)
+                .Select(i => new RelatorioFolhaFornecedorItemDto
+                {
+                    Fornecedor = i.Fornecedor?.NomeRazaoSocial ?? "(?)",
+                    Descricao = i.Descricao,
+                    NumeroDocumento = i.NumeroDocumento,
+                    DataVencimento = i.DataVencimento,
+                    StatusPagamento = i.StatusPagamento,
+                    Quantidade = i.Quantidade,
+                    ValorUnitario = i.ValorUnitario,
+                    ValorTotalPagar = i.ValorTotalPagar,
+                    Banco = i.Banco,
+                    Agencia = i.Agencia,
+                    Conta = i.Conta,
+                    ChavePix = i.ChavePix,
+                    NomeTitularConta = i.NomeTitularConta,
+                    Observacao = i.Observacao
+                })
+                .ToList()
+        };
+    }
+
     public async Task<ResumoDespesaGeralDto> GerarResumoDespesaGeralAsync(int competenciaId)
     {
         await using var ctx = await _dbFactory.CreateDbContextAsync();
@@ -264,56 +308,157 @@ public class RelatorioFinanceiroService
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == competenciaId);
 
-        var lancamentos = await ctx.LancamentosFinanceiros
+        // Bloco 1 — Entradas (entidade Entrada) da competência.
+        var entradas = await ctx.Entradas
             .AsNoTracking()
-            .Where(l => l.CompetenciaId == competenciaId && l.Status != "Cancelado")
-            .Include(l => l.PlanoConta)
+            .Where(e => e.CompetenciaId == competenciaId)
+            .Include(e => e.Fornecedor)
+            .OrderBy(e => e.DataEmissao)
+            .Select(e => new ResumoEntradaDto
+            {
+                Fornecedor = e.Fornecedor != null ? e.Fornecedor.NomeRazaoSocial : "(?)",
+                Descricao = e.Descricao,
+                DataEmissao = e.DataEmissao,
+                DataPagamento = e.DataPagamento,
+                ValorBruto = e.ValorBruto,
+                Desconto = e.Desconto,
+                ValorLiquido = e.ValorLiquido
+            })
             .ToListAsync();
 
-        var entradas = lancamentos
-            .Where(l => l.TipoLancamento == "Entrada")
-            .OrderBy(l => l.Descricao)
-            .Select(l => new ResumoLinhaDto { Descricao = l.Descricao, Valor = l.Valor })
-            .ToList();
-
-        var saidas = lancamentos.Where(l => l.TipoLancamento == "Saida").ToList();
-
-        var saidasPorPlano = saidas
-            .GroupBy(l => l.PlanoConta?.Nome ?? "(Sem plano)")
-            .OrderBy(g => g.Key)
-            .Select(g => new ResumoGrupoDto
-            {
-                PlanoConta = g.Key,
-                Lancamentos = g.OrderBy(x => x.Descricao)
-                    .Select(x => new ResumoLinhaDto { Descricao = x.Descricao, Valor = x.Valor })
-                    .ToList(),
-                Total = g.Sum(x => x.Valor)
-            })
-            .ToList();
-
-        var folhaColab = await ctx.FolhasColaboradores
-            .AsNoTracking()
-            .Where(f => f.CompetenciaId == competenciaId)
-            .Select(f => (decimal?)f.ValorTotal)
-            .FirstOrDefaultAsync();
-
-        var folhaTutor = await ctx.FolhasTutores
-            .AsNoTracking()
-            .Where(f => f.CompetenciaId == competenciaId)
-            .Select(f => (decimal?)f.ValorTotal)
-            .FirstOrDefaultAsync();
+        // Blocos 2, 3 e 4 — Folhas da competência (reaproveitam os relatórios existentes).
+        var folhaFornecedor = await GerarRelatorioFolhaFornecedoresAsync(competenciaId);
+        var folhaTutor = await GerarRelatorioFolhaTutoresAsync(competenciaId);
+        var folhaColaborador = await GerarRelatorioFolhaColaboradoresAsync(competenciaId);
 
         return new ResumoDespesaGeralDto
         {
             CompetenciaTexto = competencia is not null ? $"{competencia.Mes:00}/{competencia.Ano}" : string.Empty,
             Entradas = entradas,
-            TotalEntradas = entradas.Sum(e => e.Valor),
-            SaidasPorPlanoConta = saidasPorPlano,
-            TotalSaidas = saidas.Sum(s => s.Valor),
-            TotalFolhaColaboradores = folhaColab ?? 0m,
-            TotalFolhaTutores = folhaTutor ?? 0m,
-            TotalDespesasFixas = saidas.Where(s => s.TipoDespesa == "Fixa").Sum(s => s.Valor),
-            TotalDespesasVariaveis = saidas.Where(s => s.TipoDespesa == "Variavel").Sum(s => s.Valor)
+            FolhaFornecedor = folhaFornecedor,
+            FolhaTutor = folhaTutor,
+            FolhaColaborador = folhaColaborador
+        };
+    }
+
+    public async Task<RelatorioPagamentosBancariosDto> GerarRelatorioPagamentosBancariosAsync(int competenciaId)
+    {
+        await using var ctx = await _dbFactory.CreateDbContextAsync();
+
+        var competencia = await ctx.Competencias
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == competenciaId);
+        var competenciaTexto = competencia is not null ? $"{competencia.Mes:00}/{competencia.Ano}" : string.Empty;
+
+        var linhas = new List<PagamentoBancarioLinhaDto>();
+
+        // === Folha de Colaboradores (apenas FECHADA) ===
+        var folhasColab = await ctx.FolhasColaboradores
+            .AsNoTracking()
+            .Where(f => f.CompetenciaId == competenciaId && f.Status == "Fechada")
+            .Include(f => f.Itens).ThenInclude(i => i.Colaborador!).ThenInclude(c => c.Unidade)
+            .Include(f => f.Itens).ThenInclude(i => i.Colaborador!).ThenInclude(c => c.ContaBancaria)
+            .ToListAsync();
+
+        foreach (var folha in folhasColab)
+        {
+            foreach (var i in folha.Itens)
+            {
+                var conta = i.Colaborador?.ContaBancaria;
+                linhas.Add(new PagamentoBancarioLinhaDto
+                {
+                    Origem = "Colaborador",
+                    Unidade = i.Colaborador?.Unidade?.Nome,
+                    CompetenciaTexto = competenciaTexto,
+                    Nome = i.Colaborador?.Nome ?? "(?)",
+                    Cpf = i.Colaborador?.Cpf,
+                    Valor = i.ValorReceberPix,
+                    Forma = conta?.Forma.ToString(),
+                    TipoPessoa = conta?.TipoPessoa.ToString(),
+                    NomeTitular = conta?.NomeTitular,
+                    ChavePix = conta?.ChavePix,
+                    Banco = conta?.NomeBanco,
+                    Codigo = conta?.CodigoBanco,
+                    Agencia = conta?.Agencia,
+                    Conta = conta?.Conta
+                });
+            }
+        }
+
+        // === Folha de Tutores (apenas FECHADA) ===
+        var folhasTut = await ctx.FolhasTutores
+            .AsNoTracking()
+            .Where(f => f.CompetenciaId == competenciaId && f.Status == "Fechada")
+            .Include(f => f.Itens).ThenInclude(i => i.Tutor!).ThenInclude(t => t.Unidade)
+            .Include(f => f.Itens).ThenInclude(i => i.Tutor!).ThenInclude(t => t.ContaBancaria)
+            .ToListAsync();
+
+        foreach (var folha in folhasTut)
+        {
+            foreach (var i in folha.Itens)
+            {
+                var conta = i.Tutor?.ContaBancaria;
+                linhas.Add(new PagamentoBancarioLinhaDto
+                {
+                    Origem = "Tutor",
+                    Unidade = i.Tutor?.Unidade?.Nome,
+                    CompetenciaTexto = competenciaTexto,
+                    Nome = i.Tutor?.Nome ?? "(?)",
+                    Cpf = i.Tutor?.Cpf,
+                    Valor = i.ValorTotalReceber,
+                    Forma = conta?.Forma.ToString(),
+                    TipoPessoa = conta?.TipoPessoa.ToString(),
+                    NomeTitular = conta?.NomeTitular,
+                    ChavePix = conta?.ChavePix,
+                    Banco = conta?.NomeBanco,
+                    Codigo = conta?.CodigoBanco,
+                    Agencia = conta?.Agencia,
+                    Conta = conta?.Conta
+                });
+            }
+        }
+
+        // === Folha de Fornecedores (apenas FECHADA) ===
+        var folhasForn = await ctx.FolhasFornecedores
+            .AsNoTracking()
+            .Where(f => f.CompetenciaId == competenciaId && f.Status == "Fechada")
+            .Include(f => f.Itens).ThenInclude(i => i.Fornecedor!).ThenInclude(fr => fr.Unidade)
+            .Include(f => f.Itens).ThenInclude(i => i.Fornecedor!).ThenInclude(fr => fr.ContaBancaria)
+            .ToListAsync();
+
+        foreach (var folha in folhasForn)
+        {
+            foreach (var i in folha.Itens)
+            {
+                var conta = i.Fornecedor?.ContaBancaria;
+                linhas.Add(new PagamentoBancarioLinhaDto
+                {
+                    Origem = "Fornecedor",
+                    Unidade = i.Fornecedor?.Unidade?.Nome,
+                    CompetenciaTexto = competenciaTexto,
+                    Nome = i.Fornecedor?.NomeRazaoSocial ?? "(?)",
+                    Cpf = i.Fornecedor?.CpfCnpj,
+                    Valor = i.ValorTotalPagar,
+                    Forma = conta?.Forma.ToString(),
+                    TipoPessoa = conta?.TipoPessoa.ToString(),
+                    NomeTitular = conta?.NomeTitular,
+                    ChavePix = conta?.ChavePix,
+                    Banco = conta?.NomeBanco,
+                    Codigo = conta?.CodigoBanco,
+                    Agencia = conta?.Agencia,
+                    Conta = conta?.Conta
+                });
+            }
+        }
+
+        return new RelatorioPagamentosBancariosDto
+        {
+            CompetenciaTexto = competenciaTexto,
+            Linhas = linhas
+                .OrderBy(l => l.Origem)
+                .ThenBy(l => l.Unidade)
+                .ThenBy(l => l.Nome)
+                .ToList()
         };
     }
 }

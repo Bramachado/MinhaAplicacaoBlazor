@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MinhaAplicacaoBlazor.Data;
 
@@ -11,9 +12,11 @@ using MinhaAplicacaoBlazor.Data;
 namespace MinhaAplicacaoBlazor.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260702165448_AddEntrada")]
+    partial class AddEntrada
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -685,9 +688,6 @@ namespace MinhaAplicacaoBlazor.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CompetenciaId")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("DataEmissao")
                         .HasColumnType("datetime2");
 
@@ -711,8 +711,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasColumnType("decimal(12,2)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CompetenciaId");
 
                     b.HasIndex("FornecedorId");
 
@@ -1578,19 +1576,11 @@ namespace MinhaAplicacaoBlazor.Migrations
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Entrada", b =>
                 {
-                    b.HasOne("MinhaAplicacaoBlazor.Models.Competencia", "Competencia")
-                        .WithMany()
-                        .HasForeignKey("CompetenciaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("MinhaAplicacaoBlazor.Models.Fornecedor", "Fornecedor")
                         .WithMany()
                         .HasForeignKey("FornecedorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Competencia");
 
                     b.Navigation("Fornecedor");
                 });

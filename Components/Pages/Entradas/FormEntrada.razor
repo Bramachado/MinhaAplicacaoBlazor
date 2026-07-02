@@ -1,0 +1,228 @@
+@page "/entradas/novo"
+@page "/entradas/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNovo ? "Nova Entrada" : "Editar Entrada")</PageTitle>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">@(IsNovo ? "Nova Entrada" : "Editar Entrada")</h3>
+            <button type="button" class="btn btn-secondary" @onclick="Cancelar">Voltar</button>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else if (fornecedores.Count == 0)
+            {
+                <div class="alert alert-warning">
+                    Nenhum fornecedor cadastrado.
+                    <a href="/fornecedores/novo" class="alert-link">Cadastre um fornecedor</a> antes de lançar uma entrada.
+                </div>
+                <button type="button" class="btn btn-secondary" @onclick="Cancelar">Voltar</button>
+            }
+            else if (competencias.Count == 0)
+            {
+                <div class="alert alert-warning">
+                    Nenhuma competência cadastrada.
+                    <a href="/competencias" class="alert-link">Cadastre uma competência</a> antes de lançar uma entrada.
+                </div>
+                <button type="button" class="btn btn-secondary" @onclick="Cancelar">Voltar</button>
+            }
+            else
+            {
+                <EditForm Model="entrada" OnValidSubmit="SalvarAsync" FormName="form-entrada">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <div class="col-md-5 mb-3">
+                            <label class="form-label">Fornecedor <span class="text-danger">*</span></label>
+                            <InputSelect class="form-select" @bind-Value="entrada.FornecedorId">
+                                <option value="0">-- Selecione --</option>
+                                @foreach (var f in fornecedores)
+                                {
+                                    <option value="@f.Id">@f.NomeRazaoSocial</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Competência <span class="text-danger">*</span></label>
+                            <InputSelect class="form-select" @bind-Value="entrada.CompetenciaId">
+                                <option value="0">-- Selecione --</option>
+                                @foreach (var c in competencias)
+                                {
+                                    <option value="@c.Id">@($"{c.Mes:00}/{c.Ano}")</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Data de Emissão <span class="text-danger">*</span></label>
+                            <InputDate class="form-control" @bind-Value="entrada.DataEmissao" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Descrição</label>
+                            <InputText class="form-control" @bind-Value="entrada.Descricao" />
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h5>Valores</h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Valor Bruto</label>
+                            <InputNumber class="form-control text-end" @bind-Value="entrada.ValorBruto" step="0.01" @bind-Value:after="Recalcular" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Desconto</label>
+                            <InputNumber class="form-control text-end" @bind-Value="entrada.Desconto" step="0.01" @bind-Value:after="Recalcular" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Valor Líquido</label>
+                            <input type="text" class="form-control text-end fw-semibold text-primary" value="@entrada.ValorLiquido.ToString("C")" readonly />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data de Pagamento</label>
+                            <InputDate class="form-control" @bind-Value="entrada.DataPagamento" />
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+
+    @if (!carregando && !IsNovo)
+    {
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Anexos (Comprovantes / Notas)</h4>
+                <AnexosEntrada EntradaId="Id!.Value" />
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-0">
+                    Clique em <strong>Anexos</strong> para abrir a janela e anexar um ou mais arquivos
+                    (PDF, JPG ou PNG) a esta entrada.
+                </p>
+            </div>
+        </div>
+    }
+    else if (!carregando && IsNovo && fornecedores.Count > 0)
+    {
+        <div class="alert alert-info mt-3">
+            Salve a entrada primeiro para poder anexar comprovantes e notas.
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private Entrada entrada = new();
+    private List<Fornecedor> fornecedores = new();
+    private List<Competencia> competencias = new();
+    private bool carregando = true;
+    private string? mensagemErro;
+
+    private bool IsNovo => Id is null or 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        fornecedores = await context.Fornecedores
+            .AsNoTracking()
+            .Where(f => f.Ativo)
+            .OrderBy(f => f.NomeRazaoSocial)
+            .ToListAsync();
+
+        competencias = await context.Competencias
+            .AsNoTracking()
+            .OrderByDescending(c => c.Ano).ThenByDescending(c => c.Mes)
+            .ToListAsync();
+
+        if (!IsNovo)
+        {
+            var existente = await context.Entradas
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo("/entradas");
+                return;
+            }
+
+            entrada = existente;
+        }
+        else
+        {
+            var atual = competencias.FirstOrDefault(c =>
+                c.Mes == DateTime.Today.Month && c.Ano == DateTime.Today.Year);
+            if (atual is not null)
+                entrada.CompetenciaId = atual.Id;
+        }
+
+        carregando = false;
+    }
+
+    private void Recalcular() => entrada.Recalcular();
+
+    private async Task SalvarAsync()
+    {
+        if (entrada.FornecedorId == 0)
+        {
+            mensagemErro = "Selecione um fornecedor.";
+            return;
+        }
+
+        if (entrada.CompetenciaId == 0)
+        {
+            mensagemErro = "Selecione uma competência.";
+            return;
+        }
+
+        entrada.Recalcular();
+        mensagemErro = null;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        if (IsNovo)
+            context.Entradas.Add(entrada);
+        else
+            context.Entradas.Update(entrada);
+
+        await context.SaveChangesAsync();
+
+        // Após salvar uma nova entrada, permanece na edição para permitir anexar arquivos.
+        if (IsNovo)
+            Navigation.NavigateTo($"/entradas/editar/{entrada.Id}");
+        else
+            Navigation.NavigateTo("/entradas");
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/entradas");
+}

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MinhaAplicacaoBlazor.Data;
 
@@ -11,9 +12,11 @@ using MinhaAplicacaoBlazor.Data;
 namespace MinhaAplicacaoBlazor.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260702163552_AnexosFolhaFornecedorItem")]
+    partial class AnexosFolhaFornecedorItem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,9 +50,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<int?>("EntradaId")
-                        .HasColumnType("int");
-
                     b.Property<int?>("FolhaFornecedorItemId")
                         .HasColumnType("int");
 
@@ -62,8 +62,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("EntradaId");
 
                     b.HasIndex("FolhaFornecedorItemId");
 
@@ -675,48 +673,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Cursos");
-                });
-
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Entrada", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CompetenciaId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("DataEmissao")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DataPagamento")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("Desconto")
-                        .HasColumnType("decimal(12,2)");
-
-                    b.Property<string>("Descricao")
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<int>("FornecedorId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("ValorBruto")
-                        .HasColumnType("decimal(12,2)");
-
-                    b.Property<decimal>("ValorLiquido")
-                        .HasColumnType("decimal(12,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CompetenciaId");
-
-                    b.HasIndex("FornecedorId");
-
-                    b.ToTable("Entradas");
                 });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.EscalaAulaPratica", b =>
@@ -1450,17 +1406,10 @@ namespace MinhaAplicacaoBlazor.Migrations
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Arquivo", b =>
                 {
-                    b.HasOne("MinhaAplicacaoBlazor.Models.Entrada", "Entrada")
-                        .WithMany("Arquivos")
-                        .HasForeignKey("EntradaId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
                     b.HasOne("MinhaAplicacaoBlazor.Models.FolhaFornecedorItem", "FolhaFornecedorItem")
                         .WithMany("Arquivos")
                         .HasForeignKey("FolhaFornecedorItemId")
                         .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("Entrada");
 
                     b.Navigation("FolhaFornecedorItem");
                 });
@@ -1574,25 +1523,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.Navigation("ContaBancaria");
 
                     b.Navigation("Unidade");
-                });
-
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Entrada", b =>
-                {
-                    b.HasOne("MinhaAplicacaoBlazor.Models.Competencia", "Competencia")
-                        .WithMany()
-                        .HasForeignKey("CompetenciaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("MinhaAplicacaoBlazor.Models.Fornecedor", "Fornecedor")
-                        .WithMany()
-                        .HasForeignKey("FornecedorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Competencia");
-
-                    b.Navigation("Fornecedor");
                 });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.EscalaAulaPratica", b =>
@@ -1830,11 +1760,6 @@ namespace MinhaAplicacaoBlazor.Migrations
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Curso", b =>
                 {
                     b.Navigation("Tutores");
-                });
-
-            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Entrada", b =>
-                {
-                    b.Navigation("Arquivos");
                 });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.FolhaColaborador", b =>

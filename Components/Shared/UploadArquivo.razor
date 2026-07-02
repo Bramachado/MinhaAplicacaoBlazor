@@ -1,0 +1,171 @@
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+<div class="border rounded p-3">
+    <h5 class="mb-3">@Titulo</h5>
+
+    <div class="row g-2">
+        <div class="col-md-5">
+            <label class="form-label">Descrição <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" placeholder="Ex.: Comprovante de pagamento, Nota fiscal..."
+                   @bind="descricao" @bind:event="oninput" disabled="@enviando" />
+        </div>
+        <div class="col-md-5">
+            <label class="form-label">Arquivo (PDF, JPG, PNG) <span class="text-danger">*</span></label>
+            <InputFile class="form-control" OnChange="OnArquivoSelecionado" accept=".pdf,.jpg,.jpeg,.png"
+                       disabled="@enviando" @key="inputFileKey" />
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="button" class="btn btn-primary w-100" @onclick="SalvarAsync"
+                    disabled="@(enviando || arquivoSelecionado is null)">
+                @if (enviando)
+                {
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                }
+                Enviar
+            </button>
+        </div>
+    </div>
+
+    @if (arquivoSelecionado is not null && string.IsNullOrEmpty(mensagemErro))
+    {
+        <small class="text-muted d-block mt-2">
+            Selecionado: <strong>@arquivoSelecionado.Name</strong> (@FormatarTamanho(arquivoSelecionado.Size))
+        </small>
+    }
+
+    @if (!string.IsNullOrEmpty(mensagemErro))
+    {
+        <div class="alert alert-danger mt-3 mb-0">@mensagemErro</div>
+    }
+    @if (!string.IsNullOrEmpty(mensagemSucesso))
+    {
+        <div class="alert alert-success mt-3 mb-0">@mensagemSucesso</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Titulo { get; set; } = "Enviar Arquivo";
+
+    // Notifica o componente pai que um arquivo foi salvo (ex.: para recarregar a lista).
+    [Parameter] public EventCallback OnUploaded { get; set; }
+
+    // Quando informado, o arquivo é vinculado a este item da folha de fornecedores.
+    [Parameter] public int? FolhaFornecedorItemId { get; set; }
+
+    // Quando informado, o arquivo é vinculado a esta entrada financeira.
+    [Parameter] public int? EntradaId { get; set; }
+
+    private const long TamanhoMaximo = 15 * 1024 * 1024; // 15 MB
+
+    private static readonly HashSet<string> ContentTypesPermitidos = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "application/pdf", "image/jpeg", "image/jpg", "image/png"
+    };
+
+    private static readonly HashSet<string> ExtensoesPermitidas = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".pdf", ".jpg", ".jpeg", ".png"
+    };
+
+    private string descricao = string.Empty;
+    private IBrowserFile? arquivoSelecionado;
+    private bool enviando;
+    private string? mensagemErro;
+    private string? mensagemSucesso;
+    private int inputFileKey;
+
+    private void OnArquivoSelecionado(InputFileChangeEventArgs e)
+    {
+        mensagemErro = null;
+        mensagemSucesso = null;
+        arquivoSelecionado = e.File;
+
+        var extensao = Path.GetExtension(arquivoSelecionado.Name);
+        if (!ExtensoesPermitidas.Contains(extensao) || !ContentTypesPermitidos.Contains(arquivoSelecionado.ContentType))
+        {
+            mensagemErro = "Tipo de arquivo não permitido. Envie apenas PDF, JPG ou PNG.";
+            arquivoSelecionado = null;
+            return;
+        }
+
+        if (arquivoSelecionado.Size > TamanhoMaximo)
+        {
+            mensagemErro = $"Arquivo muito grande. Tamanho máximo: {FormatarTamanho(TamanhoMaximo)}.";
+            arquivoSelecionado = null;
+        }
+    }
+
+    private async Task SalvarAsync()
+    {
+        mensagemErro = null;
+        mensagemSucesso = null;
+
+        if (string.IsNullOrWhiteSpace(descricao))
+        {
+            mensagemErro = "Informe a descrição do arquivo.";
+            return;
+        }
+
+        if (arquivoSelecionado is null)
+        {
+            mensagemErro = "Selecione um arquivo.";
+            return;
+        }
+
+        enviando = true;
+        try
+        {
+            byte[] conteudo;
+            await using (var stream = arquivoSelecionado.OpenReadStream(maxAllowedSize: TamanhoMaximo))
+            using (var ms = new MemoryStream())
+            {
+                await stream.CopyToAsync(ms);
+                conteudo = ms.ToArray();
+            }
+
+            var arquivo = new Arquivo
+            {
+                Data = DateTime.Now,
+                Descricao = descricao.Trim(),
+                NomeArquivo = arquivoSelecionado.Name,
+                ContentType = arquivoSelecionado.ContentType,
+                TamanhoBytes = conteudo.LongLength,
+                Conteudo = conteudo,
+                FolhaFornecedorItemId = FolhaFornecedorItemId,
+                EntradaId = EntradaId
+            };
+
+            await using var context = await DbFactory.CreateDbContextAsync();
+            context.Arquivos.Add(arquivo);
+            await context.SaveChangesAsync();
+
+            mensagemSucesso = "Arquivo enviado com sucesso.";
+
+            // Limpa o formulário para um novo envio.
+            descricao = string.Empty;
+            arquivoSelecionado = null;
+            inputFileKey++;
+
+            await OnUploaded.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = $"Falha ao enviar o arquivo: {ex.Message}";
+        }
+        finally
+        {
+            enviando = false;
+        }
+    }
+
+    private static string FormatarTamanho(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024d:0.#} KB";
+        return $"{bytes / (1024d * 1024d):0.#} MB";
+    }
+}

@@ -6,6 +6,9 @@
 
 main {
     flex: 1;
+    /* Permite que a área de conteúdo encolha e contenha a rolagem horizontal
+       (ex.: tabelas largas) sem empurrar/esconder o menu lateral. */
+    min-width: 0;
 }
 
 .sidebar {

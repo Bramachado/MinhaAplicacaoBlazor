@@ -54,13 +54,6 @@
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="tutores">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
-                            <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
-                        </svg><span class="nav-text">Tutores</span>
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
                     <NavLink class="nav-link" href="escalas-aulas-praticas">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
                             <path d="M2 0a2 2 0 0 0-2 2h16a2 2 0 0 0-2-2zM0 14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3H0zm11-4.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5z"/>
@@ -70,8 +63,8 @@
             </div>
         </div>
 
-        <div class="nav-group @(GrupoAberto("rh") ? "aberto" : "")">
-            <div class="nav-group-title" role="button" @onclick='() => ToggleGrupo("rh")'><span class="nav-text">RH</span></div>
+        <div class="nav-group @(GrupoAberto("cadastros") ? "aberto" : "")">
+            <div class="nav-group-title" role="button" @onclick='() => ToggleGrupo("cadastros")'><span class="nav-text">Cadastros</span></div>
             <div class="nav-group-items">
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="colaboradores">
@@ -81,50 +74,10 @@
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="folhas-colaboradores">
+                    <NavLink class="nav-link" href="tutores">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
-                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
-                            <path d="M5 11.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m1.639-4.95a.5.5 0 1 1 .722.692L6.95 5.671a.5.5 0 0 1-.704.005L5.605 5.03a.5.5 0 1 1 .69-.723l.34.319.394-.395A.5.5 0 0 1 6.639 4.55"/>
-                        </svg><span class="nav-text">Folha Colaboradores</span>
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="folhas-tutores">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
-                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
-                            <path d="M4.5 12.5A.5.5 0 0 1 5 12h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0-2A.5.5 0 0 1 5 10h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0-2A.5.5 0 0 1 5 8h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0-2A.5.5 0 0 1 5 6h2a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5"/>
-                        </svg><span class="nav-text">Folha Tutores</span>
-                    </NavLink>
-                </div>
-            </div>
-        </div>
-
-        <div class="nav-group @(GrupoAberto("financeiro") ? "aberto" : "")">
-            <div class="nav-group-title" role="button" @onclick='() => ToggleGrupo("financeiro")'><span class="nav-text">Financeiro</span></div>
-            <div class="nav-group-items">
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="relatorios-financeiros">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
-                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
-                            <path d="M4.5 12.5A.5.5 0 0 1 5 12h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0-2A.5.5 0 0 1 5 10h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m1.639-3.708 1.33.886 1.854-3.583a.5.5 0 1 1 .887.46l-2.1 4.06a.5.5 0 0 1-.752.13l-1.305-.872z"/>
-                        </svg><span class="nav-text">Relatórios</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="lancamentos-financeiros">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
-                            <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .485.621l-1.5 6A.5.5 0 0 1 13 10H4a.5.5 0 0 1-.485-.379L1.61 2H.5a.5.5 0 0 1-.5-.5M3.14 4l1.25 5h8.22l1.25-5z"/>
-                            <path d="M5 13a1 1 0 1 0 0 2 1 1 0 0 0 0-2m-2 1a2 2 0 1 1 4 0 2 2 0 0 1-4 0m9-1a1 1 0 1 0 0 2 1 1 0 0 0 0-2m-2 1a2 2 0 1 1 4 0 2 2 0 0 1-4 0"/>
-                        </svg><span class="nav-text">Lançamentos</span>
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="competencias">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
-                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
-                            <path d="M2.5 7a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"/>
-                        </svg><span class="nav-text">Competências</span>
+                            <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
+                        </svg><span class="nav-text">Tutores</span>
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
@@ -148,6 +101,75 @@
                             <path d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2z"/>
                             <path d="M5 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0m0-2.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0m0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0m1.5-5a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1zM6 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 6 8m.5 2a.5.5 0 0 0 0 1h7a.5.5 0 0 0 0-1z"/>
                         </svg><span class="nav-text">Plano de Contas</span>
+                    </NavLink>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-group @(GrupoAberto("pagamentos") ? "aberto" : "")">
+            <div class="nav-group-title" role="button" @onclick='() => ToggleGrupo("pagamentos")'><span class="nav-text">Pagamentos</span></div>
+            <div class="nav-group-items">
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="folhas-tutores">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
+                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+                            <path d="M4.5 12.5A.5.5 0 0 1 5 12h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0-2A.5.5 0 0 1 5 10h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0-2A.5.5 0 0 1 5 8h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0-2A.5.5 0 0 1 5 6h2a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5"/>
+                        </svg><span class="nav-text">Folha Tutores</span>
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="folhas-colaboradores">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
+                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+                            <path d="M5 11.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m1.639-4.95a.5.5 0 1 1 .722.692L6.95 5.671a.5.5 0 0 1-.704.005L5.605 5.03a.5.5 0 1 1 .69-.723l.34.319.394-.395A.5.5 0 0 1 6.639 4.55"/>
+                        </svg><span class="nav-text">Folha Colaboradores</span>
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="folhas-fornecedores">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
+                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+                            <path d="M4.5 12.5A.5.5 0 0 1 5 12h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0-2A.5.5 0 0 1 5 10h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0-2A.5.5 0 0 1 5 8h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0-2A.5.5 0 0 1 5 6h2a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5"/>
+                        </svg><span class="nav-text">Folha Fornecedores</span>
+                    </NavLink>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-group @(GrupoAberto("financeiro") ? "aberto" : "")">
+            <div class="nav-group-title" role="button" @onclick='() => ToggleGrupo("financeiro")'><span class="nav-text">Financeiro</span></div>
+            <div class="nav-group-items">
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="relatorios-financeiros">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
+                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+                            <path d="M4.5 12.5A.5.5 0 0 1 5 12h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0-2A.5.5 0 0 1 5 10h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m1.639-3.708 1.33.886 1.854-3.583a.5.5 0 1 1 .887.46l-2.1 4.06a.5.5 0 0 1-.752.13l-1.305-.872z"/>
+                        </svg><span class="nav-text">Relatórios</span>
+                    </NavLink>
+                </div>
+
+                @* <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="lancamentos-financeiros">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
+                            <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .485.621l-1.5 6A.5.5 0 0 1 13 10H4a.5.5 0 0 1-.485-.379L1.61 2H.5a.5.5 0 0 1-.5-.5M3.14 4l1.25 5h8.22l1.25-5z"/>
+                            <path d="M5 13a1 1 0 1 0 0 2 1 1 0 0 0 0-2m-2 1a2 2 0 1 1 4 0 2 2 0 0 1-4 0m9-1a1 1 0 1 0 0 2 1 1 0 0 0 0-2m-2 1a2 2 0 1 1 4 0 2 2 0 0 1-4 0"/>
+                        </svg><span class="nav-text">Lançamentos</span>
+                    </NavLink>
+                </div> *@
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="entradas">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
+                            <path d="M8 0a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 12.293V.5A.5.5 0 0 1 8 0"/>
+                            <path d="M1.5 14a.5.5 0 0 0 0 1h13a.5.5 0 0 0 0-1z"/>
+                        </svg><span class="nav-text">Entradas</span>
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="competencias">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
+                            <path d="M2.5 7a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"/>
+                        </svg><span class="nav-text">Competências</span>
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
@@ -180,10 +202,17 @@
                         </svg><span class="nav-text">Contas Bancárias</span>
                     </NavLink>
                 </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="arquivos">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
+                            <path d="M4.5 3a2.5 2.5 0 0 1 5 0v9a1.5 1.5 0 0 1-3 0V5a.5.5 0 0 1 1 0v7a.5.5 0 0 0 1 0V3a1.5 1.5 0 1 0-3 0v9a2.5 2.5 0 0 0 5 0V5a.5.5 0 0 1 1 0v7a3.5 3.5 0 1 1-7 0z"/>
+                        </svg><span class="nav-text">Arquivos</span>
+                    </NavLink>
+                </div>
             </div>
         </div>
 
-        <div class="nav-group @(GrupoAberto("demos") ? "aberto" : "")">
+        @* <div class="nav-group @(GrupoAberto("demos") ? "aberto" : "")">
             <div class="nav-group-title" role="button" @onclick='() => ToggleGrupo("demos")'><span class="nav-text">Demos</span></div>
             <div class="nav-group-items">
                 <div class="nav-item px-3">
@@ -201,7 +230,7 @@
                     </NavLink>
                 </div>
             </div>
-        </div>
+        </div> *@
     </nav>
 </div>
 
@@ -211,13 +240,13 @@
     private static readonly Dictionary<string, string[]> RotasPorGrupo = new()
     {
         ["geral"] = new[] { "unidades" },
-        ["academico"] = new[] { "cursos", "titulacoes", "tutores", "escalas-aulas-praticas" },
-        ["rh"] = new[] { "colaboradores", "folhas-colaboradores", "folhas-tutores" },
+        ["academico"] = new[] { "cursos", "titulacoes", "escalas-aulas-praticas" },
+        ["cadastros"] = new[] { "colaboradores", "tutores", "fornecedores", "categorias-fornecedores", "planos-contas" },
+        ["pagamentos"] = new[] { "folhas-tutores", "folhas-colaboradores", "folhas-fornecedores" },
         ["financeiro"] = new[]
         {
-            "relatorios-financeiros", "lancamentos-financeiros", "competencias",
-            "fornecedores", "categorias-fornecedores", "planos-contas",
-            "financeiro/cnab", "formas-pagamento", "contas-bancarias"
+            "relatorios-financeiros", "lancamentos-financeiros", "entradas", "competencias",
+            "financeiro/cnab", "formas-pagamento", "contas-bancarias", "arquivos"
         },
         ["demos"] = new[] { "counter", "weather" },
     };

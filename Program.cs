@@ -20,6 +20,7 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
 builder.Services.AddScoped<CategoriaFornecedorService>();
 builder.Services.AddScoped<FolhaColaboradorService>();
 builder.Services.AddScoped<FolhaTutorService>();
+builder.Services.AddScoped<FolhaFornecedorService>();
 builder.Services.AddScoped<RelatorioFinanceiroService>();
 builder.Services.AddScoped<ICnabPagamentoService, CnabPagamentoService>();
 
