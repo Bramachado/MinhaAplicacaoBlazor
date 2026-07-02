@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MinhaAplicacaoBlazor.Data;
 
@@ -11,9 +12,11 @@ using MinhaAplicacaoBlazor.Data;
 namespace MinhaAplicacaoBlazor.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260702021717_AlteraTotalAnosParaDouble")]
+    partial class AlteraTotalAnosParaDouble
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -581,11 +584,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasMaxLength(18)
                         .HasColumnType("nvarchar(18)");
 
-                    b.Property<string>("Forma")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
                     b.Property<string>("NomeBanco")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -594,11 +592,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("TipoPessoa")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id");
 
@@ -756,9 +749,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<decimal>("OutrosProventos")
-                        .HasColumnType("decimal(12,2)");
-
                     b.Property<decimal>("PlanoSaude")
                         .HasColumnType("decimal(12,2)");
 
@@ -768,10 +758,13 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.Property<decimal>("PremiacaoVariavel")
                         .HasColumnType("decimal(12,2)");
 
-                    b.Property<decimal>("SalarioBase")
+                    b.Property<decimal>("SalarioBruto")
                         .HasColumnType("decimal(12,2)");
 
                     b.Property<decimal>("SalarioFamilia")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<decimal>("SalarioLiquidoBase")
                         .HasColumnType("decimal(12,2)");
 
                     b.Property<decimal>("TicketAlimentacao")

@@ -146,8 +146,8 @@
                 <PropertyColumn Property="@(l => l.DataPagamento)" Format="dd/MM/yyyy" Title="Pagamento" Sortable="true" />
                 <PropertyColumn Property="@(l => l.Descricao)" Title="Descrição" Sortable="true" />
                 <PropertyColumn Property="@(l => l.PlanoConta!.Nome)" Title="Plano de Conta" Sortable="true" />
-                <PropertyColumn Property="@(l => l.Fornecedor!.NomeRazaoSocial)" Title="Fornecedor" Sortable="true" />
-                <PropertyColumn Property="@(l => l.Unidade!.Nome)" Title="Unidade" Sortable="true" />
+                <TemplateColumn Title="Fornecedor">@(context.Fornecedor?.NomeRazaoSocial ?? "—")</TemplateColumn>
+                <TemplateColumn Title="Unidade">@(context.Unidade?.Nome ?? "—")</TemplateColumn>
                 <TemplateColumn Title="Tipo" Sortable="true" SortBy="@sortPorTipo" Align="Align.Center">
                     @if (context.TipoLancamento == "Entrada")
                     {

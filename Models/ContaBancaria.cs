@@ -2,6 +2,18 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MinhaAplicacaoBlazor.Models;
 
+public enum TipoPessoa
+{
+    Fisica,
+    Juridica
+}
+
+public enum Forma
+{
+    PIX,
+    TED
+}
+
 public class ContaBancaria
 {
     public int Id { get; set; }
@@ -13,6 +25,10 @@ public class ContaBancaria
     [Required]
     [MaxLength(18)]
     public string CpfCnpj { get; set; } = string.Empty;
+
+    public TipoPessoa TipoPessoa { get; set; } = TipoPessoa.Fisica;
+
+    public Forma Forma { get; set; } = Forma.PIX;
 
     [MaxLength(100)]
     public string? ChavePix { get; set; }

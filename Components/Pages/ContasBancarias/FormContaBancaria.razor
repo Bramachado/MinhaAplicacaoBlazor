@@ -42,6 +42,24 @@
                     </div>
 
                     <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipo de Pessoa</label>
+                            <InputSelect class="form-select" @bind-Value="conta.TipoPessoa">
+                                <option value="@TipoPessoa.Fisica">Física</option>
+                                <option value="@TipoPessoa.Juridica">Jurídica</option>
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Forma</label>
+                            <InputSelect class="form-select" @bind-Value="conta.Forma">
+                                <option value="@Forma.PIX">PIX</option>
+                                <option value="@Forma.TED">TED</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Chave PIX</label>
                             <InputText class="form-control" @bind-Value="conta.ChavePix" />

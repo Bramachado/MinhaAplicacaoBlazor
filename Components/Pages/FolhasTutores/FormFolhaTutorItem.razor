@@ -70,19 +70,19 @@
                     <div class="row">
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Total Horas Normais</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.TotalHorasNormais" step="0.01" @oninput="Recalcular" />
+                            <InputNumber class="form-control text-end" @bind-Value="item.TotalHorasNormais" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Valor Hora Normal</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.ValorHoraNormal" step="0.01" @oninput="Recalcular" />
+                            <InputNumber class="form-control text-end" @bind-Value="item.ValorHoraNormal" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Total Horas Práticas</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.TotalHorasPraticas" step="0.01" @oninput="Recalcular" />
+                            <InputNumber class="form-control text-end" @bind-Value="item.TotalHorasPraticas" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Valor Hora Prática</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.ValorHoraPratica" step="0.01" @oninput="Recalcular" />
+                            <InputNumber class="form-control text-end" @bind-Value="item.ValorHoraPratica" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                     </div>
 
@@ -237,17 +237,18 @@
         var tutor = tutores.FirstOrDefault(t => t.Id == tutorId);
         if (tutor is null) return;
 
-        item.Cargo ??= tutor.Titulacao?.Nome;
-        item.Banco ??= tutor.ContaBancaria?.CodigoBanco;
-        item.Agencia ??= tutor.ContaBancaria?.Agencia;
-        item.Conta ??= tutor.ContaBancaria?.Conta;
-        item.ChavePix ??= tutor.ContaBancaria?.ChavePix;
-        item.NomeTitularConta ??= tutor.ContaBancaria?.NomeTitular;
+        // Sobrescreve os campos automáticos a cada troca de tutor.
+        item.Cargo = tutor.Titulacao?.Nome;
+        item.Banco = tutor.ContaBancaria?.CodigoBanco;
+        item.Agencia = tutor.ContaBancaria?.Agencia;
+        item.Conta = tutor.ContaBancaria?.Conta;
+        item.ChavePix = tutor.ContaBancaria?.ChavePix;
+        item.NomeTitularConta = tutor.ContaBancaria?.NomeTitular;
 
         if (tutor.Titulacao is not null)
         {
-            if (item.ValorHoraNormal == 0) item.ValorHoraNormal = tutor.Titulacao.ValorHoraAulaNormal;
-            if (item.ValorHoraPratica == 0) item.ValorHoraPratica = tutor.Titulacao.ValorHoraAulaPratica;
+            item.ValorHoraNormal = tutor.Titulacao.ValorHoraAulaNormal;
+            item.ValorHoraPratica = tutor.Titulacao.ValorHoraAulaPratica;
         }
 
         item.Recalcular();

@@ -40,7 +40,7 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Colaborador <span class="text-danger">*</span></label>
-                            <InputSelect class="form-select" @bind-Value="item.ColaboradorId" disabled="@(!IsNovo)">
+                            <InputSelect class="form-select" @bind-Value="ColaboradorIdValue" disabled="@(!IsNovo)">
                                 <option value="0">-- Selecione --</option>
                                 @foreach (var c in colaboradores)
                                 {
@@ -64,38 +64,38 @@
                     <h5>Proventos</h5>
                     <div class="row">
                         <div class="col-md-3 mb-3">
-                            <label class="form-label">Salário Bruto</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.SalarioBruto" step="0.01" @oninput="Recalcular" />
+                            <label class="form-label">Salário Base</label>
+                            <input type="text" class="form-control text-end" value="@item.SalarioBase.ToString("C")" readonly />
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Ticket Alimentação</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.TicketAlimentacao" step="0.01" @oninput="Recalcular" />
+                            <InputNumber class="form-control text-end" @bind-Value="item.TicketAlimentacao" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                         <div class="col-md-3 mb-3">
-                            <label class="form-label">Salário Líquido Base</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.SalarioLiquidoBase" step="0.01" />
+                            <label class="form-label">Outros Proventos</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.OutrosProventos" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Salário Família</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.SalarioFamilia" step="0.01" @oninput="Recalcular" />
+                            <InputNumber class="form-control text-end" @bind-Value="item.SalarioFamilia" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Premiação Fixa</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.PremiacaoFixa" step="0.01" @oninput="Recalcular" />
+                            <InputNumber class="form-control text-end" @bind-Value="item.PremiacaoFixa" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Premiação Variável</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.PremiacaoVariavel" step="0.01" @oninput="Recalcular" />
+                            <InputNumber class="form-control text-end" @bind-Value="item.PremiacaoVariavel" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">13º Salário</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.DecimoTerceiro" step="0.01" @oninput="Recalcular" />
+                            <InputNumber class="form-control text-end" @bind-Value="item.DecimoTerceiro" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Férias 1/3</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.FeriasUmTerco" step="0.01" @oninput="Recalcular" />
+                            <InputNumber class="form-control text-end" @bind-Value="item.FeriasUmTerco" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                     </div>
 
@@ -103,12 +103,12 @@
                     <h5>Faltas e Descontos</h5>
                     <div class="row">
                         <div class="col-md-3 mb-3">
-                            <label class="form-label">Valor Hora</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.ValorHora" step="0.01" @oninput="Recalcular" />
+                            <label class="form-label">Valor Hora (calc.)</label>
+                            <input type="text" class="form-control text-end" value="@item.ValorHora.ToString("C")" readonly />
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Horas Falta</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.HorasFalta" step="0.01" @oninput="Recalcular" />
+                            <InputNumber class="form-control text-end" @bind-Value="item.HorasFalta" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Valor Faltas (calc.)</label>
@@ -116,21 +116,21 @@
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Desconto INSS</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.DescontoINSS" step="0.01" @oninput="Recalcular" />
+                            <InputNumber class="form-control text-end" @bind-Value="item.DescontoINSS" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Desconto IR</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.DescontoIR" step="0.01" @oninput="Recalcular" />
+                            <InputNumber class="form-control text-end" @bind-Value="item.DescontoIR" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Plano de Saúde</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.PlanoSaude" step="0.01" @oninput="Recalcular" />
+                            <InputNumber class="form-control text-end" @bind-Value="item.PlanoSaude" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                         <div class="col-md-3 mb-3">
-                            <label class="form-label">Vale/Consignado/FGTS</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.ValeConsignadoFGTS" step="0.01" @oninput="Recalcular" />
+                            <label class="form-label">Vale/Consignado</label>
+                            <InputNumber class="form-control text-end" @bind-Value="item.ValeConsignadoFGTS" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                     </div>
 
@@ -189,6 +189,17 @@
 
     private bool IsNovo => Id is null or 0;
 
+    private int ColaboradorIdValue
+    {
+        get => item.ColaboradorId;
+        set
+        {
+            item.ColaboradorId = value;
+            if (IsNovo && value > 0)
+                AplicarSnapshotColaborador(value);
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         await using var context = await DbFactory.CreateDbContextAsync();
@@ -238,6 +249,20 @@
         }
 
         carregando = false;
+    }
+
+    private void AplicarSnapshotColaborador(int colaboradorId)
+    {
+        var colaborador = colaboradores.FirstOrDefault(c => c.Id == colaboradorId);
+        if (colaborador is null) return;
+
+        // Sobrescreve os campos automáticos a cada troca de colaborador.
+        item.Cargo = colaborador.Cargo;
+        item.CargaHorariaSemanal = colaborador.CargaHorariaSemanal;
+        item.SalarioBase = colaborador.SalarioBase ?? 0m;
+        item.TicketAlimentacao = colaborador.TicketAlimentacao ?? 0m;
+
+        item.Recalcular();
     }
 
     private void Recalcular()

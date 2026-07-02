@@ -1,19 +1,84 @@
+:root {
+    /* === Identidade visual FADUC === */
+    --bs-primary: #D31C6B;
+    --bs-primary-rgb: 211,28,107;
+
+    --bs-secondary: #003399;
+    --bs-secondary-rgb: 0,51,153;
+
+    --bs-light: #FFFFFF;
+    --bs-dark: #232323;
+
+    --bs-body-bg: #FFFFFF;
+    --bs-body-color: #232323;
+
+    /* Links da aplicação usam o azul institucional */
+    --bs-link-color: #003399;
+    --bs-link-color-rgb: 0,51,153;
+    --bs-link-hover-color: #000066;
+    --bs-link-hover-color-rgb: 0,0,102;
+
+    /* Extras */
+    --faduc-magenta: #D31C6B;
+    --faduc-magenta-2: #F3006C;
+    --faduc-magenta-dark: #A81555;
+
+    --faduc-blue: #003399;
+    --faduc-blue-dark: #000066;
+
+    --faduc-gray: #8E9794;
+    --faduc-gray-dark: #232323;
+}
+
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 a, .btn-link {
-    color: #006bb7;
+    color: var(--faduc-blue);
+}
+
+a:hover, .btn-link:hover {
+    color: var(--faduc-blue-dark);
 }
 
 .btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--faduc-magenta);
+    --bs-btn-border-color: var(--faduc-magenta);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--faduc-magenta-dark);
+    --bs-btn-hover-border-color: var(--faduc-magenta-dark);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--faduc-magenta-dark);
+    --bs-btn-active-border-color: var(--faduc-magenta-dark);
+    --bs-btn-disabled-color: #fff;
+    --bs-btn-disabled-bg: var(--faduc-magenta);
+    --bs-btn-disabled-border-color: var(--faduc-magenta);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--faduc-magenta);
+    --bs-btn-border-color: var(--faduc-magenta);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--faduc-magenta);
+    --bs-btn-hover-border-color: var(--faduc-magenta);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--faduc-magenta);
+    --bs-btn-active-border-color: var(--faduc-magenta);
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.55);
+}
+
+.form-control:focus, .form-select:focus, .form-check-input:focus {
+    border-color: rgba(var(--bs-primary-rgb), 0.55);
+}
+
+.form-check-input:checked {
+    background-color: var(--faduc-magenta);
+    border-color: var(--faduc-magenta);
 }
 
 .content {
@@ -59,11 +124,25 @@ h1:focus {
     text-align: start;
 }
 
-/* === Submenu agrupado no sidebar === */
-.nav-group-toggle {
-    display: none;
+/* === Identidade FADUC: títulos e cabeçalhos === */
+h1, h2, h3 {
+    color: var(--faduc-blue);
 }
 
+.card-header {
+    border-top: 3px solid var(--faduc-magenta);
+}
+
+.card-header h1, .card-header h2, .card-header h3,
+.card-header h4, .card-header h5 {
+    color: var(--faduc-blue);
+}
+
+.table > thead {
+    color: var(--faduc-blue);
+}
+
+/* === Submenu agrupado no sidebar (acordeão) === */
 .nav-group-title {
     display: flex;
     align-items: center;
@@ -90,15 +169,20 @@ h1:focus {
     border-right: 4px solid transparent;
     border-top: 5px solid currentColor;
     margin-right: 0.5rem;
+    transform: rotate(-90deg);
     transition: transform 0.15s ease-in-out;
 }
 
-.nav-group-toggle:not(:checked) + .nav-group-title::before {
-    transform: rotate(-90deg);
+.nav-group.aberto .nav-group-title::before {
+    transform: rotate(0deg);
 }
 
-.nav-group-toggle:not(:checked) ~ .nav-group-items {
+.nav-group-items {
     display: none;
+}
+
+.nav-group.aberto .nav-group-items {
+    display: block;
 }
 
 @media (min-width: 641px) {

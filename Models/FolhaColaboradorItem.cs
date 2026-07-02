@@ -20,13 +20,13 @@ public class FolhaColaboradorItem
     public decimal? CargaHorariaSemanal { get; set; }
 
     [Column(TypeName = "decimal(12,2)")]
-    public decimal SalarioBruto { get; set; }
+    public decimal SalarioBase { get; set; }
 
     [Column(TypeName = "decimal(12,2)")]
     public decimal TicketAlimentacao { get; set; }
 
     [Column(TypeName = "decimal(12,2)")]
-    public decimal SalarioLiquidoBase { get; set; }
+    public decimal OutrosProventos { get; set; }
 
     [Column(TypeName = "decimal(12,2)")]
     public decimal SalarioFamilia { get; set; }
@@ -81,10 +81,11 @@ public class FolhaColaboradorItem
 
     public void Recalcular()
     {
-        TotalProventos = SalarioBruto + TicketAlimentacao + SalarioFamilia
+        TotalProventos = SalarioBase + OutrosProventos + TicketAlimentacao + SalarioFamilia
                        + PremiacaoFixa + PremiacaoVariavel
                        + DecimoTerceiro + FeriasUmTerco;
 
+        ValorHora = CargaHorariaSemanal > 0 ? CalcularValorHora() : 0m;
         ValorFaltas = ValorHora * HorasFalta;
 
         TotalDescontos = DescontoINSS + DescontoIR + PlanoSaude
@@ -93,4 +94,27 @@ public class FolhaColaboradorItem
         ValorTotal = TotalProventos - TotalDescontos;
         ValorReceberPix = ValorTotal - TicketAlimentacao;
     }
+
+    public decimal CalcularValorHora()
+    {
+        if (CargaHorariaSemanal <= 0)
+            throw new InvalidOperationException("Carga horária semanal deve ser maior que zero.");
+
+        decimal divisorMensal = ObterDivisorMensal(Convert.ToDecimal(CargaHorariaSemanal));
+        return Math.Round(Convert.ToDecimal(SalarioBase) / divisorMensal, 2, MidpointRounding.AwayFromZero);
+    }
+
+    public decimal ObterDivisorMensal(decimal cargaHorariaSemanal)
+    {
+        return cargaHorariaSemanal switch
+        {
+            44m => 220m,
+            40m => 200m,
+            36m => 180m,
+            30m => 150m,
+            _   => (cargaHorariaSemanal / 6m) * 30m // fallback para cargas não mapeadas
+        };
+    }
+
+
 }

@@ -1,6 +1,10 @@
+@rendermode InteractiveServer
+@implements IDisposable
+@inject NavigationManager NavigationManager
+
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href=""><span class="nav-text">MinhaAplicacaoBlazor</span></a>
+        <a class="navbar-brand" href=""><span class="nav-text">Edunorte ERP</span></a>
     </div>
 </div>
 
@@ -16,9 +20,8 @@
             </NavLink>
         </div>
 
-        <div class="nav-group">
-            <input type="checkbox" id="grp-geral" class="nav-group-toggle" checked />
-            <label for="grp-geral" class="nav-group-title"><span class="nav-text">Geral</span></label>
+        <div class="nav-group @(GrupoAberto("geral") ? "aberto" : "")">
+            <div class="nav-group-title" role="button" @onclick='() => ToggleGrupo("geral")'><span class="nav-text">Geral</span></div>
             <div class="nav-group-items">
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="unidades">
@@ -31,9 +34,8 @@
             </div>
         </div>
 
-        <div class="nav-group">
-            <input type="checkbox" id="grp-academico" class="nav-group-toggle" checked />
-            <label for="grp-academico" class="nav-group-title"><span class="nav-text">Acadêmico</span></label>
+        <div class="nav-group @(GrupoAberto("academico") ? "aberto" : "")">
+            <div class="nav-group-title" role="button" @onclick='() => ToggleGrupo("academico")'><span class="nav-text">Acadêmico</span></div>
             <div class="nav-group-items">
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="cursos">
@@ -68,9 +70,8 @@
             </div>
         </div>
 
-        <div class="nav-group">
-            <input type="checkbox" id="grp-rh" class="nav-group-toggle" checked />
-            <label for="grp-rh" class="nav-group-title"><span class="nav-text">RH</span></label>
+        <div class="nav-group @(GrupoAberto("rh") ? "aberto" : "")">
+            <div class="nav-group-title" role="button" @onclick='() => ToggleGrupo("rh")'><span class="nav-text">RH</span></div>
             <div class="nav-group-items">
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="colaboradores">
@@ -98,9 +99,8 @@
             </div>
         </div>
 
-        <div class="nav-group">
-            <input type="checkbox" id="grp-financeiro" class="nav-group-toggle" checked />
-            <label for="grp-financeiro" class="nav-group-title"><span class="nav-text">Financeiro</span></label>
+        <div class="nav-group @(GrupoAberto("financeiro") ? "aberto" : "")">
+            <div class="nav-group-title" role="button" @onclick='() => ToggleGrupo("financeiro")'><span class="nav-text">Financeiro</span></div>
             <div class="nav-group-items">
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="relatorios-financeiros">
@@ -183,9 +183,8 @@
             </div>
         </div>
 
-        <div class="nav-group">
-            <input type="checkbox" id="grp-demo" class="nav-group-toggle" />
-            <label for="grp-demo" class="nav-group-title"><span class="nav-text">Demos</span></label>
+        <div class="nav-group @(GrupoAberto("demos") ? "aberto" : "")">
+            <div class="nav-group-title" role="button" @onclick='() => ToggleGrupo("demos")'><span class="nav-text">Demos</span></div>
             <div class="nav-group-items">
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="counter">
@@ -205,3 +204,77 @@
         </div>
     </nav>
 </div>
+
+@code {
+    private string? grupoExpandido;
+
+    private static readonly Dictionary<string, string[]> RotasPorGrupo = new()
+    {
+        ["geral"] = new[] { "unidades" },
+        ["academico"] = new[] { "cursos", "titulacoes", "tutores", "escalas-aulas-praticas" },
+        ["rh"] = new[] { "colaboradores", "folhas-colaboradores", "folhas-tutores" },
+        ["financeiro"] = new[]
+        {
+            "relatorios-financeiros", "lancamentos-financeiros", "competencias",
+            "fornecedores", "categorias-fornecedores", "planos-contas",
+            "financeiro/cnab", "formas-pagamento", "contas-bancarias"
+        },
+        ["demos"] = new[] { "counter", "weather" },
+    };
+
+    protected override void OnInitialized()
+    {
+        AtualizarGrupoPelaRota(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        AtualizarGrupoPelaRota(e.Location);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void AtualizarGrupoPelaRota(string uri)
+    {
+        var rota = NavigationManager.ToBaseRelativePath(uri);
+
+        var q = rota.IndexOf('?');
+        if (q >= 0)
+            rota = rota.Substring(0, q);
+
+        rota = rota.Trim('/').ToLowerInvariant();
+
+        // Home / raiz: recolhe todos os submenus
+        if (string.IsNullOrEmpty(rota))
+        {
+            grupoExpandido = null;
+            return;
+        }
+
+        foreach (var (grupo, rotas) in RotasPorGrupo)
+        {
+            foreach (var r in rotas)
+            {
+                if (rota == r || rota.StartsWith(r + "/", StringComparison.Ordinal))
+                {
+                    grupoExpandido = grupo;
+                    return;
+                }
+            }
+        }
+        // Rota não mapeada: mantém o estado atual.
+    }
+
+    private bool GrupoAberto(string grupo) => grupoExpandido == grupo;
+
+    private void ToggleGrupo(string grupo)
+    {
+        // Acordeão: abre o grupo clicado e recolhe os demais (ou fecha se já aberto).
+        grupoExpandido = grupoExpandido == grupo ? null : grupo;
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}

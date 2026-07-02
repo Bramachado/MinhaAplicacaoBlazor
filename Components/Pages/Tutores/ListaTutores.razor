@@ -90,7 +90,6 @@
                 <PropertyColumn Property="@(t => t.Cpf)" Title="CPF" Sortable="true" />
                 <PropertyColumn Property="@(t => t.Titulacao!.Nome)" Title="Titulação" Sortable="true" />
                 <PropertyColumn Property="@(t => t.Unidade!.Nome)" Title="Unidade" Sortable="true" />
-                <PropertyColumn Property="@(t => t.Curso!.NomeCurso)" Title="Curso" Sortable="true" />
                 <TemplateColumn Title="Ativo" Sortable="true" SortBy="@sortPorAtivo" Align="Align.Center">
                     @if (context.Ativo)
                     {

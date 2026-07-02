@@ -12,7 +12,7 @@ public class Curso
 
     public int CargaHorariaTotal { get; set; }
 
-    public int TotalAnos { get; set; }
+    public double TotalAnos { get; set; }
 
     public List<Tutor> Tutores { get; set; } = new();
 }

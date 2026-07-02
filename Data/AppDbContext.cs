@@ -143,6 +143,17 @@ public class AppDbContext : DbContext
             .HasForeignKey(x => x.CategoriaFornecedorId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // === Conta Bancária: enums gravados como texto ===
+        modelBuilder.Entity<ContaBancaria>()
+            .Property(x => x.TipoPessoa)
+            .HasConversion<string>()
+            .HasMaxLength(20);
+
+        modelBuilder.Entity<ContaBancaria>()
+            .Property(x => x.Forma)
+            .HasConversion<string>()
+            .HasMaxLength(10);
+
         // === Conta Bancária (uma conta por Tutor / Colaborador / Fornecedor) ===
         modelBuilder.Entity<Tutor>()
             .HasOne(x => x.ContaBancaria)

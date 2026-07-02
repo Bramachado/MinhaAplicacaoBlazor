@@ -56,11 +56,9 @@
             <QuickGrid Items="ContasFiltradas" Pagination="pagination" Class="table table-striped table-hover align-middle imprimivel-sem-acoes">
                 <PropertyColumn Property="@(c => c.NomeTitular)" Title="Titular" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
                 <PropertyColumn Property="@(c => c.CpfCnpj)" Title="CPF/CNPJ" Sortable="true" />
+                <PropertyColumn Property="@(c => c.TipoPessoa)" Title="Tipo Pessoa" Sortable="true" />
+                <PropertyColumn Property="@(c => c.Forma)" Title="Forma" Sortable="true" />
                 <PropertyColumn Property="@(c => c.NomeBanco)" Title="Banco" Sortable="true" />
-                <PropertyColumn Property="@(c => c.CodigoBanco)" Title="Código" />
-                <PropertyColumn Property="@(c => c.Agencia)" Title="Agência" />
-                <PropertyColumn Property="@(c => c.Conta)" Title="Conta" />
-                <PropertyColumn Property="@(c => c.ChavePix)" Title="Chave PIX" />
                 <TemplateColumn Title="Ações" Align="Align.End">
                     <button class="btn btn-sm btn-outline-secondary me-1"
                             title="Editar"

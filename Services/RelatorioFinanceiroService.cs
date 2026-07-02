@@ -184,7 +184,7 @@ public class RelatorioFinanceiroService
                     Unidade = i.Colaborador?.Unidade?.Nome,
                     Cargo = i.Cargo,
                     CargaHorariaSemanal = i.CargaHorariaSemanal,
-                    SalarioBruto = i.SalarioBruto,
+                    SalarioBruto = i.SalarioBase,
                     TicketAlimentacao = i.TicketAlimentacao,
                     PremiacaoFixa = i.PremiacaoFixa,
                     PremiacaoVariavel = i.PremiacaoVariavel,
