@@ -18,25 +18,7 @@ public class Colaborador
     [MaxLength(20)]
     public string? Rg { get; set; }
 
-    [MaxLength(100)]
-    public string? ChavePix { get; set; }
-
-    [MaxLength(100)]
-    public string? Banco { get; set; }
-
-    [MaxLength(10)]
-    public string? CodigoBanco { get; set; }
-
-    [MaxLength(20)]
-    public string? Agencia { get; set; }
-
-    [MaxLength(30)]
-    public string? Conta { get; set; }
-
-    [MaxLength(150)]
-    public string? NomeTitular { get; set; }
-
-    [MaxLength(150)]
+        [MaxLength(150)]
     [EmailAddress]
     public string? Email { get; set; }
 
@@ -62,4 +44,8 @@ public class Colaborador
     public int UnidadeId { get; set; }
 
     public Unidade? Unidade { get; set; }
+
+    public int? ContaBancariaId { get; set; }
+
+    public ContaBancaria? ContaBancaria { get; set; }
 }

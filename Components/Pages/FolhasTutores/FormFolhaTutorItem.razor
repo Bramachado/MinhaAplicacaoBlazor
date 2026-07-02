@@ -205,6 +205,7 @@
         tutores = await context.Tutores
             .AsNoTracking()
             .Include(t => t.Titulacao)
+            .Include(t => t.ContaBancaria)
             .Where(t => t.Ativo && !idsJaNaFolha.Contains(t.Id))
             .OrderBy(t => t.Nome)
             .ToListAsync();
@@ -237,11 +238,11 @@
         if (tutor is null) return;
 
         item.Cargo ??= tutor.Titulacao?.Nome;
-        item.Banco ??= tutor.CodigoBanco;
-        item.Agencia ??= tutor.Agencia;
-        item.Conta ??= tutor.Conta;
-        item.ChavePix ??= tutor.ChavePix;
-        item.NomeTitularConta ??= tutor.NomeTitular;
+        item.Banco ??= tutor.ContaBancaria?.CodigoBanco;
+        item.Agencia ??= tutor.ContaBancaria?.Agencia;
+        item.Conta ??= tutor.ContaBancaria?.Conta;
+        item.ChavePix ??= tutor.ContaBancaria?.ChavePix;
+        item.NomeTitularConta ??= tutor.ContaBancaria?.NomeTitular;
 
         if (tutor.Titulacao is not null)
         {

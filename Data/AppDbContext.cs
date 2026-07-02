@@ -24,6 +24,7 @@ public class AppDbContext : DbContext
     public DbSet<PlanoConta> PlanosContas => Set<PlanoConta>();
     public DbSet<FormaPagamento> FormasPagamento => Set<FormaPagamento>();
     public DbSet<Fornecedor> Fornecedores => Set<Fornecedor>();
+    public DbSet<ContaBancaria> ContasBancarias => Set<ContaBancaria>();
     public DbSet<LancamentoFinanceiro> LancamentosFinanceiros => Set<LancamentoFinanceiro>();
     public DbSet<FolhaColaborador> FolhasColaboradores => Set<FolhaColaborador>();
     public DbSet<FolhaColaboradorItem> FolhasColaboradoresItens => Set<FolhaColaboradorItem>();
@@ -141,6 +142,25 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(x => x.CategoriaFornecedorId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // === Conta Bancária (uma conta por Tutor / Colaborador / Fornecedor) ===
+        modelBuilder.Entity<Tutor>()
+            .HasOne(x => x.ContaBancaria)
+            .WithOne()
+            .HasForeignKey<Tutor>(x => x.ContaBancariaId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Colaborador>()
+            .HasOne(x => x.ContaBancaria)
+            .WithOne()
+            .HasForeignKey<Colaborador>(x => x.ContaBancariaId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Fornecedor>()
+            .HasOne(x => x.ContaBancaria)
+            .WithOne()
+            .HasForeignKey<Fornecedor>(x => x.ContaBancariaId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<LancamentoFinanceiro>()
             .Property(x => x.Origem)

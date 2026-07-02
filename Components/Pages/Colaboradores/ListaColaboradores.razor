@@ -81,10 +81,6 @@
                 <PropertyColumn Property="@(c => c.Cargo)" Title="Cargo" Sortable="true" />
                 <PropertyColumn Property="@(c => c.Unidade!.Nome)" Title="Unidade" Sortable="true" />
                 <PropertyColumn Property="@(c => c.Telefone)" Title="Telefone" />
-                <PropertyColumn Property="@(c => c.Email)" Title="Email" Sortable="true" />
-                <PropertyColumn Property="@(c => c.Banco)" Title="Banco" Sortable="true" />
-                <PropertyColumn Property="@(c => c.Agencia)" Title="Agência" />
-                <PropertyColumn Property="@(c => c.Conta)" Title="Conta" />
                 <TemplateColumn Title="Ativo" Sortable="true" SortBy="@sortPorAtivo" Align="Align.Center">
                     @if (context.Ativo)
                     {
@@ -172,6 +168,7 @@
         colaboradores = await context.Colaboradores
             .AsNoTracking()
             .Include(c => c.Unidade)
+            .Include(c => c.ContaBancaria)
             .OrderBy(c => c.Nome)
             .ToListAsync();
 

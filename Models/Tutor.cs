@@ -17,25 +17,6 @@ public class Tutor
     [MaxLength(20)]
     public string? Rg { get; set; }
 
-    [MaxLength(100)]
-    public string? ChavePix { get; set; }
-
-    [MaxLength(50)]
-    
-    public string? NomeBanco { get; set; }
-
-    [MaxLength(3)]
-    public string? CodigoBanco { get; set; }
-
-    [MaxLength(20)]
-    public string? Agencia { get; set; }
-
-    [MaxLength(30)]
-    public string? Conta { get; set; }
-
-    [MaxLength(150)]
-    public string? NomeTitular { get; set; }
-
     [MaxLength(150)]
     [EmailAddress]
     public string? Email { get; set; }
@@ -58,4 +39,8 @@ public class Tutor
     public int CursoId { get; set; }
 
     public Curso? Curso { get; set; }
+
+    public int? ContaBancariaId { get; set; }
+
+    public ContaBancaria? ContaBancaria { get; set; }
 }

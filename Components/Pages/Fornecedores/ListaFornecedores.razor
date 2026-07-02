@@ -83,11 +83,9 @@
         <div class="table-responsive">
             <QuickGrid Items="FornecedoresFiltrados" Pagination="pagination" Class="table table-striped table-hover align-middle imprimivel-sem-acoes">
                 <PropertyColumn Property="@(f => f.NomeRazaoSocial)" Title="Nome / Razão Social" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
-                <PropertyColumn Property="@(f => f.NomeFantasia)" Title="Fantasia" Sortable="true" />
                 <PropertyColumn Property="@(f => f.CpfCnpj)" Title="CPF/CNPJ" />
                 <PropertyColumn Property="@(f => f.CategoriaFornecedor!.Nome)" Title="Categoria" Sortable="true" />
                 <PropertyColumn Property="@(f => f.Unidade!.Nome)" Title="Unidade" Sortable="true" />
-                <PropertyColumn Property="@(f => f.NomeContato)" Title="Contato" />
                 <PropertyColumn Property="@(f => f.Telefone)" Title="Telefone" />
                 <TemplateColumn Title="Ativo" Sortable="true" SortBy="@sortPorAtivo" Align="Align.Center">
                     @if (context.Ativo)

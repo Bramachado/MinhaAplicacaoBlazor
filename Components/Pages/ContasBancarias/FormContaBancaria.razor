@@ -1,0 +1,136 @@
+@page "/contas-bancarias/novo"
+@page "/contas-bancarias/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNovo ? "Nova Conta Bancária" : "Editar Conta Bancária")</PageTitle>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">@(IsNovo ? "Nova Conta Bancária" : "Editar Conta Bancária")</h3>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                <EditForm Model="conta" OnValidSubmit="SalvarAsync" FormName="form-conta-bancaria">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Nome do Titular <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="conta.NomeTitular" />
+                            <ValidationMessage For="@(() => conta.NomeTitular)" class="text-danger small" />
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">CPF / CNPJ <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="conta.CpfCnpj" />
+                            <ValidationMessage For="@(() => conta.CpfCnpj)" class="text-danger small" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Chave PIX</label>
+                            <InputText class="form-control" @bind-Value="conta.ChavePix" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Banco</label>
+                            <InputText class="form-control" @bind-Value="conta.NomeBanco" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Código</label>
+                            <InputText class="form-control" @bind-Value="conta.CodigoBanco" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Agência</label>
+                            <InputText class="form-control" @bind-Value="conta.Agencia" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Conta</label>
+                            <InputText class="form-control" @bind-Value="conta.Conta" />
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private ContaBancaria conta = new();
+    private bool carregando = true;
+    private string? mensagemErro;
+
+    private bool IsNovo => Id is null or 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!IsNovo)
+        {
+            await using var context = await DbFactory.CreateDbContextAsync();
+
+            var existente = await context.ContasBancarias
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo("/contas-bancarias");
+                return;
+            }
+
+            conta = existente;
+        }
+
+        carregando = false;
+    }
+
+    private async Task SalvarAsync()
+    {
+        mensagemErro = null;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        if (IsNovo)
+            context.ContasBancarias.Add(conta);
+        else
+            context.ContasBancarias.Update(conta);
+
+        await context.SaveChangesAsync();
+
+        Navigation.NavigateTo("/contas-bancarias");
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/contas-bancarias");
+}

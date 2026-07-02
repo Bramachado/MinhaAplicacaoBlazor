@@ -61,7 +61,7 @@ public class CnabPagamentoService : ICnabPagamentoService
         if (origem == "LancamentoFinanceiro")
         {
             var lancs = await ctx.LancamentosFinanceiros.AsNoTracking()
-                .Include(l => l.Fornecedor)
+                .Include(l => l.Fornecedor).ThenInclude(f => f!.ContaBancaria)
                 .Where(l => l.CompetenciaId == competenciaId
                             && l.TipoLancamento == "Saida"
                             && l.Status != "Cancelado"
@@ -78,10 +78,10 @@ public class CnabPagamentoService : ICnabPagamentoService
                     OrigemId = l.Id,
                     NomeFavorecido = l.Fornecedor?.NomeRazaoSocial ?? l.Descricao,
                     CPF_CNPJ_Favorecido = l.Fornecedor?.CpfCnpj,
-                    Banco = l.Fornecedor?.CodigoBanco,
-                    Agencia = l.Fornecedor?.Agencia,
-                    Conta = l.Fornecedor?.Conta,
-                    ChavePix = l.Fornecedor?.ChavePix,
+                    Banco = l.Fornecedor?.ContaBancaria?.CodigoBanco,
+                    Agencia = l.Fornecedor?.ContaBancaria?.Agencia,
+                    Conta = l.Fornecedor?.ContaBancaria?.Conta,
+                    ChavePix = l.Fornecedor?.ContaBancaria?.ChavePix,
                     Valor = l.Valor,
                     DataVencimento = l.DataVencimento,
                     Descricao = l.Descricao,
@@ -93,7 +93,7 @@ public class CnabPagamentoService : ICnabPagamentoService
         {
             var itens = await ctx.FolhasColaboradoresItens.AsNoTracking()
                 .Include(i => i.FolhaColaborador)
-                .Include(i => i.Colaborador)
+                .Include(i => i.Colaborador).ThenInclude(c => c!.ContaBancaria)
                 .Where(i => i.FolhaColaborador!.CompetenciaId == competenciaId
                             && i.ValorReceberPix > 0)
                 .ToListAsync();
@@ -106,10 +106,10 @@ public class CnabPagamentoService : ICnabPagamentoService
                     OrigemId = i.Id,
                     NomeFavorecido = i.Colaborador?.Nome ?? "",
                     CPF_CNPJ_Favorecido = i.Colaborador?.Cpf,
-                    Banco = i.Colaborador?.CodigoBanco,
-                    Agencia = i.Colaborador?.Agencia,
-                    Conta = i.Colaborador?.Conta,
-                    ChavePix = i.Colaborador?.ChavePix,
+                    Banco = i.Colaborador?.ContaBancaria?.CodigoBanco,
+                    Agencia = i.Colaborador?.ContaBancaria?.Agencia,
+                    Conta = i.Colaborador?.ContaBancaria?.Conta,
+                    ChavePix = i.Colaborador?.ContaBancaria?.ChavePix,
                     Valor = i.ValorReceberPix,
                     Descricao = $"Folha Colab. {i.FolhaColaborador!.Status}",
                     JaEmRemessa = idsEmRemessaColab.Contains(i.Id)
@@ -120,7 +120,7 @@ public class CnabPagamentoService : ICnabPagamentoService
         {
             var itens = await ctx.FolhasTutoresItens.AsNoTracking()
                 .Include(i => i.FolhaTutor)
-                .Include(i => i.Tutor)
+                .Include(i => i.Tutor).ThenInclude(t => t!.ContaBancaria)
                 .Where(i => i.FolhaTutor!.CompetenciaId == competenciaId
                             && i.ValorTotalReceber > 0)
                 .ToListAsync();
@@ -133,10 +133,10 @@ public class CnabPagamentoService : ICnabPagamentoService
                     OrigemId = i.Id,
                     NomeFavorecido = i.Tutor?.Nome ?? "",
                     CPF_CNPJ_Favorecido = i.Tutor?.Cpf,
-                    Banco = i.Banco ?? i.Tutor?.CodigoBanco,
-                    Agencia = i.Agencia ?? i.Tutor?.Agencia,
-                    Conta = i.Conta ?? i.Tutor?.Conta,
-                    ChavePix = i.ChavePix ?? i.Tutor?.ChavePix,
+                    Banco = i.Banco ?? i.Tutor?.ContaBancaria?.CodigoBanco,
+                    Agencia = i.Agencia ?? i.Tutor?.ContaBancaria?.Agencia,
+                    Conta = i.Conta ?? i.Tutor?.ContaBancaria?.Conta,
+                    ChavePix = i.ChavePix ?? i.Tutor?.ContaBancaria?.ChavePix,
                     Valor = i.ValorTotalReceber,
                     Descricao = $"Folha Tutor {i.FolhaTutor!.Status}",
                     JaEmRemessa = idsEmRemessaTutor.Contains(i.Id)

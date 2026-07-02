@@ -108,38 +108,8 @@
                     <hr />
                     <h5>Dados Bancários</h5>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Chave PIX</label>
-                            <InputText class="form-control" @bind-Value="fornecedor.ChavePix" />
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Nome do Titular da Conta</label>
-                            <InputText class="form-control" @bind-Value="fornecedor.NomeTitularConta" />
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Banco</label>
-                            <InputText class="form-control" @bind-Value="fornecedor.Banco" />
-                        </div>
-
-                        <div class="col-md-2 mb-3">
-                            <label class="form-label">Código</label>
-                            <InputText class="form-control" @bind-Value="fornecedor.CodigoBanco" />
-                        </div>
-
-                        <div class="col-md-2 mb-3">
-                            <label class="form-label">Agência</label>
-                            <InputText class="form-control" @bind-Value="fornecedor.Agencia" />
-                        </div>
-
-                        <div class="col-md-2 mb-3">
-                            <label class="form-label">Conta</label>
-                            <InputText class="form-control" @bind-Value="fornecedor.Conta" />
-                        </div>
+                    <div class="mb-3">
+                        <SelecionarContaBancaria @bind-ContaBancariaId="fornecedor.ContaBancariaId" Titulo="Conta Bancária" />
                     </div>
 
                     @if (!string.IsNullOrEmpty(mensagemErro))

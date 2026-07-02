@@ -16,25 +16,7 @@ public class Fornecedor
     [MaxLength(20)]
     public string? CpfCnpj { get; set; }
 
-    [MaxLength(150)]
-    public string? ChavePix { get; set; }
-
-    [MaxLength(100)]
-    public string? Banco { get; set; }
-
-    [MaxLength(20)]
-    public string? CodigoBanco { get; set; }
-
-    [MaxLength(30)]
-    public string? Agencia { get; set; }
-
-    [MaxLength(50)]
-    public string? Conta { get; set; }
-
-    [MaxLength(200)]
-    public string? NomeTitularConta { get; set; }
-
-    [MaxLength(250)]
+        [MaxLength(250)]
     public string? Endereco { get; set; }
 
     [MaxLength(20)]
@@ -52,4 +34,8 @@ public class Fornecedor
     public int CategoriaFornecedorId { get; set; }
 
     public CategoriaFornecedor? CategoriaFornecedor { get; set; }
+
+    public int? ContaBancariaId { get; set; }
+
+    public ContaBancaria? ContaBancaria { get; set; }
 }

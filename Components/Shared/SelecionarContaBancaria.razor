@@ -1,0 +1,164 @@
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+<div class="border rounded p-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">@Titulo</h5>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" @onclick="AbrirModalAsync">
+                @(ContaBancariaId is null ? "Vincular Conta" : "Alterar")
+            </button>
+            @if (ContaBancariaId is not null)
+            {
+                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="DesvincularAsync">Desvincular</button>
+            }
+        </div>
+    </div>
+
+    @if (contaVinculada is not null)
+    {
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Titular</dt>
+            <dd class="col-sm-9">@contaVinculada.NomeTitular</dd>
+            <dt class="col-sm-3">CPF/CNPJ</dt>
+            <dd class="col-sm-9">@contaVinculada.CpfCnpj</dd>
+            <dt class="col-sm-3">Banco</dt>
+            <dd class="col-sm-9">@FormatarBanco(contaVinculada)</dd>
+            <dt class="col-sm-3">Agência / Conta</dt>
+            <dd class="col-sm-9">@(contaVinculada.Agencia ?? "—") / @(contaVinculada.Conta ?? "—")</dd>
+            <dt class="col-sm-3">Chave PIX</dt>
+            <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(contaVinculada.ChavePix) ? "—" : contaVinculada.ChavePix)</dd>
+        </dl>
+    }
+    else
+    {
+        <p class="text-muted mb-0">Nenhuma conta bancária vinculada.</p>
+    }
+</div>
+
+@if (mostrarModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Selecionar Conta Bancária</h5>
+                    <button type="button" class="btn-close" @onclick="FecharModal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-3"
+                           placeholder="Pesquisar por titular, CPF/CNPJ, banco ou chave PIX..."
+                           @bind="filtro" @bind:event="oninput" />
+
+                    @if (ContasFiltradas.Count == 0)
+                    {
+                        <p class="text-muted mb-0">Nenhuma conta bancária encontrada.</p>
+                    }
+                    else
+                    {
+                        <div class="list-group">
+                            @foreach (var c in ContasFiltradas)
+                            {
+                                <button type="button"
+                                        class="list-group-item list-group-item-action @(selecaoModal == c.Id ? "active" : "")"
+                                        @onclick="() => selecaoModal = c.Id">
+                                    <div class="fw-semibold">@c.NomeTitular <small class="text-muted">(@c.CpfCnpj)</small></div>
+                                    <small>
+                                        @FormatarBanco(c) — Ag. @(c.Agencia ?? "—") Cc. @(c.Conta ?? "—")
+                                        @(string.IsNullOrWhiteSpace(c.ChavePix) ? "" : $"— PIX: {c.ChavePix}")
+                                    </small>
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <a href="/contas-bancarias/novo" class="btn btn-outline-secondary me-auto" target="_blank">Nova Conta</a>
+                    <button type="button" class="btn btn-secondary" @onclick="FecharModal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" @onclick="SalvarAsync" disabled="@(selecaoModal is null)">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int? ContaBancariaId { get; set; }
+    [Parameter] public EventCallback<int?> ContaBancariaIdChanged { get; set; }
+    [Parameter] public string Titulo { get; set; } = "Conta Bancária";
+
+    private List<ContaBancaria> contas = new();
+    private ContaBancaria? contaVinculada;
+    private bool mostrarModal;
+    private int? selecaoModal;
+    private string filtro = string.Empty;
+    private bool carregado;
+
+    private List<ContaBancaria> ContasFiltradas =>
+        string.IsNullOrWhiteSpace(filtro)
+            ? contas
+            : contas.Where(c =>
+                c.NomeTitular.Contains(filtro, StringComparison.OrdinalIgnoreCase) ||
+                c.CpfCnpj.Contains(filtro, StringComparison.OrdinalIgnoreCase) ||
+                (c.NomeBanco != null && c.NomeBanco.Contains(filtro, StringComparison.OrdinalIgnoreCase)) ||
+                (c.ChavePix != null && c.ChavePix.Contains(filtro, StringComparison.OrdinalIgnoreCase)))
+              .ToList();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!carregado)
+        {
+            await CarregarContasAsync();
+            carregado = true;
+        }
+
+        contaVinculada = ContaBancariaId is null
+            ? null
+            : contas.FirstOrDefault(c => c.Id == ContaBancariaId);
+    }
+
+    private async Task CarregarContasAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+        contas = await context.ContasBancarias
+            .AsNoTracking()
+            .OrderBy(c => c.NomeTitular)
+            .ToListAsync();
+    }
+
+    private async Task AbrirModalAsync()
+    {
+        // Recarrega para refletir contas recém-cadastradas.
+        await CarregarContasAsync();
+        selecaoModal = ContaBancariaId;
+        filtro = string.Empty;
+        mostrarModal = true;
+    }
+
+    private void FecharModal() => mostrarModal = false;
+
+    private async Task SalvarAsync()
+    {
+        if (selecaoModal is null) return;
+
+        ContaBancariaId = selecaoModal;
+        contaVinculada = contas.FirstOrDefault(c => c.Id == ContaBancariaId);
+        mostrarModal = false;
+        await ContaBancariaIdChanged.InvokeAsync(ContaBancariaId);
+    }
+
+    private async Task DesvincularAsync()
+    {
+        ContaBancariaId = null;
+        contaVinculada = null;
+        await ContaBancariaIdChanged.InvokeAsync(null);
+    }
+
+    private static string FormatarBanco(ContaBancaria c) =>
+        string.IsNullOrWhiteSpace(c.CodigoBanco)
+            ? (c.NomeBanco ?? "—")
+            : $"{c.CodigoBanco} - {c.NomeBanco}";
+}

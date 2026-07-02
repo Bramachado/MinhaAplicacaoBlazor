@@ -57,11 +57,6 @@
                             <label class="form-label">RG</label>
                             <InputText class="form-control" @bind-Value="colaborador.Rg" />
                         </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Chave PIX</label>
-                            <InputText class="form-control" @bind-Value="colaborador.ChavePix" />
-                        </div>
                     </div>
 
                     <div class="row">
@@ -109,35 +104,12 @@
                     <hr />
                     <h5>Dados Bancários</h5>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Banco</label>
-                            <InputText class="form-control" @bind-Value="colaborador.Banco" />
-                        </div>
-
-                        <div class="col-md-2 mb-3">
-                            <label class="form-label">Código</label>
-                            <InputText class="form-control" @bind-Value="colaborador.CodigoBanco" />
-                        </div>
-
-                        <div class="col-md-2 mb-3">
-                            <label class="form-label">Agência</label>
-                            <InputText class="form-control" @bind-Value="colaborador.Agencia" />
-                        </div>
-
-                        <div class="col-md-2 mb-3">
-                            <label class="form-label">Conta</label>
-                            <InputText class="form-control" @bind-Value="colaborador.Conta" />
-                        </div>
+                    <div class="mb-3">
+                        <SelecionarContaBancaria @bind-ContaBancariaId="colaborador.ContaBancariaId" Titulo="Conta Bancária" />
                     </div>
 
                     <div class="row">
-                        <div class="col-md-9 mb-3">
-                            <label class="form-label">Nome do Titular</label>
-                            <InputText class="form-control" @bind-Value="colaborador.NomeTitular" />
-                        </div>
-
-                        <div class="col-md-3 mb-3 d-flex align-items-end">
+                        <div class="col-md-3 mb-3">
                             <div class="form-check">
                                 <InputCheckbox class="form-check-input" id="ativo-colaborador" @bind-Value="colaborador.Ativo" />
                                 <label class="form-check-label" for="ativo-colaborador">Ativo</label>
