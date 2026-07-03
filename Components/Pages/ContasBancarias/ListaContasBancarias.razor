@@ -94,6 +94,8 @@
 </div>
 
 @code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
     private List<ContaBancaria>? contas;
     private string filtroTexto = string.Empty;
     private readonly PaginationState pagination = new() { ItemsPerPage = 10 };
@@ -155,7 +157,8 @@
         var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta conta bancária?");
         if (!confirmado) return;
 
-        await using var context = await DbFactory.CreateDbContextAsync();
+        var usuario = AuthState is null ? null : (await AuthState).User;
+        await using var context = await DbFactory.CreateDbContextAsync(usuario);
         var entidade = await context.ContasBancarias.FindAsync(id);
 
         if (entidade is not null)

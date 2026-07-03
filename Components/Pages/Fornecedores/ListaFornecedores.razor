@@ -142,6 +142,8 @@
 </div>
 
 @code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
     private List<Fornecedor>? fornecedores;
     private List<Unidade> unidades = new();
     private List<CategoriaFornecedor> categorias = new();
@@ -245,7 +247,8 @@
         var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir este fornecedor?");
         if (!confirmado) return;
 
-        await using var context = await DbFactory.CreateDbContextAsync();
+        var usuario = AuthState is null ? null : (await AuthState).User;
+        await using var context = await DbFactory.CreateDbContextAsync(usuario);
         var entidade = await context.Fornecedores.FindAsync(id);
 
         if (entidade is not null)

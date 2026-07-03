@@ -147,6 +147,8 @@
 </div>
 
 @code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
     private List<Tutor>? tutores;
     private List<Unidade> unidades = new();
     private List<Curso> cursos = new();
@@ -265,7 +267,8 @@
         if (!confirmado)
             return;
 
-        await using var context = await DbFactory.CreateDbContextAsync();
+        var usuario = AuthState is null ? null : (await AuthState).User;
+        await using var context = await DbFactory.CreateDbContextAsync(usuario);
 
         var entidade = await context.Tutores.FindAsync(id);
 

@@ -136,6 +136,8 @@
 @code {
     [Parameter] public int? Id { get; set; }
 
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
     private Colaborador colaborador = new();
     private List<Unidade> unidades = new();
     private bool carregando = true;
@@ -181,7 +183,8 @@
 
         mensagemErro = null;
 
-        await using var context = await DbFactory.CreateDbContextAsync();
+        var usuario = AuthState is null ? null : (await AuthState).User;
+        await using var context = await DbFactory.CreateDbContextAsync(usuario);
 
         if (IsNovo)
             context.Colaboradores.Add(colaborador);

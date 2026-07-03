@@ -8,12 +8,21 @@ using MinhaAplicacaoBlazor.Data;
 
 namespace MinhaAplicacaoBlazor.Data;
 
-public class AppDbContext : IdentityDbContext<ApplicationUser>
+public partial class AppDbContext : IdentityDbContext<ApplicationUser>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
     }
+
+    /// <summary>
+    /// Id do usuário logado que originou a operação. Definido por operação
+    /// (via CreateDbContextAsync(user)); usado pela auditoria automática.
+    /// </summary>
+    public string? UsuarioAuditoriaId { get; set; }
+
+    /// <summary>Nome do usuário logado que originou a operação.</summary>
+    public string? UsuarioAuditoriaNome { get; set; }
 
     public DbSet<Perfil> Perfis => Set<Perfil>();
     public DbSet<PerfilPermissao> PerfilPermissoes => Set<PerfilPermissao>();
@@ -46,6 +55,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<RemessaCnabItem> RemessasCnabItens => Set<RemessaCnabItem>();
     public DbSet<RetornoCnab> RetornosCnab => Set<RetornoCnab>();
     public DbSet<RetornoCnabItem> RetornosCnabItens => Set<RetornoCnabItem>();
+
+    public DbSet<RegistroAuditoria> RegistrosAuditoria => Set<RegistroAuditoria>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -471,5 +482,24 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .WithMany()
             .HasForeignKey(x => x.RemessaCnabItemId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // === Auditoria ===
+        modelBuilder.Entity<RegistroAuditoria>()
+            .Property(x => x.Acao)
+            .HasConversion<string>()
+            .HasMaxLength(20);
+
+        modelBuilder.Entity<RegistroAuditoria>()
+            .Property(x => x.DataHora)
+            .HasDefaultValueSql("GETDATE()");
+
+        modelBuilder.Entity<RegistroAuditoria>()
+            .HasIndex(x => x.DataHora);
+
+        modelBuilder.Entity<RegistroAuditoria>()
+            .HasIndex(x => new { x.Entidade, x.EntidadeId });
+
+        modelBuilder.Entity<RegistroAuditoria>()
+            .HasIndex(x => x.UsuarioId);
     }
 }

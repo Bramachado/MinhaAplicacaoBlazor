@@ -1,0 +1,282 @@
+@page "/auditoria"
+@attribute [Authorize(Policy = "Auditoria.Ver")]
+@rendermode InteractiveServer
+
+@using System.Text.Json
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+<PageTitle>Auditoria</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Auditoria</h1>
+    </div>
+
+    <div class="row mb-3 g-2">
+        <div class="col-md-3">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Pesquisar por descrição ou usuário..."
+                   @bind="filtroTexto"
+                   @bind:event="oninput" />
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="filtroEntidade">
+                <option value="">Todas as entidades</option>
+                @foreach (var e in EntidadesDisponiveis)
+                {
+                    <option value="@e.Key">@e.Value</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="filtroAcao">
+                <option value="">Todas as ações</option>
+                <option value="@AcaoAuditoria.Inclusao">Inclusão</option>
+                <option value="@AcaoAuditoria.Alteracao">Alteração</option>
+                <option value="@AcaoAuditoria.Exclusao">Exclusão</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <input type="date" class="form-control" @bind="filtroDe" title="A partir de" />
+        </div>
+        <div class="col-md-2">
+            <input type="date" class="form-control" @bind="filtroAte" title="Até" />
+        </div>
+        <div class="col-md-1">
+            <select class="form-select" @bind="pagination.ItemsPerPage">
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+        </div>
+    </div>
+
+    @if (registros is null)
+    {
+        <p>Carregando...</p>
+    }
+    else
+    {
+        @if (registros.Count >= LimiteRegistros)
+        {
+            <div class="alert alert-info py-2">
+                Exibindo os <strong>@LimiteRegistros</strong> registros mais recentes. Refine os filtros de data para ver registros mais antigos.
+            </div>
+        }
+
+        <div class="table-responsive">
+            <QuickGrid Items="RegistrosFiltrados" Pagination="@pagination.QuandoNecessario(RegistrosFiltrados)" Class="table table-striped table-hover align-middle">
+                <PropertyColumn Property="@(r => r.DataHora)" Title="Data / Hora" Format="dd/MM/yyyy HH:mm:ss" Sortable="true" InitialSortDirection="SortDirection.Descending" IsDefaultSortColumn="true" />
+                <PropertyColumn Property="@(r => r.UsuarioNome)" Title="Usuário" Sortable="true" />
+                <TemplateColumn Title="Entidade" Sortable="true" SortBy="@sortPorEntidade">
+                    @RotularEntidade(context.Entidade)
+                </TemplateColumn>
+                <PropertyColumn Property="@(r => r.Descricao)" Title="Registro" Sortable="true" />
+                <TemplateColumn Title="Ação" Align="Align.Center" Sortable="true" SortBy="@sortPorAcao">
+                    @switch (context.Acao)
+                    {
+                        case AcaoAuditoria.Inclusao:
+                            <span class="badge bg-success">Inclusão</span>
+                            break;
+                        case AcaoAuditoria.Alteracao:
+                            <span class="badge bg-warning text-dark">Alteração</span>
+                            break;
+                        case AcaoAuditoria.Exclusao:
+                            <span class="badge bg-danger">Exclusão</span>
+                            break;
+                    }
+                </TemplateColumn>
+                <TemplateColumn Title="Detalhes" Align="Align.Center">
+                    @if (!string.IsNullOrWhiteSpace(context.Alteracoes))
+                    {
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => VerDetalhes(context)">
+                            Ver alterações
+                        </button>
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <small class="text-muted">@(RegistrosFiltrados.Count()) registro(s)</small>
+            <Paginator State="pagination" />
+        </div>
+    }
+</div>
+
+@if (detalheSelecionado is not null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Alterações — @RotularEntidade(detalheSelecionado.Entidade): @detalheSelecionado.Descricao
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="FecharDetalhes"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        @detalheSelecionado.UsuarioNome — @detalheSelecionado.DataHora.ToString("dd/MM/yyyy HH:mm:ss")
+                    </p>
+                    @if (alteracoesDetalhe.Count == 0)
+                    {
+                        <p class="text-muted mb-0">Sem detalhes de alteração.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Campo</th>
+                                    <th>De</th>
+                                    <th>Para</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in alteracoesDetalhe)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">@item.Campo</td>
+                                        <td class="text-danger">@(string.IsNullOrEmpty(item.De) ? "—" : item.De)</td>
+                                        <td class="text-success">@(string.IsNullOrEmpty(item.Para) ? "—" : item.Para)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="FecharDetalhes">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private const int LimiteRegistros = 1000;
+
+    private List<RegistroAuditoria>? registros;
+
+    private string filtroTexto = string.Empty;
+    private string filtroEntidade = string.Empty;
+    private string filtroAcao = string.Empty;
+    private DateTime? filtroDe;
+    private DateTime? filtroAte;
+
+    private readonly PaginationState pagination = new() { ItemsPerPage = 50 };
+
+    private readonly GridSort<RegistroAuditoria> sortPorEntidade = GridSort<RegistroAuditoria>.ByAscending(r => r.Entidade);
+    private readonly GridSort<RegistroAuditoria> sortPorAcao = GridSort<RegistroAuditoria>.ByAscending(r => r.Acao);
+
+    private RegistroAuditoria? detalheSelecionado;
+    private List<(string Campo, string? De, string? Para)> alteracoesDetalhe = new();
+
+    private static readonly Dictionary<string, string> RotulosEntidade = new()
+    {
+        ["Tutor"] = "Tutor",
+        ["Colaborador"] = "Colaborador",
+        ["Fornecedor"] = "Fornecedor",
+        ["ContaBancaria"] = "Conta Bancária",
+    };
+
+    private IEnumerable<KeyValuePair<string, string>> EntidadesDisponiveis => RotulosEntidade;
+
+    private IQueryable<RegistroAuditoria> RegistrosFiltrados
+    {
+        get
+        {
+            if (registros is null)
+                return Enumerable.Empty<RegistroAuditoria>().AsQueryable();
+
+            IEnumerable<RegistroAuditoria> resultado = registros;
+
+            if (!string.IsNullOrWhiteSpace(filtroTexto))
+            {
+                var termo = filtroTexto.Trim();
+                resultado = resultado.Where(r =>
+                    (r.Descricao != null && r.Descricao.Contains(termo, StringComparison.OrdinalIgnoreCase)) ||
+                    r.UsuarioNome.Contains(termo, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filtroEntidade))
+                resultado = resultado.Where(r => r.Entidade == filtroEntidade);
+
+            if (Enum.TryParse<AcaoAuditoria>(filtroAcao, out var acao))
+                resultado = resultado.Where(r => r.Acao == acao);
+
+            if (filtroDe is not null)
+                resultado = resultado.Where(r => r.DataHora >= filtroDe.Value.Date);
+
+            if (filtroAte is not null)
+                resultado = resultado.Where(r => r.DataHora < filtroAte.Value.Date.AddDays(1));
+
+            return resultado.AsQueryable();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        registros = await context.RegistrosAuditoria
+            .AsNoTracking()
+            .OrderByDescending(r => r.DataHora)
+            .ThenByDescending(r => r.Id)
+            .Take(LimiteRegistros)
+            .ToListAsync();
+    }
+
+    private static string RotularEntidade(string entidade) =>
+        RotulosEntidade.TryGetValue(entidade, out var rotulo) ? rotulo : entidade;
+
+    private void VerDetalhes(RegistroAuditoria registro)
+    {
+        detalheSelecionado = registro;
+        alteracoesDetalhe = ParsearAlteracoes(registro.Alteracoes);
+    }
+
+    private void FecharDetalhes()
+    {
+        detalheSelecionado = null;
+        alteracoesDetalhe = new();
+    }
+
+    private static List<(string Campo, string? De, string? Para)> ParsearAlteracoes(string? json)
+    {
+        var lista = new List<(string, string?, string?)>();
+
+        if (string.IsNullOrWhiteSpace(json))
+            return lista;
+
+        try
+        {
+            var dados = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string?>>>(json);
+            if (dados is not null)
+            {
+                foreach (var (campo, valores) in dados)
+                {
+                    valores.TryGetValue("de", out var de);
+                    valores.TryGetValue("para", out var para);
+                    lista.Add((campo, de, para));
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // JSON inesperado: ignora e mostra vazio.
+        }
+
+        return lista;
+    }
+}

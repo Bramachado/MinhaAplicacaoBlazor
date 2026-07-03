@@ -306,6 +306,17 @@
                             </NavLink>
                         </div>
                     }
+                    @if (PodeVer("Auditoria.Ver"))
+                    {
+                        <div class="nav-item px-3">
+                            <NavLink class="nav-link" href="auditoria">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
+                                    <path d="M4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm5.5 1.5v2a1 1 0 0 0 1 1h2z"/>
+                                    <path d="M4.5 7.5A.5.5 0 0 1 5 7h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0 2A.5.5 0 0 1 5 9h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5"/>
+                                </svg><span class="nav-text">Auditoria</span>
+                            </NavLink>
+                        </div>
+                    }
                 </div>
             </div>
         }
@@ -342,7 +353,7 @@
         ["cadastros"] = new[] { "Colaboradores.Ver", "Fornecedores.Ver", "CategoriasFornecedores.Ver", "ContasBancarias.Ver", "PlanosContas.Ver", "FormasPagamento.Ver" },
         ["pagamentos"] = new[] { "FolhasTutores.Ver", "FolhasColaboradores.Ver", "FolhasFornecedores.Ver" },
         ["financeiro"] = new[] { "RelatoriosFinanceiros.Ver", "Entradas.Ver", "Cnab.Ver", "Arquivos.Ver" },
-        ["admin"] = new[] { "Usuarios.Ver", "Perfis.Ver" },
+        ["admin"] = new[] { "Usuarios.Ver", "Perfis.Ver", "Auditoria.Ver" },
     };
 
     private static readonly Dictionary<string, string[]> RotasPorGrupo = new()
@@ -352,7 +363,7 @@
         ["cadastros"] = new[] { "colaboradores", "fornecedores", "categorias-fornecedores", "contas-bancarias", "planos-contas", "formas-pagamento" },
         ["pagamentos"] = new[] { "folhas-tutores", "folhas-colaboradores", "folhas-fornecedores" },
         ["financeiro"] = new[] { "relatorios-financeiros", "entradas", "financeiro/cnab", "arquivos" },
-        ["admin"] = new[] { "admin/usuarios", "admin/perfis" },
+        ["admin"] = new[] { "admin/usuarios", "admin/perfis", "auditoria" },
     };
 
     protected override async Task OnInitializedAsync()

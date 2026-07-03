@@ -78,6 +78,7 @@ public static class Permissoes
         // Administração
         new("Usuarios", "Usuários", "Administração", Crud),
         new("Perfis", "Perfis de Acesso", "Administração", Crud),
+        new("Auditoria", "Auditoria / Logs", "Administração", SomenteVer),
     };
 
     /// <summary>Todas as chaves de permissão válidas do sistema.</summary>

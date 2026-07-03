@@ -107,6 +107,8 @@
 @code {
     [Parameter] public int? Id { get; set; }
 
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
     private ContaBancaria conta = new();
     private bool carregando = true;
     private string? mensagemErro;
@@ -139,7 +141,8 @@
     {
         mensagemErro = null;
 
-        await using var context = await DbFactory.CreateDbContextAsync();
+        var usuario = AuthState is null ? null : (await AuthState).User;
+        await using var context = await DbFactory.CreateDbContextAsync(usuario);
 
         if (IsNovo)
             context.ContasBancarias.Add(conta);
