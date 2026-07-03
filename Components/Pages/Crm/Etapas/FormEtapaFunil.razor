@@ -1,0 +1,128 @@
+@page "/crm/etapas/novo"
+@attribute [Authorize(Policy = "CrmFunil.Ver")]
+@page "/crm/etapas/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models.Crm
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNovo ? "Nova Etapa" : "Editar Etapa")</PageTitle>
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h3 class="mb-0">@(IsNovo ? "Nova Etapa do Funil" : "Editar Etapa do Funil")</h3>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                <EditForm Model="etapa" OnValidSubmit="SalvarAsync" FormName="form-crm-etapa">
+                    <DataAnnotationsValidator />
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nome <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="etapa.Nome" />
+                            <ValidationMessage For="@(() => etapa.Nome)" class="text-danger small" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Ordem</label>
+                            <InputNumber class="form-control" @bind-Value="etapa.Ordem" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Cor</label>
+                            <InputText type="color" class="form-control form-control-color" @bind-Value="etapa.Cor" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check">
+                                <InputCheckbox class="form-check-input" id="ativa-crm-etapa" @bind-Value="etapa.Ativa" />
+                                <label class="form-check-label" for="ativa-crm-etapa">Etapa ativa</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" disabled="@salvando">
+                            @(salvando ? "Salvando..." : "Salvar")
+                        </button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private CrmEtapaFunil etapa = new() { Cor = "#0d6efd", Ativa = true };
+    private bool carregando = true;
+    private bool salvando;
+    private string? mensagemErro;
+
+    private bool IsNovo => Id is null or 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!IsNovo)
+        {
+            await using var context = await DbFactory.CreateDbContextAsync();
+            var existente = await context.CrmEtapasFunil.AsNoTracking().FirstOrDefaultAsync(e => e.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo("/crm/etapas");
+                return;
+            }
+
+            etapa = existente;
+        }
+
+        carregando = false;
+    }
+
+    private async Task SalvarAsync()
+    {
+        mensagemErro = null;
+        salvando = true;
+        try
+        {
+            await using var context = await DbFactory.CreateDbContextAsync();
+
+            if (IsNovo)
+                context.CrmEtapasFunil.Add(etapa);
+            else
+                context.CrmEtapasFunil.Update(etapa);
+
+            await context.SaveChangesAsync();
+            Navigation.NavigateTo("/crm/etapas");
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = $"Erro ao salvar: {ex.Message}";
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/crm/etapas");
+}

@@ -1,0 +1,145 @@
+@page "/crm/funil"
+@attribute [Authorize(Policy = "CrmOportunidades.Ver")]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models.Crm
+@using MinhaAplicacaoBlazor.Services.Auth
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Funil (CRM)</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Funil de Vendas</h1>
+        <a class="btn btn-outline-secondary" href="crm/oportunidades">Ver em lista</a>
+    </div>
+
+    @if (!podeVerTodos)
+    {
+        <div class="alert alert-info py-2">Você está vendo apenas as oportunidades sob sua responsabilidade.</div>
+    }
+
+    @if (etapas is null)
+    {
+        <p>Carregando...</p>
+    }
+    else if (etapas.Count == 0)
+    {
+        <div class="alert alert-warning">Nenhuma etapa de funil ativa. Cadastre etapas em <a href="crm/etapas">Etapas do Funil</a>.</div>
+    }
+    else
+    {
+        <div class="d-flex gap-3 pb-3" style="overflow-x:auto;">
+            @foreach (var etapa in etapas)
+            {
+                var itens = PorEtapa(etapa.Id);
+                <div style="min-width:280px;max-width:300px;flex:0 0 auto;">
+                    <div class="card h-100">
+                        <div class="card-header text-white d-flex justify-content-between align-items-center"
+                             style="background-color:@(string.IsNullOrWhiteSpace(etapa.Cor) ? "#6c757d" : etapa.Cor)">
+                            <span class="fw-semibold">@etapa.Nome</span>
+                            <span class="badge bg-light text-dark">@itens.Count</span>
+                        </div>
+                        <div class="card-body p-2" style="background-color:#f8f9fa;min-height:120px;">
+                            <div class="small text-muted mb-2">Total: R$ @(itens.Sum(o => o.Valor).ToString("N2"))</div>
+                            @foreach (var op in itens)
+                            {
+                                <div class="card mb-2 shadow-sm">
+                                    <div class="card-body p-2">
+                                        <div class="fw-semibold">@op.Titulo</div>
+                                        <div class="small text-muted">@op.Contato?.Nome</div>
+                                        <div class="small">R$ @op.Valor.ToString("N2")</div>
+                                        <div class="small text-muted">@op.ResponsavelNome</div>
+                                        <div class="mt-2 d-flex gap-1 align-items-center">
+                                            <select class="form-select form-select-sm" value="@op.CrmEtapaFunilId"
+                                                    @onchange="e => MoverAsync(op.Id, e.Value?.ToString())">
+                                                @foreach (var et in etapas)
+                                                {
+                                                    <option value="@et.Id">@et.Nome</option>
+                                                }
+                                            </select>
+                                            <PermissaoView Requer="CrmOportunidades.Editar">
+                                                <button class="btn btn-sm btn-outline-secondary" title="Editar"
+                                                        @onclick="() => Editar(op.Id)">✎</button>
+                                            </PermissaoView>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    private List<CrmEtapaFunil>? etapas;
+    private List<CrmOportunidade> oportunidades = new();
+
+    private string? meuId;
+    private bool podeVerTodos;
+
+    private List<CrmOportunidade> PorEtapa(int etapaId) =>
+        oportunidades.Where(o => o.CrmEtapaFunilId == etapaId).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState is not null)
+        {
+            var user = (await AuthState).User;
+            meuId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            podeVerTodos = user.Claims.Any(c =>
+                c.Type == ClaimsPermissao.TipoPermissao && c.Value == "CrmOportunidades.VerTodos");
+        }
+
+        await CarregarAsync();
+    }
+
+    private async Task CarregarAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        etapas = await context.CrmEtapasFunil.AsNoTracking()
+            .Where(e => e.Ativa)
+            .OrderBy(e => e.Ordem)
+            .ToListAsync();
+
+        var query = context.CrmOportunidades
+            .AsNoTracking()
+            .Include(o => o.Contato)
+            .AsQueryable();
+
+        if (!podeVerTodos)
+            query = query.Where(o => o.ResponsavelUserId == meuId);
+
+        oportunidades = await query.OrderByDescending(o => o.CriadoEm).ToListAsync();
+    }
+
+    private async Task MoverAsync(int oportunidadeId, string? novaEtapaValor)
+    {
+        if (!int.TryParse(novaEtapaValor, out var novaEtapaId))
+            return;
+
+        var usuario = AuthState is null ? null : (await AuthState).User;
+        await using var context = await DbFactory.CreateDbContextAsync(usuario);
+
+        var op = await context.CrmOportunidades.FindAsync(oportunidadeId);
+        if (op is null || op.CrmEtapaFunilId == novaEtapaId)
+            return;
+
+        op.CrmEtapaFunilId = novaEtapaId;
+        await context.SaveChangesAsync();
+        await CarregarAsync();
+    }
+
+    private void Editar(int id) => Navigation.NavigateTo($"/crm/oportunidades/editar/{id}");
+}

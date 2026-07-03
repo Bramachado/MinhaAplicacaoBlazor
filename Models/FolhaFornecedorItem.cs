@@ -48,7 +48,7 @@ public class FolhaFornecedorItem
     [MaxLength(200)]
     public string? NomeTitularConta { get; set; }
 
-    [MaxLength(500)]
+    [Column(TypeName = "varchar(max)")]
     public string? Observacao { get; set; }
 
     public List<Arquivo> Arquivos { get; set; } = new();

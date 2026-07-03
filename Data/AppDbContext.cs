@@ -501,5 +501,8 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
 
         modelBuilder.Entity<RegistroAuditoria>()
             .HasIndex(x => x.UsuarioId);
+
+        // === CRM (subsistema isolado, schema "crm") ===
+        ConfigurarCrm(modelBuilder);
     }
 }

@@ -7,6 +7,7 @@ using MinhaAplicacaoBlazor.Data;
 using MinhaAplicacaoBlazor.Models;
 using MinhaAplicacaoBlazor.Models.Auth;
 using MinhaAplicacaoBlazor.Models.Cnab;
+using MinhaAplicacaoBlazor.Models.Crm;
 using MinhaAplicacaoBlazor.Services;
 using MinhaAplicacaoBlazor.Services.Auth;
 using MinhaAplicacaoBlazor.Services.Cnab;
@@ -183,6 +184,22 @@ using (var scope = app.Services.CreateScope())
     if (novasCnab.Count > 0)
     {
         dbCtx.FormasLancamentoCnab.AddRange(novasCnab);
+        await dbCtx.SaveChangesAsync();
+    }
+
+    // === Seed CRM: etapas padrão do funil ===
+    if (!await dbCtx.CrmEtapasFunil.AnyAsync())
+    {
+        var etapasFunil = new[]
+        {
+            new CrmEtapaFunil { Nome = "Novo",        Ordem = 1, Cor = "#6c757d", Ativa = true },
+            new CrmEtapaFunil { Nome = "Contato feito", Ordem = 2, Cor = "#0dcaf0", Ativa = true },
+            new CrmEtapaFunil { Nome = "Proposta",    Ordem = 3, Cor = "#0d6efd", Ativa = true },
+            new CrmEtapaFunil { Nome = "Negociação",  Ordem = 4, Cor = "#ffc107", Ativa = true },
+            new CrmEtapaFunil { Nome = "Ganho",       Ordem = 5, Cor = "#198754", Ativa = true },
+            new CrmEtapaFunil { Nome = "Perdido",     Ordem = 6, Cor = "#dc3545", Ativa = true },
+        };
+        dbCtx.CrmEtapasFunil.AddRange(etapasFunil);
         await dbCtx.SaveChangesAsync();
     }
 }

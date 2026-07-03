@@ -1,0 +1,213 @@
+@page "/crm/oportunidades"
+@attribute [Authorize(Policy = "CrmOportunidades.Ver")]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models.Crm
+@using MinhaAplicacaoBlazor.Services.Auth
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Oportunidades (CRM)</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Oportunidades</h1>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-primary" href="crm/funil">Ver Funil (Kanban)</a>
+            <PermissaoView Requer="CrmOportunidades.Criar">
+                <button class="btn btn-primary" @onclick="Nova">Nova Oportunidade</button>
+            </PermissaoView>
+        </div>
+    </div>
+
+    @if (!podeVerTodos)
+    {
+        <div class="alert alert-info py-2">Você está vendo apenas as oportunidades sob sua responsabilidade.</div>
+    }
+
+    <div class="row mb-3 g-2">
+        <div class="col-md-4">
+            <input type="text" class="form-control" placeholder="Pesquisar por título ou contato..."
+                   @bind="filtroTexto" @bind:event="oninput" />
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="filtroEtapa">
+                <option value="0">Todas as etapas</option>
+                @foreach (var e in etapas)
+                {
+                    <option value="@e.Id">@e.Nome</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="filtroStatus">
+                <option value="">Todos os status</option>
+                <option value="@StatusOportunidade.Aberta">Aberta</option>
+                <option value="@StatusOportunidade.Ganha">Ganha</option>
+                <option value="@StatusOportunidade.Perdida">Perdida</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="pagination.ItemsPerPage">
+                <option value="10">10 por página</option>
+                <option value="25">25 por página</option>
+                <option value="50">50 por página</option>
+            </select>
+        </div>
+    </div>
+
+    @if (oportunidades is null)
+    {
+        <p>Carregando...</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <QuickGrid Items="OportunidadesFiltradas" Pagination="@pagination.QuandoNecessario(OportunidadesFiltradas)" Class="table table-striped table-hover align-middle">
+                <PropertyColumn Property="@(o => o.Titulo)" Title="Título" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
+                <TemplateColumn Title="Contato" Sortable="true" SortBy="@sortPorContato">
+                    @context.Contato?.Nome
+                </TemplateColumn>
+                <TemplateColumn Title="Etapa" Sortable="true" SortBy="@sortPorEtapa">
+                    <span class="badge" style="background-color:@(context.Etapa?.Cor ?? "#6c757d")">@context.Etapa?.Nome</span>
+                </TemplateColumn>
+                <TemplateColumn Title="Valor" Align="Align.End" Sortable="true" SortBy="@sortPorValor">
+                    R$ @context.Valor.ToString("N2")
+                </TemplateColumn>
+                <TemplateColumn Title="Status" Align="Align.Center" Sortable="true" SortBy="@sortPorStatus">
+                    @switch (context.Status)
+                    {
+                        case StatusOportunidade.Aberta:
+                            <span class="badge bg-primary">Aberta</span>
+                            break;
+                        case StatusOportunidade.Ganha:
+                            <span class="badge bg-success">Ganha</span>
+                            break;
+                        case StatusOportunidade.Perdida:
+                            <span class="badge bg-danger">Perdida</span>
+                            break;
+                    }
+                </TemplateColumn>
+                <PropertyColumn Property="@(o => o.ResponsavelNome)" Title="Responsável" Sortable="true" />
+                <PropertyColumn Property="@(o => o.DataPrevisao)" Title="Previsão" Format="dd/MM/yyyy" Sortable="true" />
+                <TemplateColumn Title="Ações" Align="Align.End">
+                    <PermissaoView Requer="CrmOportunidades.Editar">
+                        <button class="btn btn-sm btn-outline-secondary me-1" title="Editar" @onclick="() => Editar(context.Id)">Editar</button>
+                    </PermissaoView>
+                    <PermissaoView Requer="CrmOportunidades.Excluir">
+                        <button class="btn btn-sm btn-outline-danger" title="Excluir" @onclick="() => ExcluirAsync(context.Id)">Excluir</button>
+                    </PermissaoView>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <small class="text-muted">@(OportunidadesFiltradas.Count()) registro(s) — total R$ @(OportunidadesFiltradas.Sum(o => o.Valor).ToString("N2"))</small>
+            <Paginator State="pagination" />
+        </div>
+    }
+</div>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    private List<CrmOportunidade>? oportunidades;
+    private List<CrmEtapaFunil> etapas = new();
+
+    private string filtroTexto = string.Empty;
+    private int filtroEtapa;
+    private string filtroStatus = string.Empty;
+    private readonly PaginationState pagination = new() { ItemsPerPage = 25 };
+
+    private readonly GridSort<CrmOportunidade> sortPorContato = GridSort<CrmOportunidade>.ByAscending(o => o.Contato!.Nome);
+    private readonly GridSort<CrmOportunidade> sortPorEtapa = GridSort<CrmOportunidade>.ByAscending(o => o.Etapa!.Ordem);
+    private readonly GridSort<CrmOportunidade> sortPorValor = GridSort<CrmOportunidade>.ByAscending(o => o.Valor);
+    private readonly GridSort<CrmOportunidade> sortPorStatus = GridSort<CrmOportunidade>.ByAscending(o => o.Status);
+
+    private string? meuId;
+    private bool podeVerTodos;
+
+    private IQueryable<CrmOportunidade> OportunidadesFiltradas
+    {
+        get
+        {
+            if (oportunidades is null)
+                return Enumerable.Empty<CrmOportunidade>().AsQueryable();
+
+            IEnumerable<CrmOportunidade> resultado = oportunidades;
+
+            if (!string.IsNullOrWhiteSpace(filtroTexto))
+            {
+                var termo = filtroTexto.Trim();
+                resultado = resultado.Where(o =>
+                    o.Titulo.Contains(termo, StringComparison.OrdinalIgnoreCase) ||
+                    (o.Contato != null && o.Contato.Nome.Contains(termo, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (filtroEtapa > 0)
+                resultado = resultado.Where(o => o.CrmEtapaFunilId == filtroEtapa);
+
+            if (Enum.TryParse<StatusOportunidade>(filtroStatus, out var st))
+                resultado = resultado.Where(o => o.Status == st);
+
+            return resultado.AsQueryable();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState is not null)
+        {
+            var user = (await AuthState).User;
+            meuId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            podeVerTodos = user.Claims.Any(c =>
+                c.Type == ClaimsPermissao.TipoPermissao && c.Value == "CrmOportunidades.VerTodos");
+        }
+
+        await CarregarAsync();
+    }
+
+    private async Task CarregarAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        etapas = await context.CrmEtapasFunil.AsNoTracking().OrderBy(e => e.Ordem).ToListAsync();
+
+        var query = context.CrmOportunidades
+            .AsNoTracking()
+            .Include(o => o.Contato)
+            .Include(o => o.Etapa)
+            .AsQueryable();
+
+        if (!podeVerTodos)
+            query = query.Where(o => o.ResponsavelUserId == meuId);
+
+        oportunidades = await query.OrderByDescending(o => o.CriadoEm).ToListAsync();
+    }
+
+    private void Nova() => Navigation.NavigateTo("/crm/oportunidades/novo");
+    private void Editar(int id) => Navigation.NavigateTo($"/crm/oportunidades/editar/{id}");
+
+    private async Task ExcluirAsync(int id)
+    {
+        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta oportunidade?");
+        if (!confirmado)
+            return;
+
+        var usuario = AuthState is null ? null : (await AuthState).User;
+        await using var context = await DbFactory.CreateDbContextAsync(usuario);
+
+        var entidade = await context.CrmOportunidades.FindAsync(id);
+        if (entidade is not null)
+        {
+            context.CrmOportunidades.Remove(entidade);
+            await context.SaveChangesAsync();
+            await CarregarAsync();
+        }
+    }
+}

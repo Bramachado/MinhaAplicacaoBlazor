@@ -1,3 +1,6 @@
+dotnet publish -c Release
+
+
 git status
 git add .
 git commit -m "Descrição da alteração"
@@ -18,3 +21,22 @@ unzip -o publish.zip
 
 //remover
 rm publish.zip
+rm -rf /var/www/MinhaAplicacaoBlazor/*
+
+//Compila e publica para versao de producao
+dotnet publish -c Release
+
+//Ver sites ativos no Nginx
+ls -la /etc/nginx/sites-enabled/
+
+//Ver configuração de cada site
+sudo cat /etc/nginx/sites-available/minhaaplicacao
+
+//Ver para qual porta cada app aponta
+sudo grep -R "proxy_pass" /etc/nginx/sites-enabled/
+
+//Desativar uma aplicação no Nginx
+//Para tirar uma aplicação do Nginx, remova o link em sites-enabled.
+sudo rm /etc/nginx/sites-enabled/blazor 
+sudo nginx -t
+sudo systemctl reload nginx

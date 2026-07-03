@@ -1,0 +1,188 @@
+@page "/crm/contatos/novo"
+@attribute [Authorize(Policy = "CrmContatos.Ver")]
+@page "/crm/contatos/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models.Crm
+@using MinhaAplicacaoBlazor.Services.Auth
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNovo ? "Novo Contato" : "Editar Contato")</PageTitle>
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h3 class="mb-0">@(IsNovo ? "Novo Contato" : "Editar Contato")</h3>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                <EditForm Model="contato" OnValidSubmit="SalvarAsync" FormName="form-crm-contato">
+                    <DataAnnotationsValidator />
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nome <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="contato.Nome" />
+                            <ValidationMessage For="@(() => contato.Nome)" class="text-danger small" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Empresa</label>
+                            <InputText class="form-control" @bind-Value="contato.EmpresaNome" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">E-mail</label>
+                            <InputText type="email" class="form-control" @bind-Value="contato.Email" />
+                            <ValidationMessage For="@(() => contato.Email)" class="text-danger small" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Telefone</label>
+                            <InputText class="form-control" @bind-Value="contato.Telefone" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Cargo</label>
+                            <InputText class="form-control" @bind-Value="contato.Cargo" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Origem</label>
+                            <InputText class="form-control" list="origens-crm" @bind-Value="contato.Origem" />
+                            <datalist id="origens-crm">
+                                <option value="Indicação" />
+                                <option value="Site" />
+                                <option value="Evento" />
+                                <option value="Redes sociais" />
+                                <option value="Ligação" />
+                                <option value="Outro" />
+                            </datalist>
+                        </div>
+                        <div class="col-md-8 mb-3 d-flex align-items-end">
+                            <div class="form-check">
+                                <InputCheckbox class="form-check-input" id="ativo-crm-contato" @bind-Value="contato.Ativo" />
+                                <label class="form-check-label" for="ativo-crm-contato">Contato ativo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Observações</label>
+                            <InputTextArea class="form-control" rows="3" @bind-Value="contato.Observacoes" />
+                        </div>
+                    </div>
+
+                    @if (!IsNovo && !string.IsNullOrWhiteSpace(contato.ResponsavelNome))
+                    {
+                        <p class="text-muted small">Responsável: <strong>@contato.ResponsavelNome</strong></p>
+                    }
+
+                    @if (!string.IsNullOrEmpty(mensagemErro))
+                    {
+                        <div class="alert alert-danger">@mensagemErro</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" disabled="@salvando">
+                            @(salvando ? "Salvando..." : "Salvar")
+                        </button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    private CrmContato contato = new();
+    private bool carregando = true;
+    private bool salvando;
+    private string? mensagemErro;
+
+    private string? meuId;
+    private string meuNome = string.Empty;
+    private bool podeVerTodos;
+
+    private bool IsNovo => Id is null or 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState is not null)
+        {
+            var user = (await AuthState).User;
+            meuId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            meuNome = user.FindFirst("nome_completo")?.Value ?? user.Identity?.Name ?? "Desconhecido";
+            podeVerTodos = user.Claims.Any(c =>
+                c.Type == ClaimsPermissao.TipoPermissao && c.Value == "CrmContatos.VerTodos");
+        }
+
+        if (!IsNovo)
+        {
+            await using var context = await DbFactory.CreateDbContextAsync();
+            var existente = await context.CrmContatos.AsNoTracking().FirstOrDefaultAsync(c => c.Id == Id);
+
+            if (existente is null || (!podeVerTodos && existente.ResponsavelUserId != meuId))
+            {
+                Navigation.NavigateTo("/crm/contatos");
+                return;
+            }
+
+            contato = existente;
+        }
+
+        carregando = false;
+    }
+
+    private async Task SalvarAsync()
+    {
+        mensagemErro = null;
+        salvando = true;
+        try
+        {
+            var usuario = AuthState is null ? null : (await AuthState).User;
+            await using var context = await DbFactory.CreateDbContextAsync(usuario);
+
+            if (IsNovo)
+            {
+                contato.ResponsavelUserId = meuId;
+                contato.ResponsavelNome = meuNome;
+                context.CrmContatos.Add(contato);
+            }
+            else
+            {
+                context.CrmContatos.Update(contato);
+            }
+
+            await context.SaveChangesAsync();
+            Navigation.NavigateTo("/crm/contatos");
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = $"Erro ao salvar: {ex.Message}";
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/crm/contatos");
+}
