@@ -1,4 +1,5 @@
 @page "/financeiro/cnab/nova-remessa"
+@attribute [Authorize(Policy = "Cnab.Ver")]
 @rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
@@ -71,7 +72,9 @@
             <div class="d-flex gap-2 mt-3">
                 <button class="btn btn-primary" @onclick="CarregarPagamentosAsync" disabled="@(competenciaId == 0)">Carregar Pagamentos</button>
                 <button class="btn btn-info" @onclick="ValidarAsync" disabled="@(pagamentos.Count == 0)">Validar</button>
-                <button class="btn btn-success" @onclick="GerarRemessaAsync" disabled="@(pagamentos.Count == 0 || formaId == 0 || cfgId == 0)">Gerar Remessa</button>
+                <PermissaoView Requer="Cnab.Criar">
+                    <button class="btn btn-success" @onclick="GerarRemessaAsync" disabled="@(pagamentos.Count == 0 || formaId == 0 || cfgId == 0)">Gerar Remessa</button>
+                </PermissaoView>
             </div>
         </div>
     </div>

@@ -1,0 +1,84 @@
+@page "/admin/usuarios"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "Usuarios.Ver")]
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models.Auth
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+<PageTitle>Usuários</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Usuários</h1>
+    <AuthorizeView Policy="Usuarios.Criar">
+        <a class="btn btn-primary" href="admin/usuarios/novo">+ Novo Usuário</a>
+    </AuthorizeView>
+</div>
+
+@if (usuarios is null)
+{
+    <p>Carregando...</p>
+}
+else if (usuarios.Count == 0)
+{
+    <p>Nenhum usuário cadastrado.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Perfil</th>
+                <th>Situação</th>
+                <th style="width:1%"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var u in usuarios)
+            {
+                <tr>
+                    <td>@u.NomeCompleto</td>
+                    <td>@u.Email</td>
+                    <td>@(u.Perfil ?? "—")</td>
+                    <td>
+                        @if (u.Ativo)
+                        {
+                            <span class="badge bg-success">Ativo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inativo</span>
+                        }
+                    </td>
+                    <td class="text-nowrap">
+                        <AuthorizeView Policy="Usuarios.Editar" Context="edit">
+                            <a class="btn btn-sm btn-outline-primary" href="@($"admin/usuarios/{u.Id}")">Editar</a>
+                        </AuthorizeView>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<UsuarioVm>? usuarios;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        usuarios = await db.Users
+            .OrderBy(u => u.NomeCompleto)
+            .Select(u => new UsuarioVm(
+                u.Id,
+                u.NomeCompleto,
+                u.Email,
+                u.Ativo,
+                u.Perfil != null ? u.Perfil.Nome : null))
+            .ToListAsync();
+    }
+
+    private record UsuarioVm(string Id, string NomeCompleto, string? Email, bool Ativo, string? Perfil);
+}

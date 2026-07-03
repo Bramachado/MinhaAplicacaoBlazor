@@ -1,4 +1,5 @@
 @page "/escalas-aulas-praticas/novo"
+@attribute [Authorize(Policy = "EscalasAulasPraticas.Ver")]
 @page "/escalas-aulas-praticas/editar/{Id:int}"
 @rendermode InteractiveServer
 

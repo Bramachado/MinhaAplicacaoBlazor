@@ -1,4 +1,5 @@
 @page "/contas-bancarias/novo"
+@attribute [Authorize(Policy = "ContasBancarias.Ver")]
 @page "/contas-bancarias/editar/{Id:int}"
 @rendermode InteractiveServer
 

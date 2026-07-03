@@ -1,0 +1,103 @@
+@page "/admin/perfis"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "Perfis.Ver")]
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models.Auth
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Perfis de Acesso</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Perfis de Acesso</h1>
+    <AuthorizeView Policy="Perfis.Criar">
+        <a class="btn btn-primary" href="admin/perfis/novo">+ Novo Perfil</a>
+    </AuthorizeView>
+</div>
+
+@if (perfis is null)
+{
+    <p>Carregando...</p>
+}
+else if (perfis.Count == 0)
+{
+    <p>Nenhum perfil cadastrado.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Descrição</th>
+                <th>Permissões</th>
+                <th style="width:1%"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in perfis)
+            {
+                <tr>
+                    <td>@p.Nome @(p.Sistema ? "🔒" : "")</td>
+                    <td>@p.Descricao</td>
+                    <td>@p.QtdPermissoes</td>
+                    <td class="text-nowrap">
+                        <AuthorizeView Policy="Perfis.Editar" Context="edit">
+                            <a class="btn btn-sm btn-outline-primary" href="@($"admin/perfis/{p.Id}")">Editar</a>
+                        </AuthorizeView>
+                        @if (!p.Sistema)
+                        {
+                            <AuthorizeView Policy="Perfis.Excluir" Context="del">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => Excluir(p.Id)">Excluir</button>
+                            </AuthorizeView>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<PerfilVm>? perfis;
+
+    protected override async Task OnInitializedAsync() => await Carregar();
+
+    private async Task Carregar()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        perfis = await db.Perfis
+            .OrderBy(p => p.Nome)
+            .Select(p => new PerfilVm(p.Id, p.Nome, p.Descricao, p.Sistema, p.Permissoes.Count))
+            .ToListAsync();
+    }
+
+    private async Task Excluir(int id)
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var perfil = await db.Perfis.FindAsync(id);
+        if (perfil is null || perfil.Sistema) return;
+
+        // Impede excluir perfil ainda em uso.
+        var emUso = await db.Users.AnyAsync(u => u.PerfilId == id);
+        if (emUso)
+        {
+            erro = "Não é possível excluir: há usuários com este perfil.";
+            return;
+        }
+
+        db.Perfis.Remove(perfil);
+        await db.SaveChangesAsync();
+        await Carregar();
+    }
+
+    private string? erro;
+
+    private record PerfilVm(int Id, string Nome, string? Descricao, bool Sistema, int QtdPermissoes);
+}
+
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger">@erro</div>
+}

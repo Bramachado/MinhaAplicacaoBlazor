@@ -1,4 +1,5 @@
 @page "/folhas-fornecedores/novo"
+@attribute [Authorize(Policy = "FolhasFornecedores.Ver")]
 @page "/folhas-fornecedores/editar/{Id:int}"
 @rendermode InteractiveServer
 

@@ -5,3 +5,16 @@ git push  //Envia para a nuvem do github
 
 
 git pull //baixa para o seu repositorio local
+
+//Enviar para VPN
+
+scp "D:\OneDrive\Documentos\MeusAPP_git\MinhaAplicacaoBlazor\bin\Release\net10.0\publish.zip" root@2.24.64.158:/var/www/MinhaAplicacaoBlazor/
+
+//Descompactar
+unzip arquivo.zip
+
+//Descompactar sobrescrevendo arquivos existentes
+unzip -o publish.zip
+
+//remover
+rm publish.zip

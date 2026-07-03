@@ -1,4 +1,5 @@
 @page "/cursos/novo"
+@attribute [Authorize(Policy = "Cursos.Ver")]
 @page "/cursos/editar/{Id:int}"
 @rendermode InteractiveServer
 

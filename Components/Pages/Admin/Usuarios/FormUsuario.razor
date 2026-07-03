@@ -1,0 +1,312 @@
+@page "/admin/usuarios/novo"
+@page "/admin/usuarios/{Id}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "Usuarios.Editar")]
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models.Auth
+@inject UserManager<ApplicationUser> UserManager
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(EhNovo ? "Novo Usuário" : "Editar Usuário")</PageTitle>
+
+<h1>@(EhNovo ? "Novo Usuário" : $"Editar Usuário: {nomeCompleto}")</h1>
+
+@if (carregando)
+{
+    <p>Carregando...</p>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(erro))
+    {
+        <div class="alert alert-danger">@erro</div>
+    }
+    @if (!string.IsNullOrEmpty(sucesso))
+    {
+        <div class="alert alert-success">@sucesso</div>
+    }
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <label class="form-label">Nome completo</label>
+            <input class="form-control" @bind="nomeCompleto" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">E-mail (login)</label>
+            <input class="form-control" @bind="email" disabled="@(!EhNovo)" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Perfil</label>
+            <select class="form-select" value="@perfilId" @onchange="OnPerfilChanged">
+                <option value="">— Sem perfil —</option>
+                @foreach (var p in perfisDisponiveis)
+                {
+                    <option value="@p.Id">@p.Nome</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-6 d-flex align-items-end">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="ativo" @bind="ativo" />
+                <label class="form-check-label" for="ativo">Usuário ativo</label>
+            </div>
+        </div>
+
+        @if (EhNovo)
+        {
+            <div class="col-md-6">
+                <label class="form-label">Senha</label>
+                <input class="form-control" type="password" @bind="senha" />
+            </div>
+        }
+        else
+        {
+            <div class="col-md-6">
+                <label class="form-label">Nova senha (deixe vazio para manter)</label>
+                <input class="form-control" type="password" @bind="novaSenha" />
+            </div>
+        }
+    </div>
+
+    <h4 class="mt-4">Permissões</h4>
+    <p class="text-muted small mb-2">
+        A base vem do perfil. Use <strong>Conceder</strong> para dar algo a mais, ou
+        <strong>Revogar</strong> para tirar algo que o perfil concede. As células destacadas
+        já são concedidas pelo perfil.
+    </p>
+
+    @foreach (var grupo in Permissoes.PorGrupo())
+    {
+        <div class="card mb-3">
+            <div class="card-header fw-bold">@grupo.Key</div>
+            <div class="card-body p-0" style="overflow-x:auto;">
+                <table class="table table-sm mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width:28%">Módulo</th>
+                            @foreach (var acao in AcoesColunas)
+                            {
+                                <th class="text-center">@acao</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var modulo in grupo)
+                        {
+                            <tr>
+                                <td>@modulo.Rotulo</td>
+                                @foreach (var acao in AcoesColunas)
+                                {
+                                    var chave = $"{modulo.Chave}.{acao}";
+                                    var existe = modulo.Acoes.Any(a => a.Chave == acao);
+                                    var noPerfil = doPerfil.Contains(chave);
+                                    <td class="text-center @(noPerfil ? "table-info" : "")">
+                                        @if (existe)
+                                        {
+                                            <select class="form-select form-select-sm"
+                                                    value="@((int)EstadoDe(chave))"
+                                                    @onchange="e => DefinirEstado(chave, e.Value!)">
+                                                <option value="0">Herdar@(noPerfil ? " (✓)" : " (—)")</option>
+                                                <option value="1">Conceder ✓</option>
+                                                <option value="2">Revogar ✗</option>
+                                            </select>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" @onclick="Salvar" disabled="@salvando">Salvar</button>
+        <a class="btn btn-outline-secondary" href="admin/usuarios">Voltar</a>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Id { get; set; }
+
+    private enum Estado { Herdar = 0, Conceder = 1, Revogar = 2 }
+
+    private static readonly string[] AcoesColunas = { Permissoes.Ver, Permissoes.Criar, Permissoes.Editar, Permissoes.Excluir };
+
+    private bool EhNovo => string.IsNullOrEmpty(Id);
+    private bool carregando = true;
+    private bool salvando;
+
+    private string nomeCompleto = string.Empty;
+    private string email = string.Empty;
+    private bool ativo = true;
+    private int? perfilId;
+    private string senha = string.Empty;
+    private string novaSenha = string.Empty;
+
+    private List<PerfilOpt> perfisDisponiveis = new();
+    private HashSet<string> doPerfil = new();
+    private readonly Dictionary<string, Estado> ajustes = new();
+
+    private string? erro;
+    private string? sucesso;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        perfisDisponiveis = await db.Perfis
+            .OrderBy(p => p.Nome)
+            .Select(p => new PerfilOpt(p.Id, p.Nome))
+            .ToListAsync();
+
+        if (!EhNovo)
+        {
+            var user = await UserManager.FindByIdAsync(Id!);
+            if (user is null)
+            {
+                erro = "Usuário não encontrado.";
+                carregando = false;
+                return;
+            }
+
+            nomeCompleto = user.NomeCompleto;
+            email = user.Email ?? string.Empty;
+            ativo = user.Ativo;
+            perfilId = user.PerfilId;
+
+            var overrides = await db.UsuarioPermissoes
+                .Where(p => p.UsuarioId == user.Id)
+                .ToListAsync();
+            foreach (var o in overrides)
+                ajustes[o.Permissao] = o.Concedida ? Estado.Conceder : Estado.Revogar;
+        }
+
+        await CarregarPermissoesDoPerfil(db);
+        carregando = false;
+    }
+
+    private async Task CarregarPermissoesDoPerfil(AppDbContext db)
+    {
+        doPerfil = perfilId is null
+            ? new HashSet<string>()
+            : (await db.PerfilPermissoes
+                .Where(p => p.PerfilId == perfilId)
+                .Select(p => p.Permissao)
+                .ToListAsync()).ToHashSet();
+    }
+
+    private async Task OnPerfilChanged(ChangeEventArgs e)
+    {
+        perfilId = int.TryParse(e.Value?.ToString(), out var v) ? v : (int?)null;
+        await using var db = await DbFactory.CreateDbContextAsync();
+        await CarregarPermissoesDoPerfil(db);
+    }
+
+    private Estado EstadoDe(string chave) => ajustes.TryGetValue(chave, out var e) ? e : Estado.Herdar;
+
+    private void DefinirEstado(string chave, object valor)
+    {
+        var estado = (Estado)int.Parse(valor.ToString()!);
+        if (estado == Estado.Herdar) ajustes.Remove(chave);
+        else ajustes[chave] = estado;
+    }
+
+    private async Task Salvar()
+    {
+        erro = sucesso = null;
+
+        if (string.IsNullOrWhiteSpace(nomeCompleto)) { erro = "Informe o nome."; return; }
+        if (string.IsNullOrWhiteSpace(email)) { erro = "Informe o e-mail."; return; }
+
+        salvando = true;
+        try
+        {
+            ApplicationUser user;
+
+            if (EhNovo)
+            {
+                if (string.IsNullOrWhiteSpace(senha)) { erro = "Informe a senha."; return; }
+
+                user = new ApplicationUser
+                {
+                    UserName = email.Trim(),
+                    Email = email.Trim(),
+                    EmailConfirmed = true,
+                    NomeCompleto = nomeCompleto.Trim(),
+                    Ativo = ativo,
+                    PerfilId = perfilId
+                };
+
+                var criado = await UserManager.CreateAsync(user, senha);
+                if (!criado.Succeeded)
+                {
+                    erro = string.Join(" ", criado.Errors.Select(e => e.Description));
+                    return;
+                }
+            }
+            else
+            {
+                user = (await UserManager.FindByIdAsync(Id!))!;
+                user.NomeCompleto = nomeCompleto.Trim();
+                user.Ativo = ativo;
+                user.PerfilId = perfilId;
+
+                var atualizado = await UserManager.UpdateAsync(user);
+                if (!atualizado.Succeeded)
+                {
+                    erro = string.Join(" ", atualizado.Errors.Select(e => e.Description));
+                    return;
+                }
+
+                if (!string.IsNullOrWhiteSpace(novaSenha))
+                {
+                    var token = await UserManager.GeneratePasswordResetTokenAsync(user);
+                    var reset = await UserManager.ResetPasswordAsync(user, token, novaSenha);
+                    if (!reset.Succeeded)
+                    {
+                        erro = string.Join(" ", reset.Errors.Select(e => e.Description));
+                        return;
+                    }
+                }
+            }
+
+            // Sincroniza os ajustes individuais de permissão.
+            await using (var db = await DbFactory.CreateDbContextAsync())
+            {
+                var existentes = await db.UsuarioPermissoes
+                    .Where(p => p.UsuarioId == user.Id)
+                    .ToListAsync();
+
+                db.UsuarioPermissoes.RemoveRange(existentes);
+
+                foreach (var (chave, estado) in ajustes)
+                {
+                    if (!Permissoes.Existe(chave)) continue;
+                    db.UsuarioPermissoes.Add(new UsuarioPermissao
+                    {
+                        UsuarioId = user.Id,
+                        Permissao = chave,
+                        Concedida = estado == Estado.Conceder
+                    });
+                }
+                await db.SaveChangesAsync();
+            }
+
+            // Invalida a sessão atual do usuário para que as novas permissões
+            // passem a valer no próximo acesso (ou desligue o acesso, se revogado).
+            await UserManager.UpdateSecurityStampAsync(user);
+
+            Navigation.NavigateTo("admin/usuarios");
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+
+    private record PerfilOpt(int Id, string Nome);
+}

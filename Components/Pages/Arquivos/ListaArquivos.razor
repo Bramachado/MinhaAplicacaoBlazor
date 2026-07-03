@@ -1,4 +1,5 @@
 @page "/arquivos"
+@attribute [Authorize(Policy = "Arquivos.Ver")]
 @rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
@@ -15,9 +16,11 @@
         <h1>Arquivos / Comprovantes</h1>
     </div>
 
-    <div class="mb-4">
-        <UploadArquivo Titulo="Enviar Comprovante / Nota" OnUploaded="CarregarDadosAsync" />
-    </div>
+    <PermissaoView Requer="Arquivos.Criar">
+        <div class="mb-4">
+            <UploadArquivo Titulo="Enviar Comprovante / Nota" OnUploaded="CarregarDadosAsync" />
+        </div>
+    </PermissaoView>
 
     <div class="row mb-3 g-2">
         <div class="col-md-4">
@@ -40,7 +43,7 @@
     else
     {
         <div class="table-responsive">
-            <QuickGrid Items="ArquivosFiltrados" Pagination="pagination" Class="table table-striped table-hover align-middle">
+            <QuickGrid Items="ArquivosFiltrados" Pagination="@pagination.QuandoNecessario(ArquivosFiltrados)" Class="table table-striped table-hover align-middle">
                 <PropertyColumn Property="@(a => a.Data)" Format="dd/MM/yyyy HH:mm" Title="Data" Sortable="true"
                                 InitialSortDirection="SortDirection.Descending" IsDefaultSortColumn="true" />
                 <PropertyColumn Property="@(a => a.Descricao)" Title="Descrição" Sortable="true" />
@@ -58,13 +61,15 @@
                             <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
                         </svg>
                     </button>
-                    <button class="btn btn-sm btn-outline-danger" title="Excluir"
-                            @onclick="() => ExcluirAsync(context.Id)">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-                            <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
-                        </svg>
-                    </button>
+                    <PermissaoView Requer="Arquivos.Excluir">
+                        <button class="btn btn-sm btn-outline-danger" title="Excluir"
+                                @onclick="() => ExcluirAsync(context.Id)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                            </svg>
+                        </button>
+                    </PermissaoView>
                 </TemplateColumn>
             </QuickGrid>
         </div>

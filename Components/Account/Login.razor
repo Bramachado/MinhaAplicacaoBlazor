@@ -1,0 +1,113 @@
+@page "/login"
+@layout MinhaAplicacaoBlazor.Components.Layout.EmptyLayout
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using MinhaAplicacaoBlazor.Models.Auth
+@attribute [AllowAnonymous]
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+
+<PageTitle>Entrar - Edunorte ERP</PageTitle>
+
+<div class="login-card">
+    <img src="favicon.png" alt="Edunorte" class="login-logo" />
+    <div class="login-brand">Edunorte ERP</div>
+    <h1 class="login-title">Bem-vindo</h1>
+    <p class="login-subtitle">Entre com suas credenciais para acessar o sistema</p>
+
+    @if (!string.IsNullOrEmpty(erro))
+    {
+        <div class="alert alert-danger" role="alert">@erro</div>
+    }
+
+    <EditForm Model="Input" method="post" OnValidSubmit="Autenticar" FormName="login">
+        <DataAnnotationsValidator />
+
+        <div class="mb-3">
+            <label class="form-label">E-mail</label>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z"/>
+                    </svg>
+                </span>
+                <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" placeholder="seu@email.com" />
+            </div>
+            <ValidationMessage For="() => Input.Email" class="text-danger" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Senha</label>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
+                    </svg>
+                </span>
+                <InputText type="password" @bind-Value="Input.Senha" class="form-control" autocomplete="current-password" placeholder="••••••••" />
+            </div>
+            <ValidationMessage For="() => Input.Senha" class="text-danger" />
+        </div>
+
+        <div class="form-check mb-4">
+            <InputCheckbox @bind-Value="Input.Lembrar" class="form-check-input" id="lembrar" />
+            <label class="form-check-label" for="lembrar">Manter conectado</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">Entrar</button>
+    </EditForm>
+
+    <div class="login-footer">© @DateTime.Now.Year Edunorte — Todos os direitos reservados</div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private LoginInput Input { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string? erro;
+
+    protected override void OnInitialized() => Input ??= new();
+
+    private async Task Autenticar()
+    {
+        var usuario = await UserManager.FindByEmailAsync(Input.Email);
+        if (usuario is null || !usuario.Ativo)
+        {
+            erro = "E-mail ou senha inválidos, ou usuário inativo.";
+            return;
+        }
+
+        var resultado = await SignInManager.PasswordSignInAsync(
+            usuario.UserName!, Input.Senha, Input.Lembrar, lockoutOnFailure: true);
+
+        if (resultado.Succeeded)
+        {
+            Navigation.NavigateTo(ReturnUrl ?? "/");
+        }
+        else if (resultado.IsLockedOut)
+        {
+            erro = "Conta bloqueada temporariamente por excesso de tentativas. Tente novamente em alguns minutos.";
+        }
+        else
+        {
+            erro = "E-mail ou senha inválidos.";
+        }
+    }
+
+    private sealed class LoginInput
+    {
+        [Required(ErrorMessage = "Informe o e-mail.")]
+        [EmailAddress(ErrorMessage = "E-mail inválido.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Informe a senha.")]
+        public string Senha { get; set; } = string.Empty;
+
+        public bool Lembrar { get; set; }
+    }
+}

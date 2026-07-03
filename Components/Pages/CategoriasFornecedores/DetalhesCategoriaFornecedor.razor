@@ -1,4 +1,5 @@
 @page "/categorias-fornecedores/detalhes/{Id:int}"
+@attribute [Authorize(Policy = "CategoriasFornecedores.Ver")]
 @rendermode InteractiveServer
 
 @using MinhaAplicacaoBlazor.Models
@@ -56,7 +57,9 @@
                 </dl>
 
                 <div class="d-flex gap-2 mt-3">
-                    <button class="btn btn-primary" @onclick="Editar">Editar</button>
+                    <PermissaoView Requer="CategoriasFornecedores.Editar">
+                        <button class="btn btn-primary" @onclick="Editar">Editar</button>
+                    </PermissaoView>
                     <button class="btn btn-secondary" @onclick="Voltar">Voltar</button>
                 </div>
             }

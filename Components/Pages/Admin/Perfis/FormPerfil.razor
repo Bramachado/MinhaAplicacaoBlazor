@@ -1,0 +1,186 @@
+@page "/admin/perfis/novo"
+@page "/admin/perfis/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "Perfis.Editar")]
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models.Auth
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(EhNovo ? "Novo Perfil" : "Editar Perfil")</PageTitle>
+
+<h1>@(EhNovo ? "Novo Perfil" : $"Editar Perfil: {nome}")</h1>
+
+@if (carregando)
+{
+    <p>Carregando...</p>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(erro))
+    {
+        <div class="alert alert-danger">@erro</div>
+    }
+
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label class="form-label">Nome</label>
+            <input class="form-control" @bind="nome" disabled="@sistema" />
+        </div>
+        <div class="col-md-8">
+            <label class="form-label">Descrição</label>
+            <input class="form-control" @bind="descricao" />
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-3">
+        <button class="btn btn-sm btn-outline-secondary" @onclick="MarcarTodas">Marcar todas</button>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="DesmarcarTodas">Desmarcar todas</button>
+    </div>
+
+    @foreach (var grupo in Permissoes.PorGrupo())
+    {
+        <div class="card mb-3">
+            <div class="card-header fw-bold">@grupo.Key</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width:40%">Módulo</th>
+                            @foreach (var acao in AcoesColunas)
+                            {
+                                <th class="text-center">@acao</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var modulo in grupo)
+                        {
+                            <tr>
+                                <td>@modulo.Rotulo</td>
+                                @foreach (var acao in AcoesColunas)
+                                {
+                                    var chave = $"{modulo.Chave}.{acao}";
+                                    var existe = modulo.Acoes.Any(a => a.Chave == acao);
+                                    <td class="text-center">
+                                        @if (existe)
+                                        {
+                                            <input type="checkbox" checked="@selecionadas.Contains(chave)"
+                                                   @onchange="e => Alternar(chave, (bool)e.Value!)" />
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" @onclick="Salvar" disabled="@salvando">Salvar</button>
+        <a class="btn btn-outline-secondary" href="admin/perfis">Cancelar</a>
+    </div>
+}
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private static readonly string[] AcoesColunas = { Permissoes.Ver, Permissoes.Criar, Permissoes.Editar, Permissoes.Excluir };
+
+    private bool EhNovo => Id is null;
+    private bool carregando = true;
+    private bool salvando;
+    private bool sistema;
+    private string nome = string.Empty;
+    private string? descricao;
+    private HashSet<string> selecionadas = new();
+    private string? erro;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!EhNovo)
+        {
+            await using var db = await DbFactory.CreateDbContextAsync();
+            var perfil = await db.Perfis
+                .Include(p => p.Permissoes)
+                .FirstOrDefaultAsync(p => p.Id == Id);
+
+            if (perfil is null)
+            {
+                erro = "Perfil não encontrado.";
+                carregando = false;
+                return;
+            }
+
+            nome = perfil.Nome;
+            descricao = perfil.Descricao;
+            sistema = perfil.Sistema;
+            selecionadas = perfil.Permissoes.Select(p => p.Permissao).ToHashSet();
+        }
+        carregando = false;
+    }
+
+    private void Alternar(string chave, bool marcado)
+    {
+        if (marcado) selecionadas.Add(chave);
+        else selecionadas.Remove(chave);
+    }
+
+    private void MarcarTodas() => selecionadas = new HashSet<string>(Permissoes.Todas);
+    private void DesmarcarTodas() => selecionadas.Clear();
+
+    private async Task Salvar()
+    {
+        erro = null;
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            erro = "Informe o nome do perfil.";
+            return;
+        }
+
+        salvando = true;
+        try
+        {
+            await using var db = await DbFactory.CreateDbContextAsync();
+
+            Perfil perfil;
+            if (EhNovo)
+            {
+                if (await db.Perfis.AnyAsync(p => p.Nome == nome))
+                {
+                    erro = "Já existe um perfil com esse nome.";
+                    return;
+                }
+                perfil = new Perfil { Nome = nome, Descricao = descricao };
+                db.Perfis.Add(perfil);
+                await db.SaveChangesAsync();
+            }
+            else
+            {
+                perfil = await db.Perfis.Include(p => p.Permissoes).FirstAsync(p => p.Id == Id);
+                if (!perfil.Sistema) perfil.Nome = nome;
+                perfil.Descricao = descricao;
+            }
+
+            // Sincroniza permissões: remove as tiradas, adiciona as novas.
+            var atuais = perfil.Permissoes.Select(p => p.Permissao).ToHashSet();
+            var validas = selecionadas.Where(Permissoes.Existe).ToHashSet();
+
+            foreach (var pp in perfil.Permissoes.Where(p => !validas.Contains(p.Permissao)).ToList())
+                db.PerfilPermissoes.Remove(pp);
+
+            foreach (var nova in validas.Where(v => !atuais.Contains(v)))
+                db.PerfilPermissoes.Add(new PerfilPermissao { PerfilId = perfil.Id, Permissao = nova });
+
+            await db.SaveChangesAsync();
+            Navigation.NavigateTo("admin/perfis");
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+}

@@ -1,17 +1,23 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using MinhaAplicacaoBlazor.Models;
+using MinhaAplicacaoBlazor.Models.Auth;
 using MinhaAplicacaoBlazor.Models.Cnab;
 using MinhaAplicacaoBlazor.Data;
 
 
 namespace MinhaAplicacaoBlazor.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext<ApplicationUser>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
     }
+
+    public DbSet<Perfil> Perfis => Set<Perfil>();
+    public DbSet<PerfilPermissao> PerfilPermissoes => Set<PerfilPermissao>();
+    public DbSet<UsuarioPermissao> UsuarioPermissoes => Set<UsuarioPermissao>();
 
     public DbSet<Tutor> Tutores => Set<Tutor>();
     public DbSet<Titulacao> Titulacoes => Set<Titulacao>();
@@ -44,6 +50,37 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // === Autenticação / Permissões ===
+        modelBuilder.Entity<Perfil>()
+            .HasIndex(x => x.Nome)
+            .IsUnique();
+
+        modelBuilder.Entity<ApplicationUser>()
+            .HasOne(x => x.Perfil)
+            .WithMany(x => x.Usuarios)
+            .HasForeignKey(x => x.PerfilId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<PerfilPermissao>()
+            .HasIndex(x => new { x.PerfilId, x.Permissao })
+            .IsUnique();
+
+        modelBuilder.Entity<PerfilPermissao>()
+            .HasOne(x => x.Perfil)
+            .WithMany(x => x.Permissoes)
+            .HasForeignKey(x => x.PerfilId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<UsuarioPermissao>()
+            .HasIndex(x => new { x.UsuarioId, x.Permissao })
+            .IsUnique();
+
+        modelBuilder.Entity<UsuarioPermissao>()
+            .HasOne(x => x.Usuario)
+            .WithMany(x => x.Permissoes)
+            .HasForeignKey(x => x.UsuarioId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Titulacao>()
             .Property(x => x.ValorHoraAulaNormal)

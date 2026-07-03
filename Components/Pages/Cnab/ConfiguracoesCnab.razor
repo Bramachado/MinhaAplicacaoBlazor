@@ -1,4 +1,5 @@
 @page "/financeiro/cnab/configuracoes"
+@attribute [Authorize(Policy = "Cnab.Ver")]
 @rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
@@ -13,7 +14,9 @@
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1>Configurações CNAB</h1>
-        <button class="btn btn-primary" @onclick="Nova">Nova Configuração</button>
+        <PermissaoView Requer="Cnab.Criar">
+            <button class="btn btn-primary" @onclick="Nova">Nova Configuração</button>
+        </PermissaoView>
     </div>
 
     @if (configuracoes is null)
@@ -59,8 +62,12 @@
                                 }
                             </td>
                             <td class="text-end">
-                                <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => Editar(c)">Editar</button>
-                                <button class="btn btn-sm btn-outline-warning" @onclick="() => AlternarAtivaAsync(c)">@(c.Ativa ? "Inativar" : "Ativar")</button>
+                                <PermissaoView Requer="Cnab.Editar">
+                                    <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => Editar(c)">Editar</button>
+                                </PermissaoView>
+                                <PermissaoView Requer="Cnab.Editar">
+                                    <button class="btn btn-sm btn-outline-warning" @onclick="() => AlternarAtivaAsync(c)">@(c.Ativa ? "Inativar" : "Ativar")</button>
+                                </PermissaoView>
                             </td>
                         </tr>
                     }

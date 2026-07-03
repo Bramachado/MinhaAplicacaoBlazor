@@ -1,4 +1,5 @@
 @page "/financeiro/cnab/remessas/{Id:int}"
+@attribute [Authorize(Policy = "Cnab.Ver")]
 @rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
@@ -49,14 +50,16 @@
 
         <div class="d-flex gap-2 mb-3 flex-wrap">
             <button class="btn btn-success" @onclick="BaixarAsync">Baixar .rem</button>
-            @if (remessa.Status == "Gerada")
-            {
-                <button class="btn btn-info" @onclick="MarcarEnviadaAsync">Marcar como Enviada</button>
-            }
-            @if (remessa.Status != "Cancelada" && remessa.Status != "Processada")
-            {
-                <button class="btn btn-danger" @onclick="CancelarAsync">Cancelar Remessa</button>
-            }
+            <PermissaoView Requer="Cnab.Editar">
+                @if (remessa.Status == "Gerada")
+                {
+                    <button class="btn btn-info" @onclick="MarcarEnviadaAsync">Marcar como Enviada</button>
+                }
+                @if (remessa.Status != "Cancelada" && remessa.Status != "Processada")
+                {
+                    <button class="btn btn-danger" @onclick="CancelarAsync">Cancelar Remessa</button>
+                }
+            </PermissaoView>
             <button class="btn btn-outline-primary" @onclick="IrImportarRetorno">Importar Retorno</button>
             <button class="btn btn-outline-secondary" @onclick="ToggleConteudo">@(mostrarConteudo ? "Ocultar" : "Visualizar") Conteúdo</button>
         </div>

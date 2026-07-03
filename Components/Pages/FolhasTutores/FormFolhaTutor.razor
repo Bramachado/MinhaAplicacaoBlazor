@@ -1,4 +1,5 @@
 @page "/folhas-tutores/novo"
+@attribute [Authorize(Policy = "FolhasTutores.Ver")]
 @page "/folhas-tutores/editar/{Id:int}"
 @rendermode InteractiveServer
 

@@ -1,4 +1,5 @@
 @page "/relatorios-financeiros"
+@attribute [Authorize(Policy = "RelatoriosFinanceiros.Ver")]
 @rendermode InteractiveServer
 
 @using System.Text

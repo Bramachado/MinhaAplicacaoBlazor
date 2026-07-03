@@ -1,4 +1,5 @@
 @page "/competencias/novo"
+@attribute [Authorize(Policy = "Competencias.Ver")]
 @page "/competencias/editar/{Id:int}"
 @rendermode InteractiveServer
 

@@ -1,4 +1,5 @@
 @page "/colaboradores/novo"
+@attribute [Authorize(Policy = "Colaboradores.Ver")]
 @page "/colaboradores/editar/{Id:int}"
 @rendermode InteractiveServer
 

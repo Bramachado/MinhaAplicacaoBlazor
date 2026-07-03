@@ -1,0 +1,35 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using MinhaAplicacaoBlazor.Services.Auth
+
+@*
+    Renderiza o conteúdo somente quando o usuário autenticado possui a permissão
+    informada (ex.: "Fornecedores.Editar"). Diferente do <AuthorizeView>, este
+    componente NÃO expõe uma variável 'context', então é seguro usá-lo dentro de
+    um <TemplateColumn> do QuickGrid sem conflitar com o 'context' da linha.
+*@
+@if (_autorizado)
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter, EditorRequired] public string Requer { get; set; } = string.Empty;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    private bool _autorizado;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (AuthState is null)
+        {
+            _autorizado = false;
+            return;
+        }
+
+        var user = (await AuthState).User;
+        _autorizado = user.Claims.Any(c =>
+            c.Type == ClaimsPermissao.TipoPermissao && c.Value == Requer);
+    }
+}
