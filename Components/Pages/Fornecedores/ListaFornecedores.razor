@@ -100,6 +100,16 @@
                         <span class="badge bg-secondary">Não</span>
                     }
                 </TemplateColumn>
+                <TemplateColumn Title="Conta" Sortable="true" SortBy="@sortPorConta" Align="Align.Center">
+                    @if (context.ContaBancariaId.HasValue)
+                    {
+                        <span class="badge bg-success">Sim</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">Não</span>
+                    }
+                </TemplateColumn>
                 <TemplateColumn Title="Ações" Align="Align.End">
                     <PermissaoView Requer="Fornecedores.Editar">
                         <button class="btn btn-sm btn-outline-secondary me-1"
@@ -142,6 +152,8 @@
     private readonly PaginationState pagination = new() { ItemsPerPage = 10 };
 
     private readonly GridSort<Fornecedor> sortPorAtivo = GridSort<Fornecedor>.ByAscending(f => f.Ativo);
+
+    private readonly GridSort<Fornecedor> sortPorConta = GridSort<Fornecedor>.ByAscending(f => f.ContaBancariaId != null);
 
     private IQueryable<Fornecedor> FornecedoresFiltrados
     {
