@@ -35,7 +35,7 @@
     </div>
 
     <div class="row mb-3 g-2 d-print-none">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <input type="text"
                    class="form-control"
                    placeholder="Pesquisar por nome, fantasia ou CPF/CNPJ..."
@@ -51,13 +51,20 @@
                 }
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <select class="form-select" @bind="filtroCategoriaId">
                 <option value="0">Todas as Categorias</option>
                 @foreach (var c in categorias)
                 {
                     <option value="@c.Id">@c.Nome</option>
                 }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="filtroTipoPagamento">
+                <option value="">Todos os Pagamentos</option>
+                <option value="Transferencia">Transferência</option>
+                <option value="Boleto">Boleto</option>
             </select>
         </div>
         <div class="col-md-1">
@@ -91,6 +98,16 @@
                 <PropertyColumn Property="@(f => f.CpfCnpj)" Title="CPF/CNPJ" />
                 <PropertyColumn Property="@(f => f.CategoriaFornecedor!.Nome)" Title="Categoria" Sortable="true" />
                 <PropertyColumn Property="@(f => f.Unidade!.Nome)" Title="Unidade" Sortable="true" />
+                <TemplateColumn Title="Pagamento" Sortable="true" SortBy="@sortPorTipoPagamento" Align="Align.Center">
+                    @if (context.TipoPagamento == "Transferencia")
+                    {
+                        <span class="badge bg-success">Transferência</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Boleto</span>
+                    }
+                </TemplateColumn>
                 <TemplateColumn Title="Ativo" Sortable="true" SortBy="@sortPorAtivo" Align="Align.Center">
                     @if (context.Ativo)
                     {
@@ -152,9 +169,12 @@
     private int filtroUnidadeId;
     private int filtroCategoriaId;
     private string filtroAtivo = string.Empty;
+    private string filtroTipoPagamento = string.Empty;
     private readonly PaginationState pagination = new() { ItemsPerPage = 10 };
 
     private readonly GridSort<Fornecedor> sortPorNome = GridSort<Fornecedor>.ByAscending(f => f.NomeRazaoSocial);
+
+    private readonly GridSort<Fornecedor> sortPorTipoPagamento = GridSort<Fornecedor>.ByAscending(f => f.TipoPagamento);
 
     private readonly GridSort<Fornecedor> sortPorAtivo = GridSort<Fornecedor>.ByAscending(f => f.Ativo);
 
@@ -183,6 +203,9 @@
 
             if (filtroCategoriaId > 0)
                 resultado = resultado.Where(f => f.CategoriaFornecedorId == filtroCategoriaId);
+
+            if (!string.IsNullOrEmpty(filtroTipoPagamento))
+                resultado = resultado.Where(f => f.TipoPagamento == filtroTipoPagamento);
 
             if (bool.TryParse(filtroAtivo, out var ativo))
                 resultado = resultado.Where(f => f.Ativo == ativo);

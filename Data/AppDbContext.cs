@@ -39,6 +39,7 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<PlanoConta> PlanosContas => Set<PlanoConta>();
     public DbSet<FormaPagamento> FormasPagamento => Set<FormaPagamento>();
     public DbSet<Fornecedor> Fornecedores => Set<Fornecedor>();
+    public DbSet<Banco> Bancos => Set<Banco>();
     public DbSet<ContaBancaria> ContasBancarias => Set<ContaBancaria>();
     public DbSet<Arquivo> Arquivos => Set<Arquivo>();
     public DbSet<Entrada> Entradas => Set<Entrada>();
@@ -387,6 +388,16 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(x => x.FornecedorId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<FolhaFornecedorItem>()
+            .HasOne(x => x.BancoPagador)
+            .WithMany()
+            .HasForeignKey(x => x.BancoPagadorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Banco>()
+            .HasIndex(x => x.NomeBanco)
+            .IsUnique();
+
         modelBuilder.Entity<Arquivo>()
             .HasOne(x => x.FolhaFornecedorItem)
             .WithMany(x => x.Arquivos)
@@ -403,6 +414,12 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(x => x.Competencia)
             .WithMany()
             .HasForeignKey(x => x.CompetenciaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Entrada>()
+            .HasOne(x => x.Banco)
+            .WithMany()
+            .HasForeignKey(x => x.BancoId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Arquivo>()

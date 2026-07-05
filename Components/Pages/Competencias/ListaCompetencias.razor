@@ -176,9 +176,18 @@
 
         if (entidade is not null)
         {
-            context.Competencias.Remove(entidade);
-            await context.SaveChangesAsync();
-            await CarregarDadosAsync();
+            try
+            {
+                context.Competencias.Remove(entidade);
+                await context.SaveChangesAsync();
+                await CarregarDadosAsync();
+            }
+            catch (DbUpdateException)
+            {
+                await JS.InvokeVoidAsync("alert",
+                    "Não é possível excluir esta competência: existem lançamentos, folhas ou entradas vinculados a ela. " +
+                    "Remova ou reassocie esses registros antes de excluir.");
+            }
         }
     }
 }

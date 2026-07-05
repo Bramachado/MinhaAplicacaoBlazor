@@ -73,8 +73,17 @@ public class CnabBtgGeracaoService
             .ToListAsync();
         foreach (var f in forn)
             foreach (var i in f.Itens)
+            {
+                // Pagamentos do tipo "Boleto" não entram no CNAB (só transferência/PIX).
+                var tipo = !string.IsNullOrWhiteSpace(i.TipoPagamento)
+                    ? i.TipoPagamento
+                    : (i.Fornecedor?.TipoPagamento ?? "Boleto");
+                if (string.Equals(tipo, "Boleto", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
                 lista.Add(Mapear("Fornecedor", i.Id, i.Fornecedor?.Unidade?.Nome,
                     i.Fornecedor?.NomeRazaoSocial, i.Fornecedor?.CpfCnpj, i.ValorTotalPagar, i.Fornecedor?.ContaBancaria));
+            }
 
         // Marca os que já estão em um CNAB ativo (gerado, não cancelado).
         var chavesEmCnab = await ctx.CnabBatchPayments.AsNoTracking()

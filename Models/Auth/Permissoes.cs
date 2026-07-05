@@ -74,6 +74,7 @@ public static class Permissoes
         // Financeiro
         new("PlanosContas", "Planos de Contas", "Financeiro", Crud),
         new("FormasPagamento", "Formas de Pagamento", "Financeiro", Crud),
+        new("Bancos", "Bancos", "Financeiro", Crud),
         new("Entradas", "Entradas", "Financeiro", Crud),
         new("LancamentosFinanceiros", "Lançamentos Financeiros", "Financeiro", Crud),
         new("Arquivos", "Arquivos", "Financeiro", Crud),

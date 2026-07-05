@@ -65,6 +65,27 @@
                     </div>
 
                     <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Banco (pagador)</label>
+                            <InputSelect class="form-select" @bind-Value="item.BancoPagadorId">
+                                <option value="">-- Selecione --</option>
+                                @foreach (var b in bancos)
+                                {
+                                    <option value="@b.Id">@b.NomeBanco</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipo de Pagamento</label>
+                            <InputSelect class="form-select" @bind-Value="item.TipoPagamento">
+                                <option value="">-- Selecione --</option>
+                                <option value="Boleto">Boleto</option>
+                                <option value="Transferencia">Transferência</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-8 mb-3">
                             <label class="form-label">Descrição</label>
                             <InputText class="form-control" @bind-Value="item.Descricao" />
@@ -139,6 +160,7 @@
     private FolhaFornecedorItem item = new();
     private FolhaFornecedor? folha;
     private List<Fornecedor> fornecedores = new();
+    private List<Banco> bancos = new();
     private bool carregando = true;
     private string? mensagemErro;
     private bool IsNovo => Id is null or 0;
@@ -187,6 +209,11 @@
             .OrderBy(f => f.NomeRazaoSocial)
             .ToListAsync();
 
+        bancos = await context.Bancos
+            .AsNoTracking()
+            .OrderBy(b => b.NomeBanco)
+            .ToListAsync();
+
         if (!IsNovo)
         {
             var existente = await context.FolhasFornecedoresItens
@@ -220,6 +247,9 @@
         item.Conta = fornecedor.ContaBancaria?.Conta;
         item.ChavePix = fornecedor.ContaBancaria?.ChavePix;
         item.NomeTitularConta = fornecedor.ContaBancaria?.NomeTitular;
+
+        // Tipo de pagamento derivado do fornecedor: com conta → Transferência, sem conta → Boleto.
+        item.TipoPagamento = fornecedor.TipoPagamento;
 
         item.Recalcular();
     }

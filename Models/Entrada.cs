@@ -13,6 +13,10 @@ public class Entrada
     public int CompetenciaId { get; set; }
     public Competencia? Competencia { get; set; }
 
+    /// <summary>Banco da empresa associado a esta entrada.</summary>
+    public int? BancoId { get; set; }
+    public Banco? Banco { get; set; }
+
     [MaxLength(250)]
     public string? Descricao { get; set; }
 

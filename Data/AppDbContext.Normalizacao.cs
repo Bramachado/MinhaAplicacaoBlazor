@@ -29,6 +29,8 @@ public partial class AppDbContext
                     break;
                 case Fornecedor f:
                     f.NomeRazaoSocial = TextoBr.ParaTitulo(f.NomeRazaoSocial) ?? f.NomeRazaoSocial;
+                    // Tipo de pagamento derivado: com conta vinculada → Transferência, senão → Boleto.
+                    f.TipoPagamento = f.ContaBancariaId.HasValue ? "Transferencia" : "Boleto";
                     break;
             }
         }

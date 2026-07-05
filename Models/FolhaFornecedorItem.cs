@@ -13,6 +13,14 @@ public class FolhaFornecedorItem
     public int FornecedorId { get; set; }
     public Fornecedor? Fornecedor { get; set; }
 
+    /// <summary>Banco da empresa que irá pagar esta despesa.</summary>
+    public int? BancoPagadorId { get; set; }
+    public Banco? BancoPagador { get; set; }
+
+    /// <summary>Tipo de pagamento desta despesa: "Boleto" ou "Transferencia".</summary>
+    [MaxLength(20)]
+    public string? TipoPagamento { get; set; }
+
     [MaxLength(200)]
     public string? Descricao { get; set; }
 

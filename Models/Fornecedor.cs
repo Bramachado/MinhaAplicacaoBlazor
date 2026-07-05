@@ -38,4 +38,14 @@ public class Fornecedor
     public int? ContaBancariaId { get; set; }
 
     public ContaBancaria? ContaBancaria { get; set; }
+
+    /// <summary>
+    /// Tipo de pagamento do fornecedor: "Transferencia" quando tem conta bancária
+    /// vinculada, "Boleto" quando não tem. Coluna persistida (para filtro/ordenação
+    /// via SQL), mantida em sincronia automaticamente no SaveChanges a partir de
+    /// <see cref="ContaBancariaId"/>.
+    /// </summary>
+    [Required]
+    [MaxLength(20)]
+    public string TipoPagamento { get; set; } = "Boleto";
 }
