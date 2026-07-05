@@ -303,6 +303,17 @@
 
     private async Task ReabrirFolhaAsync()
     {
+        var statusCompetencia = competencias
+            .FirstOrDefault(c => c.Id == folha.CompetenciaId)?.Status;
+
+        if (statusCompetencia != "Aberta" && statusCompetencia != "Em Processamento")
+        {
+            await JS.InvokeVoidAsync("alert",
+                $"Não é possível reabrir ou alterar esta folha já fechada: a competência está com status \"{statusCompetencia ?? "—"}\". " +
+                "A reabertura só é permitida quando a competência está \"Aberta\" ou \"Em Processamento\".");
+            return;
+        }
+
         var confirmado = await JS.InvokeAsync<bool>("confirm",
             "Deseja realmente reabrir esta folha? Após reabrir, os registros poderão ser alterados novamente.");
         if (!confirmado) return;

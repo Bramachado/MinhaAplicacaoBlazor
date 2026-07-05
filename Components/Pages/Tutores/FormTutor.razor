@@ -73,7 +73,7 @@
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">CPF</label>
-                            <InputText class="form-control" @bind-Value="tutor.Cpf" />
+                            <InputCpf class="form-control" @bind-Value="tutor.Cpf" />
                         </div>
 
                         <div class="col-md-4 mb-3">
@@ -204,6 +204,17 @@
         var usuario = AuthState is null ? null : (await AuthState).User;
         await using var context = await DbFactory.CreateDbContextAsync(usuario);
 
+        var cpf = tutor.Cpf?.Trim();
+        var cpfDuplicado = await context.Tutores
+            .AsNoTracking()
+            .AnyAsync(t => t.Cpf == cpf && t.Id != tutor.Id);
+
+        if (cpfDuplicado)
+        {
+            mensagemErro = "Já existe um tutor cadastrado com este CPF.";
+            return;
+        }
+
         if (IsNovo)
         {
             context.Tutores.Add(tutor);
@@ -213,7 +224,15 @@
             context.Tutores.Update(tutor);
         }
 
-        await context.SaveChangesAsync();
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            mensagemErro = "Não foi possível salvar. Verifique se o CPF já não está cadastrado para outro tutor.";
+            return;
+        }
 
         Navigation.NavigateTo("/tutores");
     }

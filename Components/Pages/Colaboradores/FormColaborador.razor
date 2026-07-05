@@ -51,7 +51,7 @@
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">CPF</label>
-                            <InputText class="form-control" @bind-Value="colaborador.Cpf" />
+                            <InputCpf class="form-control" @bind-Value="colaborador.Cpf" />
                         </div>
 
                         <div class="col-md-4 mb-3">
@@ -186,12 +186,31 @@
         var usuario = AuthState is null ? null : (await AuthState).User;
         await using var context = await DbFactory.CreateDbContextAsync(usuario);
 
+        var cpf = colaborador.Cpf?.Trim();
+        var cpfDuplicado = await context.Colaboradores
+            .AsNoTracking()
+            .AnyAsync(c => c.Cpf == cpf && c.Id != colaborador.Id);
+
+        if (cpfDuplicado)
+        {
+            mensagemErro = "Já existe um colaborador cadastrado com este CPF.";
+            return;
+        }
+
         if (IsNovo)
             context.Colaboradores.Add(colaborador);
         else
             context.Colaboradores.Update(colaborador);
 
-        await context.SaveChangesAsync();
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            mensagemErro = "Não foi possível salvar. Verifique se o CPF já não está cadastrado para outro colaborador.";
+            return;
+        }
 
         Navigation.NavigateTo("/colaboradores");
     }

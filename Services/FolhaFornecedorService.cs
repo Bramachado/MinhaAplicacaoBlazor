@@ -112,6 +112,16 @@ public class FolhaFornecedorService
         if (folha.Status == "Aberta")
             throw new InvalidOperationException("A folha já está aberta.");
 
+        var statusCompetencia = await ctx.Competencias
+            .Where(c => c.Id == folha.CompetenciaId)
+            .Select(c => c.Status)
+            .FirstOrDefaultAsync();
+
+        if (statusCompetencia != "Aberta" && statusCompetencia != "Em Processamento")
+            throw new InvalidOperationException(
+                $"Não é possível reabrir ou alterar folhas já fechadas: a competência está com status \"{statusCompetencia}\". " +
+                "A reabertura só é permitida quando a competência está \"Aberta\" ou \"Em Processamento\".");
+
         var lancamento = await ctx.LancamentosFinanceiros
             .FirstOrDefaultAsync(l => l.Origem == OrigemLancamento && l.OrigemId == folhaId);
 

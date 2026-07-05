@@ -420,3 +420,20 @@ h1, h2, h3 {
     font-size: 0.78rem;
     margin-top: 1.5rem;
 }
+
+.celula-truncada {
+    display: block;
+    max-width: 320px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Na impressão mostra o nome completo (não há tooltip no papel) */
+@media print {
+    .celula-truncada {
+        max-width: none;
+        white-space: normal;
+        overflow: visible;
+    }
+}

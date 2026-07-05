@@ -1,0 +1,68 @@
+@using System.Text
+
+<input type="text"
+       class="@Class"
+       inputmode="numeric"
+       autocomplete="off"
+       maxlength="14"
+       placeholder="000.000.000-00"
+       value="@Formatar(Value)"
+       @oninput="AoDigitarAsync" />
+
+@code {
+    /// <summary>Valor armazenado no model — apenas os dígitos do CPF (sem máscara).</summary>
+    [Parameter] public string? Value { get; set; }
+
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+
+    [Parameter] public string Class { get; set; } = "form-control";
+
+    private async Task AoDigitarAsync(ChangeEventArgs e)
+    {
+        var digitos = ApenasDigitos(e.Value?.ToString());
+        if (digitos.Length > 11)
+            digitos = digitos[..11];
+
+        if (digitos != Value)
+        {
+            Value = digitos;
+            await ValueChanged.InvokeAsync(digitos);
+        }
+
+        // Reaplica a máscara no input (também reverte caracteres inválidos digitados).
+        StateHasChanged();
+    }
+
+    private static string ApenasDigitos(string? valor)
+    {
+        if (string.IsNullOrEmpty(valor))
+            return string.Empty;
+
+        var sb = new StringBuilder(valor.Length);
+        foreach (var c in valor)
+        {
+            if (char.IsDigit(c))
+                sb.Append(c);
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>Formata progressivamente os dígitos no padrão 000.000.000-00.</summary>
+    private static string Formatar(string? valor)
+    {
+        var d = ApenasDigitos(valor);
+        if (d.Length == 0)
+            return string.Empty;
+
+        var sb = new StringBuilder(14);
+        for (var i = 0; i < d.Length && i < 11; i++)
+        {
+            if (i == 3 || i == 6)
+                sb.Append('.');
+            else if (i == 9)
+                sb.Append('-');
+            sb.Append(d[i]);
+        }
+        return sb.ToString();
+    }
+}

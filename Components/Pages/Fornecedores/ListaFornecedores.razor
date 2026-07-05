@@ -85,11 +85,12 @@
     {
         <div class="table-responsive">
             <QuickGrid Items="FornecedoresFiltrados" Pagination="@pagination.QuandoNecessario(FornecedoresFiltrados)" Class="table table-striped table-hover align-middle imprimivel-sem-acoes">
-                <PropertyColumn Property="@(f => f.NomeRazaoSocial)" Title="Nome / Razão Social" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
+                <TemplateColumn Title="Nome / Razão Social" Sortable="true" SortBy="@sortPorNome" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true">
+                    <span class="celula-truncada" title="@context.NomeRazaoSocial">@context.NomeRazaoSocial</span>
+                </TemplateColumn>
                 <PropertyColumn Property="@(f => f.CpfCnpj)" Title="CPF/CNPJ" />
                 <PropertyColumn Property="@(f => f.CategoriaFornecedor!.Nome)" Title="Categoria" Sortable="true" />
                 <PropertyColumn Property="@(f => f.Unidade!.Nome)" Title="Unidade" Sortable="true" />
-                <PropertyColumn Property="@(f => f.Telefone)" Title="Telefone" />
                 <TemplateColumn Title="Ativo" Sortable="true" SortBy="@sortPorAtivo" Align="Align.Center">
                     @if (context.Ativo)
                     {
@@ -152,6 +153,8 @@
     private int filtroCategoriaId;
     private string filtroAtivo = string.Empty;
     private readonly PaginationState pagination = new() { ItemsPerPage = 10 };
+
+    private readonly GridSort<Fornecedor> sortPorNome = GridSort<Fornecedor>.ByAscending(f => f.NomeRazaoSocial);
 
     private readonly GridSort<Fornecedor> sortPorAtivo = GridSort<Fornecedor>.ByAscending(f => f.Ativo);
 

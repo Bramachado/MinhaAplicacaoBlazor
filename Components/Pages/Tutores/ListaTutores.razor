@@ -89,7 +89,9 @@
     {
         <div class="table-responsive">
             <QuickGrid Items="TutoresFiltrados" Pagination="@pagination.QuandoNecessario(TutoresFiltrados)" Class="table table-striped table-hover align-middle imprimivel-sem-acoes">
-                <PropertyColumn Property="@(t => t.Nome)" Title="Nome" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
+                <TemplateColumn Title="Nome" Sortable="true" SortBy="@sortPorNome" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true">
+                    <span class="celula-truncada" title="@context.Nome">@context.Nome</span>
+                </TemplateColumn>
                 <PropertyColumn Property="@(t => t.Cpf)" Title="CPF" Sortable="true" />
                 <PropertyColumn Property="@(t => t.Titulacao!.Nome)" Title="Titulação" Sortable="true" />
                 <PropertyColumn Property="@(t => t.Unidade!.Nome)" Title="Unidade" Sortable="true" />
@@ -158,6 +160,8 @@
     private string filtroAtivo = string.Empty;
 
     private readonly PaginationState pagination = new() { ItemsPerPage = 10 };
+
+    private readonly GridSort<Tutor> sortPorNome = GridSort<Tutor>.ByAscending(t => t.Nome);
 
     private readonly GridSort<Tutor> sortPorAtivo = GridSort<Tutor>.ByAscending(t => t.Ativo);
 
