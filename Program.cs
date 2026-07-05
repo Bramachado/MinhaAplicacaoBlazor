@@ -83,6 +83,7 @@ builder.Services.AddScoped<FolhaTutorService>();
 builder.Services.AddScoped<FolhaFornecedorService>();
 builder.Services.AddScoped<RelatorioFinanceiroService>();
 builder.Services.AddScoped<ICnabPagamentoService, CnabPagamentoService>();
+builder.Services.AddScoped<MinhaAplicacaoBlazor.CnabBtg.CnabBtgGeracaoService>();
 
 var app = builder.Build();
 

@@ -14,6 +14,21 @@ public enum Forma
     TED
 }
 
+public enum TipoConta
+{
+    Corrente,
+    Poupanca
+}
+
+public enum TipoChavePix
+{
+    Nenhuma,
+    Telefone,
+    Email,
+    CpfCnpj,
+    Aleatoria
+}
+
 public class ContaBancaria
 {
     public int Id { get; set; }
@@ -44,4 +59,13 @@ public class ContaBancaria
 
     [MaxLength(30)]
     public string? Conta { get; set; }
+
+    /// <summary>Dígito verificador da conta (separado). Se vazio, é inferido de <see cref="Conta"/>.</summary>
+    [MaxLength(2)]
+    public string? DigitoConta { get; set; }
+
+    public TipoConta TipoConta { get; set; } = TipoConta.Corrente;
+
+    /// <summary>Tipo da chave PIX. Se <see cref="TipoChavePix.Nenhuma"/>, é inferido da chave.</summary>
+    public TipoChavePix TipoChavePix { get; set; } = TipoChavePix.Nenhuma;
 }

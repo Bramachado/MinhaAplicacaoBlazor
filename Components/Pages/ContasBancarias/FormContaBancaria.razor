@@ -89,6 +89,32 @@
                         </div>
                     </div>
 
+                    <div class="row">
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Dígito da Conta</label>
+                            <InputText class="form-control" @bind-Value="conta.DigitoConta" placeholder="ex.: 3" />
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Tipo de Conta</label>
+                            <InputSelect class="form-select" @bind-Value="conta.TipoConta">
+                                <option value="@TipoConta.Corrente">Corrente</option>
+                                <option value="@TipoConta.Poupanca">Poupança</option>
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Tipo da Chave PIX</label>
+                            <InputSelect class="form-select" @bind-Value="conta.TipoChavePix">
+                                <option value="@TipoChavePix.Nenhuma">— inferir automaticamente —</option>
+                                <option value="@TipoChavePix.Telefone">Telefone</option>
+                                <option value="@TipoChavePix.Email">E-mail</option>
+                                <option value="@TipoChavePix.CpfCnpj">CPF/CNPJ</option>
+                                <option value="@TipoChavePix.Aleatoria">Aleatória (EVP)</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+
                     @if (!string.IsNullOrEmpty(mensagemErro))
                     {
                         <div class="alert alert-danger">@mensagemErro</div>

@@ -206,6 +206,18 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasConversion<string>()
             .HasMaxLength(10);
 
+        modelBuilder.Entity<ContaBancaria>()
+            .Property(x => x.TipoConta)
+            .HasConversion<string>()
+            .HasMaxLength(10)
+            .HasDefaultValue(TipoConta.Corrente);
+
+        modelBuilder.Entity<ContaBancaria>()
+            .Property(x => x.TipoChavePix)
+            .HasConversion<string>()
+            .HasMaxLength(10)
+            .HasDefaultValue(TipoChavePix.Nenhuma);
+
         // === Conta Bancária (uma conta por Tutor / Colaborador / Fornecedor) ===
         modelBuilder.Entity<Tutor>()
             .HasOne(x => x.ContaBancaria)
@@ -504,5 +516,8 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
 
         // === CRM (subsistema isolado, schema "crm") ===
         ConfigurarCrm(modelBuilder);
+
+        // === CNAB BTG (subsistema novo de geração de remessa) ===
+        ConfigurarCnabBtg(modelBuilder);
     }
 }
