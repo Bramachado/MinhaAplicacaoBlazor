@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MinhaAplicacaoBlazor.Data;
 
@@ -11,9 +12,11 @@ using MinhaAplicacaoBlazor.Data;
 namespace MinhaAplicacaoBlazor.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260705184140_RemoveCrm")]
+    partial class RemoveCrm
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -153,6 +156,242 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.CnabBtg.Data.CnabBatch", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Ambiente")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("AuditoriaJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CaminhoZip")
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<int?>("CompetenciaId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Convenio")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("EmpresaPagadora")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("GeradoEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GeradoPor")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NomeBaseArquivo")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("NsaFinal")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NsaInicial")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("SeparadoPorForma")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TipoPagamentoPrincipal")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<int>("TotalCorrigidos")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalInvalidos")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalPendentes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalSelecionados")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalValidos")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TratamentoInvalidos")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("ValorTotal")
+                        .HasColumnType("decimal(15,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GeradoEm");
+
+                    b.ToTable("CnabBatches");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.CnabBtg.Data.CnabBatchPayment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ArquivoDestino")
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<int>("CnabBatchId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CpfCnpj")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("DataCnab")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FormaLancamento")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Observacoes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Origem")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("OrigemId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SegmentosGerados")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("StatusCnab")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("Valor")
+                        .HasColumnType("decimal(15,2)");
+
+                    b.Property<long>("ValorCentavos")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CnabBatchId");
+
+                    b.HasIndex("Origem", "OrigemId");
+
+                    b.ToTable("CnabBatchPayments");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.CnabBtg.Data.CnabGeneratedFile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CnabBatchId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Conteudo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<int>("Nsa")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuantidadeOperacoes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuantidadeRegistros")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("TodasLinhas240")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("ValorTotal")
+                        .HasColumnType("decimal(15,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CnabBatchId");
+
+                    b.ToTable("CnabGeneratedFiles");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.CnabBtg.Data.CnabSequence", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("EmpresaPagadora")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int>("UltimoNsa")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaPagadora")
+                        .IsUnique();
+
+                    b.ToTable("CnabSequences");
                 });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Arquivo", b =>
@@ -416,6 +655,398 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .IsUnique();
 
                     b.ToTable("CategoriasFornecedores");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Cnab.ConfiguracaoCnab", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Agencia")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
+                    b.Property<string>("AgenciaDV")
+                        .HasMaxLength(1)
+                        .HasColumnType("nvarchar(1)");
+
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("BancoCodigo")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<string>("BancoNome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CNPJ")
+                        .IsRequired()
+                        .HasMaxLength(14)
+                        .HasColumnType("nvarchar(14)");
+
+                    b.Property<string>("Conta")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)");
+
+                    b.Property<string>("ContaDV")
+                        .HasMaxLength(1)
+                        .HasColumnType("nvarchar(1)");
+
+                    b.Property<string>("Convenio")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("DataCadastro")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Layout")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("NomeConfiguracao")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RazaoSocial")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("SequencialArquivo")
+                        .HasColumnType("int");
+
+                    b.Property<string>("VersaoLayoutArquivo")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<string>("VersaoLayoutLote")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NomeConfiguracao")
+                        .IsUnique();
+
+                    b.ToTable("ConfiguracoesCnab");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Cnab.FormaLancamentoCnab", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Categoria")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Segmentos")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique();
+
+                    b.ToTable("FormasLancamentoCnab");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Cnab.RemessaCnab", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CaminhoArquivo")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("CompetenciaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ConfiguracaoCnabId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ConteudoArquivo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DataGeracao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NomeArquivo")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("NumeroSequencial")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Observacao")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("QuantidadePagamentos")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuantidadeRegistros")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("ValorTotal")
+                        .HasColumnType("decimal(15,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetenciaId");
+
+                    b.HasIndex("ConfiguracaoCnabId");
+
+                    b.HasIndex("NomeArquivo");
+
+                    b.HasIndex("NumeroSequencial");
+
+                    b.ToTable("RemessasCnab");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Cnab.RemessaCnabItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AgenciaDVFavorecido")
+                        .HasMaxLength(1)
+                        .HasColumnType("nvarchar(1)");
+
+                    b.Property<string>("AgenciaFavorecido")
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
+                    b.Property<string>("BancoFavorecido")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("CPF_CNPJ_Favorecido")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ChavePix")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("CodigoBarras")
+                        .HasMaxLength(48)
+                        .HasColumnType("nvarchar(48)");
+
+                    b.Property<string>("CodigoOcorrencia")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("ContaDVFavorecido")
+                        .HasMaxLength(1)
+                        .HasColumnType("nvarchar(1)");
+
+                    b.Property<string>("ContaFavorecido")
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)");
+
+                    b.Property<DateTime>("DataPagamento")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("FolhaColaboradorItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("FolhaTutorItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FormaLancamentoCnabId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("FornecedorId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("LancamentoFinanceiroId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MensagemOcorrencia")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("NomeFavorecido")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("RemessaCnabId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SeuNumero")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TipoChavePix")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("ValorPagamento")
+                        .HasColumnType("decimal(15,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FolhaColaboradorItemId");
+
+                    b.HasIndex("FolhaTutorItemId");
+
+                    b.HasIndex("FormaLancamentoCnabId");
+
+                    b.HasIndex("FornecedorId");
+
+                    b.HasIndex("LancamentoFinanceiroId");
+
+                    b.HasIndex("RemessaCnabId");
+
+                    b.HasIndex("SeuNumero");
+
+                    b.ToTable("RemessasCnabItens");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Cnab.RetornoCnab", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ConteudoArquivo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DataImportacao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NomeArquivo")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Observacao")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("QuantidadeItensProcessados")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuantidadeRegistros")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RemessaCnabId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RemessaCnabId");
+
+                    b.ToTable("RetornosCnab");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Cnab.RetornoCnabItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CodigoOcorrencia")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime?>("DataPagamento")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MensagemOcorrencia")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("NomeFavorecido")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("RemessaCnabItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RetornoCnabId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SeuNumero")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("StatusProcessamento")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("ValorPagamento")
+                        .HasColumnType("decimal(15,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RemessaCnabItemId");
+
+                    b.HasIndex("RetornoCnabId");
+
+                    b.ToTable("RetornosCnabItens");
                 });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Colaborador", b =>
@@ -1515,6 +2146,28 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("MinhaAplicacaoBlazor.CnabBtg.Data.CnabBatchPayment", b =>
+                {
+                    b.HasOne("MinhaAplicacaoBlazor.CnabBtg.Data.CnabBatch", "CnabBatch")
+                        .WithMany("Pagamentos")
+                        .HasForeignKey("CnabBatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CnabBatch");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.CnabBtg.Data.CnabGeneratedFile", b =>
+                {
+                    b.HasOne("MinhaAplicacaoBlazor.CnabBtg.Data.CnabBatch", "CnabBatch")
+                        .WithMany("Arquivos")
+                        .HasForeignKey("CnabBatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CnabBatch");
+                });
+
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Arquivo", b =>
                 {
                     b.HasOne("MinhaAplicacaoBlazor.Models.Entrada", "Entrada")
@@ -1562,6 +2215,99 @@ namespace MinhaAplicacaoBlazor.Migrations
                         .IsRequired();
 
                     b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Cnab.RemessaCnab", b =>
+                {
+                    b.HasOne("MinhaAplicacaoBlazor.Models.Competencia", "Competencia")
+                        .WithMany()
+                        .HasForeignKey("CompetenciaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MinhaAplicacaoBlazor.Models.Cnab.ConfiguracaoCnab", "ConfiguracaoCnab")
+                        .WithMany()
+                        .HasForeignKey("ConfiguracaoCnabId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Competencia");
+
+                    b.Navigation("ConfiguracaoCnab");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Cnab.RemessaCnabItem", b =>
+                {
+                    b.HasOne("MinhaAplicacaoBlazor.Models.FolhaColaboradorItem", "FolhaColaboradorItem")
+                        .WithMany()
+                        .HasForeignKey("FolhaColaboradorItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MinhaAplicacaoBlazor.Models.FolhaTutorItem", "FolhaTutorItem")
+                        .WithMany()
+                        .HasForeignKey("FolhaTutorItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MinhaAplicacaoBlazor.Models.Cnab.FormaLancamentoCnab", "FormaLancamentoCnab")
+                        .WithMany()
+                        .HasForeignKey("FormaLancamentoCnabId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MinhaAplicacaoBlazor.Models.Fornecedor", "Fornecedor")
+                        .WithMany()
+                        .HasForeignKey("FornecedorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MinhaAplicacaoBlazor.Models.LancamentoFinanceiro", "LancamentoFinanceiro")
+                        .WithMany()
+                        .HasForeignKey("LancamentoFinanceiroId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MinhaAplicacaoBlazor.Models.Cnab.RemessaCnab", "RemessaCnab")
+                        .WithMany("Itens")
+                        .HasForeignKey("RemessaCnabId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FolhaColaboradorItem");
+
+                    b.Navigation("FolhaTutorItem");
+
+                    b.Navigation("FormaLancamentoCnab");
+
+                    b.Navigation("Fornecedor");
+
+                    b.Navigation("LancamentoFinanceiro");
+
+                    b.Navigation("RemessaCnab");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Cnab.RetornoCnab", b =>
+                {
+                    b.HasOne("MinhaAplicacaoBlazor.Models.Cnab.RemessaCnab", "RemessaCnab")
+                        .WithMany()
+                        .HasForeignKey("RemessaCnabId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("RemessaCnab");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Cnab.RetornoCnabItem", b =>
+                {
+                    b.HasOne("MinhaAplicacaoBlazor.Models.Cnab.RemessaCnabItem", "RemessaCnabItem")
+                        .WithMany()
+                        .HasForeignKey("RemessaCnabItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MinhaAplicacaoBlazor.Models.Cnab.RetornoCnab", "RetornoCnab")
+                        .WithMany("Itens")
+                        .HasForeignKey("RetornoCnabId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RemessaCnabItem");
+
+                    b.Navigation("RetornoCnab");
                 });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Colaborador", b =>
@@ -1844,6 +2590,13 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.Navigation("Unidade");
                 });
 
+            modelBuilder.Entity("MinhaAplicacaoBlazor.CnabBtg.Data.CnabBatch", b =>
+                {
+                    b.Navigation("Arquivos");
+
+                    b.Navigation("Pagamentos");
+                });
+
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Auth.ApplicationUser", b =>
                 {
                     b.Navigation("Permissoes");
@@ -1854,6 +2607,16 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.Navigation("Permissoes");
 
                     b.Navigation("Usuarios");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Cnab.RemessaCnab", b =>
+                {
+                    b.Navigation("Itens");
+                });
+
+            modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Cnab.RetornoCnab", b =>
+                {
+                    b.Navigation("Itens");
                 });
 
             modelBuilder.Entity("MinhaAplicacaoBlazor.Models.Curso", b =>

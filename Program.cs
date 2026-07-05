@@ -6,11 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using MinhaAplicacaoBlazor.Data;
 using MinhaAplicacaoBlazor.Models;
 using MinhaAplicacaoBlazor.Models.Auth;
-using MinhaAplicacaoBlazor.Models.Cnab;
-using MinhaAplicacaoBlazor.Models.Crm;
 using MinhaAplicacaoBlazor.Services;
 using MinhaAplicacaoBlazor.Services.Auth;
-using MinhaAplicacaoBlazor.Services.Cnab;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -82,8 +79,7 @@ builder.Services.AddScoped<FolhaColaboradorService>();
 builder.Services.AddScoped<FolhaTutorService>();
 builder.Services.AddScoped<FolhaFornecedorService>();
 builder.Services.AddScoped<RelatorioFinanceiroService>();
-builder.Services.AddScoped<ICnabPagamentoService, CnabPagamentoService>();
-builder.Services.AddScoped<MinhaAplicacaoBlazor.CnabBtg.CnabBtgGeracaoService>();
+builder.Services.AddScoped<DashboardService>();
 
 var app = builder.Build();
 
@@ -128,79 +124,6 @@ using (var scope = app.Services.CreateScope())
     if (formasNovas.Count > 0)
     {
         dbCtx.FormasPagamento.AddRange(formasNovas);
-        await dbCtx.SaveChangesAsync();
-    }
-
-    // === Seed CNAB ===
-    if (!await dbCtx.ConfiguracoesCnab.AnyAsync(c => c.NomeConfiguracao == "BTG - EDUNORTE"))
-    {
-        dbCtx.ConfiguracoesCnab.Add(new ConfiguracaoCnab
-        {
-            NomeConfiguracao = "BTG - EDUNORTE",
-            BancoCodigo = "208",
-            BancoNome = "BTG Pactual",
-            RazaoSocial = "EDUNORTE SERVICOS EDUCACIONAIS LTDA",
-            CNPJ = "58262834000155",
-            Agencia = "0050",
-            Conta = "829434",
-            ContaDV = "3",
-            Layout = "FEBRABAN240",
-            VersaoLayoutArquivo = "087",
-            VersaoLayoutLote = "046",
-            SequencialArquivo = 1,
-            Ativa = true,
-            DataCadastro = DateTime.Now
-        });
-        await dbCtx.SaveChangesAsync();
-    }
-
-    var formasCnab = new (string Codigo, string Nome, string Categoria, string Segmentos)[]
-    {
-        ("01", "Crédito em Conta Corrente/Salário", "Transferência", "A,B,C"),
-        ("03", "DOC/TED",                            "Transferência", "A,B,C"),
-        ("05", "Crédito em Conta Poupança",          "Transferência", "A,B,C"),
-        ("41", "TED - Outra Titularidade",           "Transferência", "A,B,C"),
-        ("43", "TED - Mesma Titularidade",           "Transferência", "A,B,C"),
-        ("44", "TED para Conta Investimento",        "Transferência", "A,B,C"),
-        ("45", "PIX Transferência",                  "Transferência", "A,B,C"),
-        ("47", "PIX QR-CODE",                        "Transferência", "J,J-52,J-52Pix"),
-        ("50", "Débito em Conta Corrente",           "Transferência", "A,B,C"),
-        ("30", "Liquidação de Títulos do Próprio Banco", "Títulos",   "J,J-52"),
-        ("31", "Pagamento de Títulos de Outros Bancos",  "Títulos",   "J,J-52"),
-        ("11", "Pagamento de Contas e Tributos com Código de Barras", "Tributos", "O"),
-        ("16", "Tributo - DARF Normal",              "Tributos",      "N2")
-    };
-    var existentesCnab = await dbCtx.FormasLancamentoCnab.Select(f => f.Codigo).ToListAsync();
-    var novasCnab = formasCnab
-        .Where(f => !existentesCnab.Contains(f.Codigo))
-        .Select(f => new FormaLancamentoCnab
-        {
-            Codigo = f.Codigo,
-            Nome = f.Nome,
-            Categoria = f.Categoria,
-            Segmentos = f.Segmentos,
-            Ativa = true
-        })
-        .ToList();
-    if (novasCnab.Count > 0)
-    {
-        dbCtx.FormasLancamentoCnab.AddRange(novasCnab);
-        await dbCtx.SaveChangesAsync();
-    }
-
-    // === Seed CRM: etapas padrão do funil ===
-    if (!await dbCtx.CrmEtapasFunil.AnyAsync())
-    {
-        var etapasFunil = new[]
-        {
-            new CrmEtapaFunil { Nome = "Novo",        Ordem = 1, Cor = "#6c757d", Ativa = true },
-            new CrmEtapaFunil { Nome = "Contato feito", Ordem = 2, Cor = "#0dcaf0", Ativa = true },
-            new CrmEtapaFunil { Nome = "Proposta",    Ordem = 3, Cor = "#0d6efd", Ativa = true },
-            new CrmEtapaFunil { Nome = "Negociação",  Ordem = 4, Cor = "#ffc107", Ativa = true },
-            new CrmEtapaFunil { Nome = "Ganho",       Ordem = 5, Cor = "#198754", Ativa = true },
-            new CrmEtapaFunil { Nome = "Perdido",     Ordem = 6, Cor = "#dc3545", Ativa = true },
-        };
-        dbCtx.CrmEtapasFunil.AddRange(etapasFunil);
         await dbCtx.SaveChangesAsync();
     }
 }

@@ -5,7 +5,6 @@
 @using System.Text
 @using MinhaAplicacaoBlazor.Models.Reports
 @using MinhaAplicacaoBlazor.Services
-@using MinhaAplicacaoBlazor.Components.Pages.Cnab
 
 @inject RelatorioFinanceiroService Service
 
@@ -99,8 +98,6 @@
     }
 </div>
 
-<GerarCnabModal @ref="cnabModal" />
-
 @code {
     private List<CompetenciaSelecaoDto> competencias = new();
     private int competenciaSelecionadaId;
@@ -119,7 +116,6 @@
     private bool folhaTutorNaoEncontrada;
     private ResumoDespesaGeralDto? dadosResumo;
     private RelatorioPagamentosBancariosDto? dadosPagamentos;
-    private GerarCnabModal? cnabModal;
 
     // Estado dos acordeões (itens abertos) no relatório de resumo.
     private readonly HashSet<string> itensAbertos = new();
@@ -255,12 +251,6 @@
     private async Task ImprimirAsync()
     {
         await JS.InvokeVoidAsync("window.print");
-    }
-
-    private async Task AbrirGerarCnabAsync()
-    {
-        if (cnabModal is not null)
-            await cnabModal.AbrirAsync(competenciaSelecionadaId);
     }
 
     private async Task ExportarPagamentosExcelAsync()
@@ -1362,14 +1352,6 @@
                     </svg>
                     Exportar Excel
                 </button>
-                <PermissaoView Requer="Cnab.Criar">
-                    <button class="btn btn-primary" @onclick="AbrirGerarCnabAsync" disabled="@(dadosPagamentos.Linhas.Count == 0)">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1" style="vertical-align:-2px;">
-                            <path d="M8 0 0 4v1h16V4zm-3 6H3v5H1.5a.5.5 0 0 0 0 1h13a.5.5 0 0 0 0-1H13V6h-2v5H9V6H7v5H5zm10.854 8.146-2-2a.5.5 0 0 0-.708.708L13.293 14H1.5a.5.5 0 0 0 0 1h11.793l-1.147 1.146a.5.5 0 0 0 .708.708z"/>
-                        </svg>
-                        Gerar CNAB
-                    </button>
-                </PermissaoView>
             </div>
         </div>
 

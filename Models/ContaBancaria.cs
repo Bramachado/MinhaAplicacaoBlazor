@@ -29,7 +29,7 @@ public enum TipoChavePix
     Aleatoria
 }
 
-public class ContaBancaria
+public class ContaBancaria : IValidatableObject
 {
     public int Id { get; set; }
 
@@ -68,4 +68,40 @@ public class ContaBancaria
 
     /// <summary>Tipo da chave PIX. Se <see cref="TipoChavePix.Nenhuma"/>, é inferido da chave.</summary>
     public TipoChavePix TipoChavePix { get; set; } = TipoChavePix.Nenhuma;
+
+    /// <summary>
+    /// Validação condicional conforme a <see cref="Forma"/>:
+    /// PIX exige tipo da chave e chave PIX; TED exige banco, código, agência e conta.
+    /// </summary>
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (Forma == Forma.PIX)
+        {
+            if (TipoChavePix == TipoChavePix.Nenhuma)
+                yield return new ValidationResult(
+                    "Para PIX, informe o tipo da chave.", new[] { nameof(TipoChavePix) });
+
+            if (string.IsNullOrWhiteSpace(ChavePix))
+                yield return new ValidationResult(
+                    "Para PIX, informe a chave PIX.", new[] { nameof(ChavePix) });
+        }
+        else if (Forma == Forma.TED)
+        {
+            if (string.IsNullOrWhiteSpace(NomeBanco))
+                yield return new ValidationResult(
+                    "Para TED, informe o banco.", new[] { nameof(NomeBanco) });
+
+            if (string.IsNullOrWhiteSpace(CodigoBanco))
+                yield return new ValidationResult(
+                    "Para TED, informe o código do banco.", new[] { nameof(CodigoBanco) });
+
+            if (string.IsNullOrWhiteSpace(Agencia))
+                yield return new ValidationResult(
+                    "Para TED, informe a agência.", new[] { nameof(Agencia) });
+
+            if (string.IsNullOrWhiteSpace(Conta))
+                yield return new ValidationResult(
+                    "Para TED, informe a conta.", new[] { nameof(Conta) });
+        }
+    }
 }

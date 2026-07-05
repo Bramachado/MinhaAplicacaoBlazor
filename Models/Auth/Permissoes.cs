@@ -35,17 +35,6 @@ public static class Permissoes
         new(Excluir, "Excluir"),
     };
 
-    // CRUD + "Ver de todos": sem a chave VerTodos, o usuário só enxerga os
-    // próprios registros (filtro por responsável); com ela, vê os de todos.
-    private static readonly AcaoPermissao[] CrudComVerTodos =
-    {
-        new(Ver, "Ver"),
-        new(Criar, "Criar"),
-        new(Editar, "Editar"),
-        new(Excluir, "Excluir"),
-        new(VerTodos, "Ver de todos os usuários"),
-    };
-
     // Módulos que só têm consulta (ex.: relatórios).
     private static readonly AcaoPermissao[] SomenteVer =
     {
@@ -84,14 +73,6 @@ public static class Permissoes
         new("FolhasColaboradores", "Folhas de Colaboradores", "Folhas", Crud),
         new("FolhasTutores", "Folhas de Tutores", "Folhas", Crud),
         new("FolhasFornecedores", "Folhas de Fornecedores", "Folhas", Crud),
-
-        // CNAB
-        new("Cnab", "CNAB (Remessas/Retornos)", "CNAB", Crud),
-
-        // CRM
-        new("CrmContatos", "Contatos (CRM)", "CRM", CrudComVerTodos),
-        new("CrmOportunidades", "Oportunidades (CRM)", "CRM", CrudComVerTodos),
-        new("CrmFunil", "Funil / Etapas (CRM)", "CRM", Crud),
 
         // Administração
         new("Usuarios", "Usuários", "Administração", Crud),

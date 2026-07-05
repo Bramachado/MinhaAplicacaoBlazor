@@ -81,6 +81,19 @@
                     </div>
 
                     <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Plano de Contas</label>
+                            <InputSelect class="form-select" @bind-Value="fornecedor.PlanoContaId">
+                                <option value="">-- Selecione --</option>
+                                @foreach (var p in planosContas)
+                                {
+                                    <option value="@p.Id">@p.Nome</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Endereço</label>
                             <InputText class="form-control" @bind-Value="fornecedor.Endereco" />
@@ -136,6 +149,7 @@
     private Fornecedor fornecedor = new();
     private List<Unidade> unidades = new();
     private List<CategoriaFornecedor> categorias = new();
+    private List<PlanoConta> planosContas = new();
     private bool carregando = true;
     private string? mensagemErro;
 
@@ -155,6 +169,12 @@
             .AsNoTracking()
             .Where(c => c.Ativa)
             .OrderBy(c => c.Nome)
+            .ToListAsync();
+
+        planosContas = await context.PlanosContas
+            .AsNoTracking()
+            .Where(p => p.Ativo)
+            .OrderBy(p => p.Nome)
             .ToListAsync();
 
         if (!IsNovo)

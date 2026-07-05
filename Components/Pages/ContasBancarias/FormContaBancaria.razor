@@ -62,30 +62,35 @@
 
                     <div class="row">
                         <div class="col-md-12 mb-3">
-                            <label class="form-label">Chave PIX</label>
+                            <label class="form-label">Chave PIX @if (conta.Forma == Forma.PIX) { <span class="text-danger">*</span> }</label>
                             <InputText class="form-control" @bind-Value="conta.ChavePix" />
+                            <ValidationMessage For="@(() => conta.ChavePix)" class="text-danger small" />
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Banco</label>
+                            <label class="form-label">Banco @if (conta.Forma == Forma.TED) { <span class="text-danger">*</span> }</label>
                             <InputText class="form-control" @bind-Value="conta.NomeBanco" />
+                            <ValidationMessage For="@(() => conta.NomeBanco)" class="text-danger small" />
                         </div>
 
                         <div class="col-md-2 mb-3">
-                            <label class="form-label">Código</label>
+                            <label class="form-label">Código @if (conta.Forma == Forma.TED) { <span class="text-danger">*</span> }</label>
                             <InputText class="form-control" @bind-Value="conta.CodigoBanco" />
+                            <ValidationMessage For="@(() => conta.CodigoBanco)" class="text-danger small" />
                         </div>
 
                         <div class="col-md-2 mb-3">
-                            <label class="form-label">Agência</label>
+                            <label class="form-label">Agência @if (conta.Forma == Forma.TED) { <span class="text-danger">*</span> }</label>
                             <InputText class="form-control" @bind-Value="conta.Agencia" />
+                            <ValidationMessage For="@(() => conta.Agencia)" class="text-danger small" />
                         </div>
 
                         <div class="col-md-2 mb-3">
-                            <label class="form-label">Conta</label>
+                            <label class="form-label">Conta @if (conta.Forma == Forma.TED) { <span class="text-danger">*</span> }</label>
                             <InputText class="form-control" @bind-Value="conta.Conta" />
+                            <ValidationMessage For="@(() => conta.Conta)" class="text-danger small" />
                         </div>
                     </div>
 
@@ -104,14 +109,15 @@
                         </div>
 
                         <div class="col-md-3 mb-3">
-                            <label class="form-label">Tipo da Chave PIX</label>
+                            <label class="form-label">Tipo da Chave PIX @if (conta.Forma == Forma.PIX) { <span class="text-danger">*</span> }</label>
                             <InputSelect class="form-select" @bind-Value="conta.TipoChavePix">
-                                <option value="@TipoChavePix.Nenhuma">— inferir automaticamente —</option>
+                                <option value="@TipoChavePix.Nenhuma">@(conta.Forma == Forma.PIX ? "— selecione —" : "— inferir automaticamente —")</option>
                                 <option value="@TipoChavePix.Telefone">Telefone</option>
                                 <option value="@TipoChavePix.Email">E-mail</option>
                                 <option value="@TipoChavePix.CpfCnpj">CPF/CNPJ</option>
                                 <option value="@TipoChavePix.Aleatoria">Aleatória (EVP)</option>
                             </InputSelect>
+                            <ValidationMessage For="@(() => conta.TipoChavePix)" class="text-danger small" />
                         </div>
                     </div>
 

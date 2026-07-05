@@ -35,6 +35,14 @@ public class Fornecedor
 
     public CategoriaFornecedor? CategoriaFornecedor { get; set; }
 
+    /// <summary>
+    /// Plano de contas associado ao fornecedor. Usado para classificar
+    /// contabilmente as despesas (folha de fornecedores) por conta.
+    /// </summary>
+    public int? PlanoContaId { get; set; }
+
+    public PlanoConta? PlanoConta { get; set; }
+
     public int? ContaBancariaId { get; set; }
 
     public ContaBancaria? ContaBancaria { get; set; }

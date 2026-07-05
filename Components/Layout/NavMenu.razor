@@ -258,31 +258,6 @@
                             </NavLink>
                         </div>
                     }
-                    @if (PodeVer("Cnab.Ver"))
-                    {
-                        <div class="nav-item px-3">
-                            <NavLink class="nav-link" href="financeiro/cnab/remessas">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
-                                    <path d="M14 0H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2M5 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1H5zm-2 7v-2.5a.5.5 0 0 1 1 0V11h8V8.5a.5.5 0 0 1 1 0V11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1m1.5-3.5A.5.5 0 0 1 5 7h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5"/>
-                                </svg><span class="nav-text">CNAB Pagamentos</span>
-                            </NavLink>
-                        </div>
-                        <div class="nav-item px-3">
-                            <NavLink class="nav-link" href="financeiro/cnab/configuracoes">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
-                                    <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"/>
-                                    <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52z"/>
-                                </svg><span class="nav-text">Conf. CNAB</span>
-                            </NavLink>
-                        </div>
-                        <div class="nav-item px-3">
-                            <NavLink class="nav-link" href="cnab-btg/historico">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
-                                    <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022zm2.004.45a7 7 0 0 0-.985-.299l.219-.976q.576.129 1.126.342zm1.37.71a7 7 0 0 0-.439-.27l.493-.87a8 8 0 0 1 .979.654l-.615.789a7 7 0 0 0-.418-.302zm1.834 1.79a7 7 0 0 0-.653-.796l.724-.69q.406.429.747.91zm.744 1.352a7 7 0 0 0-.214-.468l.893-.45a8 8 0 0 1 .45 1.088l-.95.313a7 7 0 0 0-.179-.483m.53 2.507a7 7 0 0 0-.1-1.025l.985-.17q.1.58.116 1.17zm-.131 1.538q.05-.254.081-.51l.993.123a8 8 0 0 1-.23 1.155l-.964-.267q.069-.247.12-.501m-.952 2.379q.276-.436.486-.908l.914.405q-.24.54-.555 1.038zm-.964 1.205q.183-.183.35-.378l.758.653a8 8 0 0 1-.401.432zM8 15a7 7 0 0 0 4.79-1.881l.683.73A8 8 0 0 1 8 16zm-6.008-2.556a7 7 0 0 0 .750.967l-.72.688a8 8 0 0 1-.856-1.107zM.348 10.5a7 7 0 0 0 .434 1.184l-.917.386a8 8 0 0 1-.489-1.309zm-.207-2.803q.024.523.121 1.03l-.984.19A8 8 0 0 1 0 7.65zM8 0a8 8 0 0 0-.7.031V8h8V.7A8 8 0 0 0 8 0z"/>
-                                </svg><span class="nav-text">Histórico CNAB</span>
-                            </NavLink>
-                        </div>
-                    }
                     @if (PodeVer("Arquivos.Ver"))
                     {
                         <div class="nav-item px-3">
@@ -297,52 +272,6 @@
             </div>
         }
 
-        @if (GrupoVisivel("crm"))
-        {
-            <div class="nav-group @(GrupoAberto("crm") ? "aberto" : "")">
-                <div class="nav-group-title" role="button" @onclick='() => ToggleGrupo("crm")'><span class="nav-text">CRM</span></div>
-                <div class="nav-group-items">
-                    @if (PodeVer("CrmContatos.Ver"))
-                    {
-                        <div class="nav-item px-3">
-                            <NavLink class="nav-link" href="crm/contatos">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
-                                    <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1zm-7.978-1L7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002-.014.002zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0M6.936 9.28a6 6 0 0 0-1.23-.247A7 7 0 0 0 5 9c-4 0-5 3-5 4q0 1 1 1h4.216A2.24 2.24 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816M4.92 10A5.5 5.5 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.63 1.492-1.256 3.16-1.275ZM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0m3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4"/>
-                                </svg><span class="nav-text">Contatos</span>
-                            </NavLink>
-                        </div>
-                    }
-                    @if (PodeVer("CrmOportunidades.Ver"))
-                    {
-                        <div class="nav-item px-3">
-                            <NavLink class="nav-link" href="crm/funil">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
-                                    <path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5z"/>
-                                </svg><span class="nav-text">Funil (Kanban)</span>
-                            </NavLink>
-                        </div>
-                        <div class="nav-item px-3">
-                            <NavLink class="nav-link" href="crm/oportunidades">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
-                                    <path d="M0 2a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v5.5a.5.5 0 0 1-1 0V1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h4.5a.5.5 0 0 1 0 1H2a2 2 0 0 1-2-2z"/>
-                                    <path d="M9.5 9a.5.5 0 0 1 .5.5v2h2a.5.5 0 0 1 0 1h-2v2a.5.5 0 0 1-1 0v-2h-2a.5.5 0 0 1 0-1h2v-2a.5.5 0 0 1 .5-.5"/>
-                                </svg><span class="nav-text">Oportunidades</span>
-                            </NavLink>
-                        </div>
-                    }
-                    @if (PodeVer("CrmFunil.Ver"))
-                    {
-                        <div class="nav-item px-3">
-                            <NavLink class="nav-link" href="crm/etapas">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" style="margin-right:0.75rem;vertical-align:-3px;" aria-hidden="true">
-                                    <path d="M5 1a2 2 0 0 0-2 2v2H1.5A1.5 1.5 0 0 0 0 6.5v8A1.5 1.5 0 0 0 1.5 16h13a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 14.5 5H13V3a2 2 0 0 0-2-2zm7 4H4V3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
-                                </svg><span class="nav-text">Etapas do Funil</span>
-                            </NavLink>
-                        </div>
-                    }
-                </div>
-            </div>
-        }
 
         @if (GrupoVisivel("admin"))
         {
@@ -416,8 +345,7 @@
         ["academico"] = new[] { "Cursos.Ver", "Titulacoes.Ver", "EscalasAulasPraticas.Ver", "Tutores.Ver" },
         ["cadastros"] = new[] { "Colaboradores.Ver", "Fornecedores.Ver", "CategoriasFornecedores.Ver", "ContasBancarias.Ver", "PlanosContas.Ver", "FormasPagamento.Ver", "Bancos.Ver" },
         ["pagamentos"] = new[] { "FolhasTutores.Ver", "FolhasColaboradores.Ver", "FolhasFornecedores.Ver" },
-        ["financeiro"] = new[] { "RelatoriosFinanceiros.Ver", "Entradas.Ver", "Cnab.Ver", "Arquivos.Ver" },
-        ["crm"] = new[] { "CrmContatos.Ver", "CrmOportunidades.Ver", "CrmFunil.Ver" },
+        ["financeiro"] = new[] { "RelatoriosFinanceiros.Ver", "Entradas.Ver", "Arquivos.Ver" },
         ["admin"] = new[] { "Usuarios.Ver", "Perfis.Ver", "Auditoria.Ver" },
     };
 
@@ -427,8 +355,7 @@
         ["academico"] = new[] { "cursos", "titulacoes", "escalas-aulas-praticas", "tutores" },
         ["cadastros"] = new[] { "colaboradores", "fornecedores", "categorias-fornecedores", "contas-bancarias", "planos-contas", "formas-pagamento", "bancos" },
         ["pagamentos"] = new[] { "folhas-tutores", "folhas-colaboradores", "folhas-fornecedores" },
-        ["financeiro"] = new[] { "relatorios-financeiros", "entradas", "financeiro/cnab", "cnab-btg", "arquivos" },
-        ["crm"] = new[] { "crm/contatos", "crm/oportunidades", "crm/funil", "crm/etapas" },
+        ["financeiro"] = new[] { "relatorios-financeiros", "entradas", "arquivos" },
         ["admin"] = new[] { "admin/usuarios", "admin/perfis", "auditoria" },
     };
 
