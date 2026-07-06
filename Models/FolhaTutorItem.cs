@@ -60,8 +60,16 @@ public class FolhaTutorItem
 
     public void Recalcular()
     {
-        ValorAulaNormal = TotalHorasNormais * ValorHoraNormal;
-        ValorAulaPratica = TotalHorasPraticas * ValorHoraPratica;
+        ValorAulaNormal = ConverterHoras(TotalHorasNormais) * ValorHoraNormal;
+        ValorAulaPratica = ConverterHoras(TotalHorasPraticas) * ValorHoraPratica;
         ValorTotalReceber = ValorAulaNormal + ValorAulaPratica;
+    }
+
+    private decimal ConverterHoras(decimal horas)
+    {
+        int h = (int)horas;
+        int minutos = (int)((horas - h) * 100);
+
+        return h + (minutos / 60m);
     }
 }
