@@ -445,5 +445,8 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
 
         modelBuilder.Entity<RegistroAuditoria>()
             .HasIndex(x => x.UsuarioId);
+
+        // === CNAB BTG (subsistema de geração de remessa) ===
+        ConfigurarCnabBtg(modelBuilder);
     }
 }

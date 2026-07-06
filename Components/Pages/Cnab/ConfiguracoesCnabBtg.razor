@@ -1,0 +1,43 @@
+@page "/cnab-btg/configuracoes"
+@attribute [Authorize(Policy = "Cnab.Ver")]
+@rendermode InteractiveServer
+
+@using MinhaAplicacaoBlazor.CnabBtg
+@inject CnabBtgGeracaoService CnabService
+
+<PageTitle>Configurações CNAB</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="mb-0">Configurações CNAB — BTG</h1>
+        <a class="btn btn-outline-secondary" href="cnab-btg/gerenciar">Gerenciar CNAB</a>
+    </div>
+
+    <div class="alert alert-info">
+        Empresas pagadoras (conta debitada) usadas nos Headers de Arquivo e de Lote. Configuráveis por
+        <code>appsettings.json</code> (seção <code>CnabBtg:Empresas</code>); na ausência, valem os padrões abaixo.
+        Estes dados nunca são inventados: divergências são registradas na auditoria da geração.
+    </div>
+
+    <div class="row g-3">
+        @foreach (var e in CnabService.Empresas)
+        {
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header fw-semibold">@e.Codigo — @e.RazaoSocial</div>
+                    <div class="card-body">
+                        <dl class="row mb-0 small">
+                            <dt class="col-sm-4">Banco</dt><dd class="col-sm-8">@e.Banco — @e.NomeBanco</dd>
+                            <dt class="col-sm-4">Inscrição</dt><dd class="col-sm-8">@(e.TipoInscricao == "2" ? "CNPJ" : "CPF") @e.Inscricao</dd>
+                            <dt class="col-sm-4">Agência</dt><dd class="col-sm-8">@e.Agencia@(string.IsNullOrEmpty(e.AgenciaDv) ? "" : "-" + e.AgenciaDv)</dd>
+                            <dt class="col-sm-4">Conta</dt><dd class="col-sm-8">@e.Conta-@e.ContaDv</dd>
+                            <dt class="col-sm-4">Convênio</dt><dd class="col-sm-8">@e.Convenio</dd>
+                            <dt class="col-sm-4">Cód. remessa</dt><dd class="col-sm-8">@e.CodigoRemessa</dd>
+                            <dt class="col-sm-4">Layout arq./lote</dt><dd class="col-sm-8">@e.VersaoLayoutArquivo / @e.VersaoLayoutLote</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

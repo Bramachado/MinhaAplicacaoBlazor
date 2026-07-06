@@ -41,6 +41,19 @@ public static class Permissoes
         new(Ver, "Ver"),
     };
 
+    public const string Gerar = "Gerar";
+    public const string Baixar = "Baixar";
+    public const string Configurar = "Configurar";
+
+    // Ações específicas do módulo CNAB.
+    private static readonly AcaoPermissao[] CnabAcoes =
+    {
+        new(Ver, "Ver"),
+        new(Gerar, "Gerar"),
+        new(Baixar, "Baixar"),
+        new(Configurar, "Configurar"),
+    };
+
     /// <summary>Todos os módulos do sistema, na ordem de exibição.</summary>
     public static readonly IReadOnlyList<ModuloPermissao> Modulos = new List<ModuloPermissao>
     {
@@ -73,6 +86,9 @@ public static class Permissoes
         new("FolhasColaboradores", "Folhas de Colaboradores", "Folhas", Crud),
         new("FolhasTutores", "Folhas de Tutores", "Folhas", Crud),
         new("FolhasFornecedores", "Folhas de Fornecedores", "Folhas", Crud),
+
+        // CNAB
+        new("Cnab", "CNAB (Geração de Remessa)", "CNAB", CnabAcoes),
 
         // Administração
         new("Usuarios", "Usuários", "Administração", Crud),

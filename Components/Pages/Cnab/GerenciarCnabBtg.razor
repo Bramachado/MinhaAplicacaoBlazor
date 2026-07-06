@@ -1,0 +1,405 @@
+@page "/cnab-btg/gerenciar"
+@attribute [Authorize(Policy = "Cnab.Ver")]
+@rendermode InteractiveServer
+
+@using MinhaAplicacaoBlazor.CnabBtg
+@inject CnabBtgGerenciamentoService Gerencia
+@inject NavigationManager Navigation
+
+<PageTitle>Gerenciar CNAB</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h1 class="mb-0">Gerenciar CNAB</h1>
+        <a class="btn btn-outline-secondary" href="cnab-btg/historico">Histórico CNAB</a>
+    </div>
+
+    <!-- ===== Filtros ===== -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label mb-1 small text-muted">Competência</label>
+                    <select class="form-select form-select-sm" @bind="competenciaId" @bind:after="CarregarAsync">
+                        <option value="0">-- Selecione --</option>
+                        @foreach (var (id, texto) in competencias)
+                        {
+                            <option value="@id">@texto</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label mb-1 small text-muted">Tipo</label>
+                    <select class="form-select form-select-sm" @bind="filtroTipo">
+                        <option value="Todos">Todos</option>
+                        <option value="Transferencia">Transferências (todas)</option>
+                        <option value="PIX">Somente PIX</option>
+                        <option value="TED">Somente TED</option>
+                        <option value="Boleto">Boletos</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label mb-1 small text-muted">Status CNAB</label>
+                    <select class="form-select form-select-sm" @bind="filtroStatus">
+                        <option value="Todos">Todos</option>
+                        <option value="Pendentes">Pendentes (a gerar)</option>
+                        <option value="JaGerado">Já gerados</option>
+                        <option value="Invalido">Inválidos</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label mb-1 small text-muted">Banco favorecido</label>
+                    <select class="form-select form-select-sm" @bind="filtroBanco">
+                        <option value="">Todos</option>
+                        @foreach (var b in BancosDisponiveis)
+                        {
+                            <option value="@b">@b</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2 text-end">
+                    <button class="btn btn-sm btn-outline-secondary w-100" @onclick="CarregarAsync" disabled="@(competenciaId == 0)">Recarregar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (carregando)
+    {
+        <div class="text-center text-muted py-5"><div class="spinner-border"></div><p class="mt-2">Carregando pagamentos...</p></div>
+    }
+    else if (resumo is null || competenciaId == 0)
+    {
+        <div class="alert alert-info">Selecione uma competência para conferir os pagamentos.</div>
+    }
+    else
+    {
+        <!-- ===== Cards de resumo ===== -->
+        <div class="row g-2 mb-3">
+            @Card("Total da competência", resumo.TotalPagamentos, resumo.ValorTotalCompetencia, "border-secondary")
+            @Card("Transferências", resumo.TotalTransferencias, resumo.ValorTransferencias, "border-primary")
+            @Card("Transf. PIX", resumo.TotalPix, resumo.ValorPix, "border-success")
+            @Card("Transf. TED", resumo.TotalTed, resumo.ValorTed, "border-info")
+            @Card("Boletos (não gerados)", resumo.TotalBoletos, resumo.ValorBoletos, "border-warning")
+            @Card("Selecionado", SelCount, SelValor, "border-info")
+            @Card("Válido p/ geração", GeravelCount, GeravelValor, "border-success")
+            @Card("Inválido", resumo.TotalInvalidos, resumo.ValorInvalidos, "border-danger")
+            @Card("Já gerado", resumo.TotalJaGerados, resumo.ValorJaGerados, "border-dark")
+            @Card("Diferença sel.−ger.", SelCount - GeravelCount, SelValor - GeravelValor, "border-danger")
+        </div>
+
+        <!-- ===== Ações ===== -->
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => SelecionarTodos(true)">Selecionar geráveis</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => SelecionarTodos(false)">Limpar seleção</button>
+                </div>
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" id="permitir-regerar"
+                           checked="@permitirRegerar"
+                           @onchange="OnPermitirRegerarChange" />
+                    <label class="form-check-label small" for="permitir-regerar">
+                        Permitir gerar novamente <span class="text-muted">(itens já em CNAB — modo teste)</span>
+                    </label>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary" @onclick="ValidarSelecionadosAsync" disabled="@(SelCount == 0)">Validar Selecionados</button>
+                <PermissaoView Requer="Cnab.Gerar">
+                    <button class="btn btn-primary" @onclick="AbrirGeracaoAsync" disabled="@(GeravelCount == 0)">Gerar CNAB (@GeravelCount)</button>
+                </PermissaoView>
+            </div>
+        </div>
+
+        @if (SelCount > 0 && BoletosSelecionados > 0)
+        {
+            <div class="alert alert-warning py-2">
+                <strong>Atenção:</strong> @BoletosSelecionados boleto(s) selecionado(s) serão <strong>ignorados</strong> na geração —
+                o módulo de Segmentos J/J-52 não está implementado. Apenas transferências entram no arquivo .rem.
+            </div>
+        }
+
+        <!-- ===== Painel de validação ===== -->
+        @if (validacao is not null)
+        {
+            <div class="card mb-3 border-info">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>Validação dos selecionados</strong>
+                    <button class="btn-close" @onclick="() => validacao = null"></button>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2 mb-2">
+                        <div class="col"><small class="text-muted d-block">Selecionados</small><strong>@validacao.TotalSelecionados</strong> · @Moeda(validacao.ValorSelecionado)</div>
+                        <div class="col"><small class="text-muted d-block">Válidos</small><strong class="text-success">@validacao.TotalValidos</strong> · @Moeda(validacao.ValorValidos)</div>
+                        <div class="col"><small class="text-muted d-block">Corrigidos/Pendentes</small><strong>@validacao.TotalCorrigidos</strong> · @Moeda(validacao.ValorCorrigidos)</div>
+                        <div class="col"><small class="text-muted d-block">Inválidos</small><strong class="text-danger">@validacao.TotalInvalidos</strong> · @Moeda(validacao.ValorInvalidos)</div>
+                        <div class="col"><small class="text-muted d-block">Boletos bloqueados</small><strong class="text-warning">@validacao.TotalBoletosBloqueados</strong> · @Moeda(validacao.ValorBoletosBloqueados)</div>
+                    </div>
+                    @foreach (var a in validacao.Alertas)
+                    {
+                        <div class="alert alert-warning py-1 mb-1 small">@a</div>
+                    }
+                    <div class="table-responsive" style="max-height: 30vh;">
+                        <table class="table table-sm table-striped align-middle mb-0">
+                            <thead class="table-dark"><tr><th>Origem</th><th>Nome</th><th class="text-end">Valor</th><th>Status</th><th>Observações</th></tr></thead>
+                            <tbody>
+                                @foreach (var i in validacao.Itens)
+                                {
+                                    <tr>
+                                        <td><span class="badge bg-secondary">@i.Origem</span></td>
+                                        <td>@i.Nome</td>
+                                        <td class="text-end">@Moeda(i.Valor)</td>
+                                        <td><span class="badge @StatusBadge(i.Status)">@i.Status</span></td>
+                                        <td><small>@string.Join(" | ", i.Observacoes)</small></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- ===== Tabela de conferência ===== -->
+        <div class="table-responsive" style="max-height: 55vh;">
+            <table class="table table-sm table-striped table-hover align-middle">
+                <thead class="table-dark" style="position: sticky; top: 0;">
+                    <tr>
+                        <th></th>
+                        <th>Origem</th>
+                        <th>Id</th>
+                        <th>Unidade</th>
+                        <th>Nome</th>
+                        <th>CPF/CNPJ</th>
+                        <th class="text-end">Valor</th>
+                        <th>Forma</th>
+                        <th>Operação</th>
+                        <th>Banco cad.</th>
+                        <th>Banco favorecido</th>
+                        <th>Cód.</th>
+                        <th>Agência</th>
+                        <th>Conta</th>
+                        <th>Díg.</th>
+                        <th>Chave PIX</th>
+                        <th>Status CNAB</th>
+                        <th>Alertas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in PagamentosFiltrados)
+                    {
+                        <tr class="@LinhaClasse(p)">
+                            <td>
+                                <input type="checkbox" class="form-check-input"
+                                       checked="@selecionados.Contains(p.Chave)"
+                                       disabled="@(!p.Selecionavel)"
+                                       @onchange="e => ToggleSelecionado(p.Chave, (bool)e.Value!)" />
+                            </td>
+                            <td><span class="badge bg-secondary">@p.Origem</span></td>
+                            <td>@p.OrigemId</td>
+                            <td>@p.Unidade</td>
+                            <td>@p.Nome</td>
+                            <td>@p.CpfCnpj</td>
+                            <td class="text-end">@Moeda(p.Valor)</td>
+                            <td>@p.Forma</td>
+                            <td>
+                                @if (p.EhBoleto)
+                                {
+                                    <span class="badge bg-warning text-dark">Boleto</span>
+                                }
+                                else
+                                {
+                                    <span class="badge @(p.TipoTransferencia == "PIX" ? "bg-success" : "bg-primary")">@p.TipoTransferencia</span>
+                                }
+                            </td>
+                            <td>@p.BancoCadastro</td>
+                            <td>@p.BancoFavorecido</td>
+                            <td>@p.CodigoBanco</td>
+                            <td>@p.Agencia</td>
+                            <td>@p.Conta</td>
+                            <td>@p.DigitoConta</td>
+                            <td>@p.ChavePix</td>
+                            <td><span class="badge @StatusBadge(p.StatusValidacao)">@p.StatusValidacao</span></td>
+                            <td><small>@string.Join(" | ", p.Alertas)</small></td>
+                        </tr>
+                    }
+                    @if (PagamentosFiltrados.Count == 0)
+                    {
+                        <tr><td colspan="18" class="text-center text-muted py-3">Nenhum pagamento para os filtros selecionados.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <p class="text-muted small mt-2">
+            Arquivo gerado conforme regras estruturais CNAB. A validação final deve ser feita no ambiente BTG.
+        </p>
+    }
+</div>
+
+<GerarCnabModal @ref="modal" OnFechado="CarregarAsync" />
+
+@code {
+    [SupplyParameterFromQuery] public int? CompetenciaId { get; set; }
+
+    private List<(int Id, string Texto)> competencias = new();
+    private int competenciaId;
+    private string filtroTipo = "Todos";
+    private string filtroStatus = "Todos";
+    private string filtroBanco = "";
+    private bool carregando;
+    private bool permitirRegerar = true; // modo teste: liberar regeração dos já gerados
+
+    private CnabGerenciarResumoDto? resumo;
+    private CnabValidacaoSelecionadosDto? validacao;
+    private readonly HashSet<string> selecionados = new();
+    private GerarCnabModal? modal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        competencias = await Gerencia.ObterCompetenciasAsync();
+        if (CompetenciaId is > 0)
+        {
+            competenciaId = CompetenciaId.Value;
+            await CarregarAsync();
+        }
+    }
+
+    private async Task CarregarAsync()
+    {
+        validacao = null;
+        selecionados.Clear();
+        if (competenciaId == 0)
+        {
+            resumo = null;
+            return;
+        }
+
+        carregando = true;
+        StateHasChanged();
+        resumo = await Gerencia.ObterResumoAsync(competenciaId, permitirRegerar);
+        // Pré-marca as transferências geráveis (não já geradas, não inválidas).
+        foreach (var p in resumo.Pagamentos.Where(p => p.GeravelNoCnab))
+            selecionados.Add(p.Chave);
+        carregando = false;
+        StateHasChanged();
+    }
+
+    private List<CnabGerenciarPagamentoDto> PagamentosFiltrados =>
+        resumo is null ? new() : resumo.Pagamentos.Where(p =>
+            FiltroTipoOk(p) &&
+            FiltroStatusOk(p) &&
+            (string.IsNullOrEmpty(filtroBanco) || p.BancoFavorecido == filtroBanco)
+        ).ToList();
+
+    private bool FiltroTipoOk(CnabGerenciarPagamentoDto p) => filtroTipo switch
+    {
+        "Transferencia" => p.EhTransferencia,
+        "PIX" => p.TipoTransferencia == "PIX",
+        "TED" => p.TipoTransferencia == "TED",
+        "Boleto" => p.EhBoleto,
+        _ => true
+    };
+
+    private bool FiltroStatusOk(CnabGerenciarPagamentoDto p) => filtroStatus switch
+    {
+        "Pendentes" => !p.JaEmCnab && !p.Invalido && p.EhTransferencia,
+        "JaGerado" => p.JaEmCnab,
+        "Invalido" => p.Invalido && p.EhTransferencia,
+        _ => true
+    };
+
+    private IEnumerable<string> BancosDisponiveis =>
+        resumo?.Pagamentos.Where(p => !string.IsNullOrWhiteSpace(p.BancoFavorecido))
+            .Select(p => p.BancoFavorecido!).Distinct().OrderBy(x => x) ?? Enumerable.Empty<string>();
+
+    // ---- Seleção ----
+    private void ToggleSelecionado(string chave, bool marcado)
+    {
+        if (marcado) selecionados.Add(chave);
+        else selecionados.Remove(chave);
+    }
+
+    private void SelecionarTodos(bool marcar)
+    {
+        selecionados.Clear();
+        if (marcar && resumo is not null)
+            foreach (var p in resumo.Pagamentos.Where(p => p.GeravelNoCnab))
+                selecionados.Add(p.Chave);
+    }
+
+    private IEnumerable<CnabGerenciarPagamentoDto> SelLista =>
+        resumo?.Pagamentos.Where(p => selecionados.Contains(p.Chave)) ?? Enumerable.Empty<CnabGerenciarPagamentoDto>();
+
+    private int SelCount => SelLista.Count();
+    private decimal SelValor => SelLista.Sum(p => p.Valor);
+    private int GeravelCount => SelLista.Count(p => p.GeravelNoCnab);
+    private decimal GeravelValor => SelLista.Where(p => p.GeravelNoCnab).Sum(p => p.Valor);
+    private int BoletosSelecionados => SelLista.Count(p => p.EhBoleto);
+
+    private async Task OnPermitirRegerarChange(ChangeEventArgs e)
+    {
+        permitirRegerar = (bool)e.Value!;
+        await CarregarAsync();
+    }
+
+    private async Task ValidarSelecionadosAsync()
+    {
+        validacao = await Gerencia.ValidarSelecionadosAsync(competenciaId, selecionados.ToList(), permitirRegerar);
+    }
+
+    private async Task AbrirGeracaoAsync()
+    {
+        if (modal is null || resumo is null) return;
+
+        var geraveis = SelLista.Where(p => p.GeravelNoCnab).Select(p => p.Chave).ToList();
+        if (geraveis.Count == 0) return;
+
+        var conf = new GerarCnabModal.ConferenciaInfo
+        {
+            ValorTotalCompetencia = resumo.ValorTotalCompetencia,
+            QuantidadeTotalCompetencia = resumo.TotalPagamentos,
+            ValorBoletos = resumo.ValorBoletos,
+            QuantidadeBoletos = resumo.TotalBoletos,
+            ValorInvalidos = resumo.ValorInvalidos
+        };
+
+        await modal.AbrirAsync(competenciaId, geraveis, conf, permitirRegerar);
+    }
+
+    // ---- Apresentação ----
+    private static string Moeda(decimal v) => v.ToString("C");
+
+    private static string StatusBadge(string status) => status switch
+    {
+        "Valido" => "bg-success",
+        "Corrigido" => "bg-info text-dark",
+        "Pendente" => "bg-warning text-dark",
+        "Invalido" => "bg-danger",
+        "Boleto" => "bg-warning text-dark",
+        "JaGerado" => "bg-dark",
+        _ => "bg-secondary"
+    };
+
+    private string LinhaClasse(CnabGerenciarPagamentoDto p)
+    {
+        if (p.JaEmCnab) return "table-active";
+        if (p.EhBoleto) return "table-warning";
+        if (p.Invalido) return "table-danger";
+        return "";
+    }
+
+    private RenderFragment Card(string titulo, int qtde, decimal valor, string borda) => __builder =>
+    {
+        <div class="col">
+            <div class="card @borda h-100">
+                <div class="card-body py-2">
+                    <small class="text-muted d-block">@titulo</small>
+                    <div class="fw-bold">@qtde</div>
+                    <div class="small">@Moeda(valor)</div>
+                </div>
+            </div>
+        </div>
+    };
+}
