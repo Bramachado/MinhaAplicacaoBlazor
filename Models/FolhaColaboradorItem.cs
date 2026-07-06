@@ -86,7 +86,7 @@ public class FolhaColaboradorItem
                        + DecimoTerceiro + FeriasUmTerco;
 
         ValorHora = CargaHorariaSemanal > 0 ? CalcularValorHora() : 0m;
-        ValorFaltas = ValorHora * HorasFalta;
+        ValorFaltas = ValorHora * ConverterHoras(HorasFalta);
 
         TotalDescontos = DescontoINSS + DescontoIR + PlanoSaude
                        + ValeConsignadoFGTS + ValorFaltas;
