@@ -92,7 +92,7 @@ public class FolhaColaboradorItem
                        + ValeConsignadoFGTS + ValorFaltas;
 
         ValorTotal = TotalProventos - TotalDescontos;
-        ValorReceberPix = ValorTotal - TicketAlimentacao;
+        ValorReceberPix = ValorTotal - TicketAlimentacao - PremiacaoFixa - PremiacaoVariavel;
     }
 
     public decimal CalcularValorHora()
@@ -114,6 +114,14 @@ public class FolhaColaboradorItem
             30m => 150m,
             _   => (cargaHorariaSemanal / 6m) * 30m // fallback para cargas não mapeadas
         };
+    }
+    
+    private decimal ConverterHoras(decimal horas)
+    {
+        int h = (int)horas;
+        int minutos = (int)((horas - h) * 100);
+
+        return h + (minutos / 60m);
     }
 
 

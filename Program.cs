@@ -140,6 +140,13 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+// Serve os arquivos físicos de wwwroot (incluindo assets de RCL em _content/**,
+// como o JS do Blazor-ApexCharts usado no dashboard) pelo middleware clássico.
+// Isto complementa o MapStaticAssets(): em alguns ambientes publicados / atrás de
+// proxy, o caminho "simples" (não fingerprinted) de _content pode dar 404 apenas
+// pelo pipeline novo; o UseStaticFiles garante a entrega desses arquivos.
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
