@@ -265,6 +265,8 @@ public class RelatorioFinanceiroService
             .Include(f => f.Competencia)
             .Include(f => f.Itens)
                 .ThenInclude(i => i.Fornecedor)
+            .Include(f => f.Itens)
+                .ThenInclude(i => i.BancoPagador)
             .FirstOrDefaultAsync(f => f.CompetenciaId == competenciaId);
 
         if (folha is null) return null;
@@ -284,6 +286,8 @@ public class RelatorioFinanceiroService
                     Fornecedor = i.Fornecedor?.NomeRazaoSocial ?? "(?)",
                     Descricao = i.Descricao,
                     NumeroDocumento = i.NumeroDocumento,
+                    TipoPagamento = i.TipoPagamento,
+                    BancoPagador = i.BancoPagador != null ? i.BancoPagador.NomeBanco : null,
                     DataVencimento = i.DataVencimento,
                     StatusPagamento = i.StatusPagamento,
                     Quantidade = i.Quantidade,

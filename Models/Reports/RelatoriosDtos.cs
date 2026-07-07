@@ -233,6 +233,8 @@ public class RelatorioFolhaFornecedorItemDto
     public string Fornecedor { get; set; } = string.Empty;
     public string? Descricao { get; set; }
     public string? NumeroDocumento { get; set; }
+    public string? TipoPagamento { get; set; }
+    public string? BancoPagador { get; set; }
     public DateTime? DataVencimento { get; set; }
     public string? StatusPagamento { get; set; }
     public decimal Quantidade { get; set; }
