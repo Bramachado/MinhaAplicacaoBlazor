@@ -228,6 +228,92 @@ public class RelatorioFolhaFornecedorDto
     public int QuantidadeFornecedores => Itens.Count;
 }
 
+/// <summary>
+/// Linha da grade do relatório "Folha de Fornecedores 2". Reúne dados do
+/// fornecedor, do item da folha, do banco pagador e da conta bancária do
+/// fornecedor (mesmas colunas da consulta SQL de origem).
+/// </summary>
+public class FolhaFornecedor2LinhaDto
+{
+    /// <summary>Marcação do usuário para exportar (ou não) esta linha para o Excel.</summary>
+    public bool Selecionado { get; set; } = true;
+
+    public string Fornecedor { get; set; } = string.Empty;
+    public string? CpfCnpjFornecedor { get; set; }
+    public string? TipoPagamento { get; set; }
+    public decimal ValorTotalPagar { get; set; }
+
+    /// <summary>Descrição do banco pagador (Bancos.Descricao).</summary>
+    public string? BancoPagador { get; set; }
+
+    // Conta bancária do fornecedor.
+    public string? NomeTitular { get; set; }
+    public string? CpfCnpjConta { get; set; }
+    public string? Forma { get; set; }
+    public string? TipoPessoa { get; set; }
+    public string? TipoChavePix { get; set; }
+    public string? ChavePix { get; set; }
+    public string? CodigoBanco { get; set; }
+    public string? NomeBanco { get; set; }
+    public string? Agencia { get; set; }
+    public string? Conta { get; set; }
+}
+
+/// <summary>
+/// Linha da grade do relatório "Folha de Colaboradores 2". Reúne dados do
+/// colaborador, do item da folha e da conta bancária do colaborador
+/// (mesmas colunas da consulta SQL de origem).
+/// </summary>
+public class FolhaColaborador2LinhaDto
+{
+    /// <summary>Marcação do usuário para exportar (ou não) esta linha para o Excel.</summary>
+    public bool Selecionado { get; set; } = true;
+
+    public string Colaborador { get; set; } = string.Empty;
+    public string? Cpf { get; set; }
+    public decimal ValorTotal { get; set; }
+    public decimal ValorReceberPix { get; set; }
+
+    // Conta bancária do colaborador.
+    public string? NomeTitular { get; set; }
+    public string? CpfCnpjConta { get; set; }
+    public string? Forma { get; set; }
+    public string? TipoPessoa { get; set; }
+    public string? TipoChavePix { get; set; }
+    public string? ChavePix { get; set; }
+    public string? CodigoBanco { get; set; }
+    public string? NomeBanco { get; set; }
+    public string? Agencia { get; set; }
+    public string? Conta { get; set; }
+}
+
+/// <summary>
+/// Linha da grade do relatório "Folha de Tutores 2". Reúne dados do tutor,
+/// do item da folha e da conta bancária do tutor (mesmas colunas da consulta
+/// SQL de origem).
+/// </summary>
+public class FolhaTutor2LinhaDto
+{
+    /// <summary>Marcação do usuário para exportar (ou não) esta linha para o Excel.</summary>
+    public bool Selecionado { get; set; } = true;
+
+    public string Tutor { get; set; } = string.Empty;
+    public string? Cpf { get; set; }
+    public decimal ValorTotalReceber { get; set; }
+
+    // Conta bancária do tutor.
+    public string? NomeTitular { get; set; }
+    public string? CpfCnpjConta { get; set; }
+    public string? Forma { get; set; }
+    public string? TipoPessoa { get; set; }
+    public string? TipoChavePix { get; set; }
+    public string? ChavePix { get; set; }
+    public string? CodigoBanco { get; set; }
+    public string? NomeBanco { get; set; }
+    public string? Agencia { get; set; }
+    public string? Conta { get; set; }
+}
+
 public class RelatorioFolhaFornecedorItemDto
 {
     public string Fornecedor { get; set; } = string.Empty;

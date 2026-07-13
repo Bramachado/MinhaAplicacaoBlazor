@@ -345,6 +345,159 @@ public class RelatorioFinanceiroService
         };
     }
 
+    /// <summary>
+    /// Relatório "Folha de Fornecedores 2": lista os itens da folha de fornecedores
+    /// da competência informada, com dados do fornecedor, banco pagador e conta
+    /// bancária. Permite filtrar por tipo de pagamento do fornecedor
+    /// ("Todos", "Boleto" ou "Transferencia").
+    /// </summary>
+    public async Task<List<FolhaFornecedor2LinhaDto>> GerarFolhaFornecedor2Async(int competenciaId, string tipoPagamento)
+    {
+        await using var ctx = await _dbFactory.CreateDbContextAsync();
+
+        var folhas = await ctx.FolhasFornecedores
+            .AsNoTracking()
+            .Where(f => f.CompetenciaId == competenciaId)
+            .Include(f => f.Itens).ThenInclude(i => i.Fornecedor!).ThenInclude(fr => fr.ContaBancaria)
+            .Include(f => f.Itens).ThenInclude(i => i.BancoPagador)
+            .ToListAsync();
+
+        var linhas = new List<FolhaFornecedor2LinhaDto>();
+        foreach (var folha in folhas)
+        {
+            foreach (var item in folha.Itens)
+            {
+                var forn = item.Fornecedor;
+                var conta = forn?.ContaBancaria;
+                linhas.Add(new FolhaFornecedor2LinhaDto
+                {
+                    Fornecedor = forn?.NomeRazaoSocial ?? "(?)",
+                    CpfCnpjFornecedor = forn?.CpfCnpj,
+                    TipoPagamento = forn?.TipoPagamento,
+                    ValorTotalPagar = item.ValorTotalPagar,
+                    BancoPagador = item.BancoPagador?.Descricao,
+                    NomeTitular = conta?.NomeTitular,
+                    CpfCnpjConta = conta?.CpfCnpj,
+                    Forma = conta?.Forma.ToString(),
+                    TipoPessoa = conta?.TipoPessoa.ToString(),
+                    TipoChavePix = conta?.TipoChavePix.ToString(),
+                    ChavePix = conta?.ChavePix,
+                    CodigoBanco = conta?.CodigoBanco,
+                    NomeBanco = conta?.NomeBanco,
+                    Agencia = conta?.Agencia,
+                    Conta = conta?.Conta
+                });
+            }
+        }
+
+        // Filtro por tipo de pagamento do fornecedor ("Todos" não filtra).
+        if (tipoPagamento is "Boleto" or "Transferencia")
+            linhas = linhas.Where(l => l.TipoPagamento == tipoPagamento).ToList();
+
+        return linhas
+            .OrderBy(l => l.Fornecedor)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Relatório "Folha de Colaboradores 2": lista os itens da folha de colaboradores
+    /// da competência informada, com dados do colaborador e da conta bancária.
+    /// Segue o SQL de origem (INNER JOIN em ContasBancarias): apenas itens cujo
+    /// colaborador possui conta bancária vinculada.
+    /// </summary>
+    public async Task<List<FolhaColaborador2LinhaDto>> GerarFolhaColaborador2Async(int competenciaId)
+    {
+        await using var ctx = await _dbFactory.CreateDbContextAsync();
+
+        var folhas = await ctx.FolhasColaboradores
+            .AsNoTracking()
+            .Where(f => f.CompetenciaId == competenciaId)
+            .Include(f => f.Itens).ThenInclude(i => i.Colaborador!).ThenInclude(c => c.ContaBancaria)
+            .ToListAsync();
+
+        var linhas = new List<FolhaColaborador2LinhaDto>();
+        foreach (var folha in folhas)
+        {
+            foreach (var item in folha.Itens)
+            {
+                var colab = item.Colaborador;
+                var conta = colab?.ContaBancaria;
+                if (conta is null) continue; // INNER JOIN: ignora sem conta bancária
+
+                linhas.Add(new FolhaColaborador2LinhaDto
+                {
+                    Colaborador = colab?.Nome ?? "(?)",
+                    Cpf = colab?.Cpf,
+                    ValorTotal = item.ValorTotal,
+                    ValorReceberPix = item.ValorReceberPix,
+                    NomeTitular = conta.NomeTitular,
+                    CpfCnpjConta = conta.CpfCnpj,
+                    Forma = conta.Forma.ToString(),
+                    TipoPessoa = conta.TipoPessoa.ToString(),
+                    TipoChavePix = conta.TipoChavePix.ToString(),
+                    ChavePix = conta.ChavePix,
+                    CodigoBanco = conta.CodigoBanco,
+                    NomeBanco = conta.NomeBanco,
+                    Agencia = conta.Agencia,
+                    Conta = conta.Conta
+                });
+            }
+        }
+
+        return linhas
+            .OrderBy(l => l.Colaborador)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Relatório "Folha de Tutores 2": lista os itens da folha de tutores da
+    /// competência informada, com dados do tutor e da conta bancária.
+    /// Segue o SQL de origem (INNER JOIN em ContasBancarias): apenas itens cujo
+    /// tutor possui conta bancária vinculada.
+    /// </summary>
+    public async Task<List<FolhaTutor2LinhaDto>> GerarFolhaTutor2Async(int competenciaId)
+    {
+        await using var ctx = await _dbFactory.CreateDbContextAsync();
+
+        var folhas = await ctx.FolhasTutores
+            .AsNoTracking()
+            .Where(f => f.CompetenciaId == competenciaId)
+            .Include(f => f.Itens).ThenInclude(i => i.Tutor!).ThenInclude(t => t.ContaBancaria)
+            .ToListAsync();
+
+        var linhas = new List<FolhaTutor2LinhaDto>();
+        foreach (var folha in folhas)
+        {
+            foreach (var item in folha.Itens)
+            {
+                var tutor = item.Tutor;
+                var conta = tutor?.ContaBancaria;
+                if (conta is null) continue; // INNER JOIN: ignora sem conta bancária
+
+                linhas.Add(new FolhaTutor2LinhaDto
+                {
+                    Tutor = tutor?.Nome ?? "(?)",
+                    Cpf = tutor?.Cpf,
+                    ValorTotalReceber = item.ValorTotalReceber,
+                    NomeTitular = conta.NomeTitular,
+                    CpfCnpjConta = conta.CpfCnpj,
+                    Forma = conta.Forma.ToString(),
+                    TipoPessoa = conta.TipoPessoa.ToString(),
+                    TipoChavePix = conta.TipoChavePix.ToString(),
+                    ChavePix = conta.ChavePix,
+                    CodigoBanco = conta.CodigoBanco,
+                    NomeBanco = conta.NomeBanco,
+                    Agencia = conta.Agencia,
+                    Conta = conta.Conta
+                });
+            }
+        }
+
+        return linhas
+            .OrderBy(l => l.Tutor)
+            .ToList();
+    }
+
     public async Task<RelatorioPagamentosBancariosDto> GerarRelatorioPagamentosBancariosAsync(int competenciaId)
     {
         await using var ctx = await _dbFactory.CreateDbContextAsync();
