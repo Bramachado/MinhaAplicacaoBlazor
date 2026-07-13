@@ -40,3 +40,12 @@ sudo grep -R "proxy_pass" /etc/nginx/sites-enabled/
 sudo rm /etc/nginx/sites-enabled/blazor 
 sudo nginx -t
 sudo systemctl reload nginx
+
+
+///////////////////////////////////////////////
+
+Implementar filtro nas grid de ItensFolhaColaborador, ItensFolhatutores, ItensFolhaFornecedor
+Permitir ao usuario pesquisar itens dentro da folha
+
+Na Folha de Fornecedore, permitiri que um fornecedor tenha mais de uma registro lancado
+
