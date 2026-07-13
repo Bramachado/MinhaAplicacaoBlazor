@@ -64,7 +64,7 @@
                 <TemplateColumn Title="Status" Sortable="true" SortBy="@sortPorStatus" Align="Align.Center">
                     <span class="badge @StatusBadge(context.Status)">@context.Status</span>
                 </TemplateColumn>
-                <TemplateColumn Title="Itens" Align="Align.Center">
+                <TemplateColumn Title="Itens" Sortable="true" SortBy="@sortPorQuantidade" Align="Align.Center">
                     @(quantidadeItens.GetValueOrDefault(context.Id, 0))
                 </TemplateColumn>
                 <TemplateColumn Title="Valor Total" Sortable="true" SortBy="@sortPorValor" Align="Align.End">
@@ -113,6 +113,7 @@
         GridSort<FolhaColaborador>.ByDescending(f => f.Competencia!.Ano).ThenDescending(f => f.Competencia!.Mes);
     private readonly GridSort<FolhaColaborador> sortPorStatus = GridSort<FolhaColaborador>.ByAscending(f => f.Status);
     private readonly GridSort<FolhaColaborador> sortPorValor = GridSort<FolhaColaborador>.ByAscending(f => f.ValorTotal);
+    private GridSort<FolhaColaborador>? sortPorQuantidade;
 
     private IQueryable<FolhaColaborador> FolhasFiltradas
     {
@@ -135,6 +136,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        sortPorQuantidade = GridSort<FolhaColaborador>.ByAscending(f => quantidadeItens.GetValueOrDefault(f.Id, 0));
         await CarregarDadosAsync();
     }
 
