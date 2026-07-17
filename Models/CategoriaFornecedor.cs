@@ -2,9 +2,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MinhaAplicacaoBlazor.Models;
 
-public class CategoriaFornecedor
+public class CategoriaFornecedor : IEntidadeEmpresa
 {
     public int Id { get; set; }
+
+    /// <summary>Empresa (tenant) dona do registro; carimbada automaticamente.</summary>
+    public int EmpresaId { get; set; }
 
     [Required(ErrorMessage = "O nome da categoria é obrigatório.")]
     [MaxLength(100, ErrorMessage = "O nome deve ter no máximo 100 caracteres.")]

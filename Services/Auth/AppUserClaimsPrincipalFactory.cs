@@ -32,6 +32,9 @@ public class AppUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<Applicat
             identity.AddClaim(new Claim("nome_completo", user.NomeCompleto));
         }
 
+        // Empresa (tenant) do usuário: usada para isolar automaticamente os dados.
+        identity.AddClaim(new Claim("empresa_id", user.EmpresaId.ToString()));
+
         var efetivas = await _permissoes.ObterPermissoesEfetivasAsync(user.Id);
         foreach (var permissao in efetivas)
         {

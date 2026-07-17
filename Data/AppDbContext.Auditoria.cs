@@ -22,6 +22,7 @@ public partial class AppDbContext
 
     public override int SaveChanges()
     {
+        AplicarEmpresa();
         NormalizarNomes();
         var pendentes = CapturarAuditoria();
         var resultado = base.SaveChanges();
@@ -32,6 +33,7 @@ public partial class AppDbContext
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        AplicarEmpresa();
         NormalizarNomes();
         var pendentes = await CapturarAuditoriaAsync(cancellationToken);
         var resultado = await base.SaveChangesAsync(cancellationToken);

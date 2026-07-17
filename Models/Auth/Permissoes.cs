@@ -91,6 +91,7 @@ public static class Permissoes
         new("Cnab", "CNAB (Geração de Remessa)", "CNAB", CnabAcoes),
 
         // Administração
+        new("Empresas", "Empresas", "Administração", Crud),
         new("Usuarios", "Usuários", "Administração", Crud),
         new("Perfis", "Perfis de Acesso", "Administração", Crud),
         new("Auditoria", "Auditoria / Logs", "Administração", SomenteVer),

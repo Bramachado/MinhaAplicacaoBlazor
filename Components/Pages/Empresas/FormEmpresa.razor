@@ -1,0 +1,105 @@
+@page "/empresas/novo"
+@attribute [Authorize(Policy = "Empresas.Ver")]
+@page "/empresas/editar/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNovo ? "Nova Empresa" : "Editar Empresa")</PageTitle>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">@(IsNovo ? "Nova Empresa" : "Editar Empresa")</h3>
+        </div>
+        <div class="card-body">
+            @if (carregando)
+            {
+                <p>Carregando...</p>
+            }
+            else
+            {
+                <EditForm Model="empresa" OnValidSubmit="SalvarAsync" FormName="form-empresa">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Nome</label>
+                            <InputText class="form-control" @bind-Value="empresa.Nome" />
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">CNPJ</label>
+                            <InputText class="form-control" @bind-Value="empresa.Cnpj" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3 d-flex align-items-end">
+                            <div class="form-check">
+                                <InputCheckbox class="form-check-input" id="ativa-empresa" @bind-Value="empresa.Ativa" />
+                                <label class="form-check-label" for="ativa-empresa">Ativa</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private Empresa empresa = new();
+    private bool carregando = true;
+
+    private bool IsNovo => Id is null or 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!IsNovo)
+        {
+            await using var context = await DbFactory.CreateDbContextAsync();
+            var existente = await context.Empresas
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Id == Id);
+
+            if (existente is null)
+            {
+                Navigation.NavigateTo("/empresas");
+                return;
+            }
+
+            empresa = existente;
+        }
+
+        carregando = false;
+    }
+
+    private async Task SalvarAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        if (IsNovo)
+            context.Empresas.Add(empresa);
+        else
+            context.Empresas.Update(empresa);
+
+        await context.SaveChangesAsync();
+        Navigation.NavigateTo("/empresas");
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/empresas");
+}

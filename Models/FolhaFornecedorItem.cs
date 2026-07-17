@@ -3,9 +3,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MinhaAplicacaoBlazor.Models;
 
-public class FolhaFornecedorItem
+public class FolhaFornecedorItem : IEntidadeEmpresa
 {
     public int Id { get; set; }
+
+    /// <summary>Empresa (tenant) dona do registro; carimbada automaticamente.</summary>
+    public int EmpresaId { get; set; }
 
     public int FolhaFornecedorId { get; set; }
     public FolhaFornecedor? FolhaFornecedor { get; set; }

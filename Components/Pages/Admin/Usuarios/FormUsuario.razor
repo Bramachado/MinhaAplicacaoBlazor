@@ -5,9 +5,11 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
 @using MinhaAplicacaoBlazor.Models.Auth
 @inject UserManager<ApplicationUser> UserManager
 @inject IDbContextFactory<AppDbContext> DbFactory
+@inject MinhaAplicacaoBlazor.Services.Auth.TenantContext Tenant
 @inject NavigationManager Navigation
 
 <PageTitle>@(EhNovo ? "Novo Usuário" : "Editar Usuário")</PageTitle>
@@ -45,6 +47,15 @@ else
                 @foreach (var p in perfisDisponiveis)
                 {
                     <option value="@p.Id">@p.Nome</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Empresa</label>
+            <select class="form-select" @bind="empresaId">
+                @foreach (var emp in empresasDisponiveis)
+                {
+                    <option value="@emp.Id">@emp.Nome</option>
                 }
             </select>
         </div>
@@ -145,10 +156,12 @@ else
     private string email = string.Empty;
     private bool ativo = true;
     private int? perfilId;
+    private int empresaId;
     private string senha = string.Empty;
     private string novaSenha = string.Empty;
 
     private List<PerfilOpt> perfisDisponiveis = new();
+    private List<EmpresaOpt> empresasDisponiveis = new();
     private HashSet<string> doPerfil = new();
     private readonly Dictionary<string, Estado> ajustes = new();
 
@@ -162,6 +175,15 @@ else
             .OrderBy(p => p.Nome)
             .Select(p => new PerfilOpt(p.Id, p.Nome))
             .ToListAsync();
+
+        // Empresa não é filtrada por tenant: lista todas (permite o super-admin
+        // bootstrapar usuários de outra empresa). Novo usuário já vem na empresa atual.
+        empresasDisponiveis = await db.Empresas
+            .Where(e => e.Ativa)
+            .OrderBy(e => e.Nome)
+            .Select(e => new EmpresaOpt(e.Id, e.Nome))
+            .ToListAsync();
+        empresaId = Tenant.EmpresaId ?? empresasDisponiveis.FirstOrDefault()?.Id ?? 0;
 
         if (!EhNovo)
         {
@@ -177,6 +199,7 @@ else
             email = user.Email ?? string.Empty;
             ativo = user.Ativo;
             perfilId = user.PerfilId;
+            empresaId = user.EmpresaId;
 
             var overrides = await db.UsuarioPermissoes
                 .Where(p => p.UsuarioId == user.Id)
@@ -221,6 +244,7 @@ else
 
         if (string.IsNullOrWhiteSpace(nomeCompleto)) { erro = "Informe o nome."; return; }
         if (string.IsNullOrWhiteSpace(email)) { erro = "Informe o e-mail."; return; }
+        if (empresaId <= 0) { erro = "Selecione a empresa."; return; }
 
         salvando = true;
         try
@@ -238,7 +262,8 @@ else
                     EmailConfirmed = true,
                     NomeCompleto = nomeCompleto.Trim(),
                     Ativo = ativo,
-                    PerfilId = perfilId
+                    PerfilId = perfilId,
+                    EmpresaId = empresaId
                 };
 
                 var criado = await UserManager.CreateAsync(user, senha);
@@ -254,6 +279,7 @@ else
                 user.NomeCompleto = nomeCompleto.Trim();
                 user.Ativo = ativo;
                 user.PerfilId = perfilId;
+                user.EmpresaId = empresaId;
 
                 var atualizado = await UserManager.UpdateAsync(user);
                 if (!atualizado.Succeeded)
@@ -309,4 +335,5 @@ else
     }
 
     private record PerfilOpt(int Id, string Nome);
+    private record EmpresaOpt(int Id, string Nome);
 }

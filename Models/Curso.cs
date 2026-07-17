@@ -2,9 +2,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MinhaAplicacaoBlazor.Models;
 
-public class Curso
+public class Curso : IEntidadeEmpresa
 {
     public int Id { get; set; }
+
+    /// <summary>Empresa (tenant) dona do registro; carimbada automaticamente.</summary>
+    public int EmpresaId { get; set; }
 
     [Required]
     [MaxLength(150)]

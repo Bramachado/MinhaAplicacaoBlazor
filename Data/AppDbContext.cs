@@ -23,6 +23,14 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
     /// <summary>Nome do usuário logado que originou a operação.</summary>
     public string? UsuarioAuditoriaNome { get; set; }
 
+    /// <summary>
+    /// Empresa (tenant) da operação atual. Definida por operação (via CreateDbContextAsync(user)).
+    /// Filtra automaticamente todas as consultas de entidades <see cref="IEntidadeEmpresa"/> e
+    /// carimba o EmpresaId de novos registros no SaveChanges.
+    /// </summary>
+    public int? EmpresaIdAtual { get; set; }
+
+    public DbSet<Empresa> Empresas => Set<Empresa>();
     public DbSet<Perfil> Perfis => Set<Perfil>();
     public DbSet<PerfilPermissao> PerfilPermissoes => Set<PerfilPermissao>();
     public DbSet<UsuarioPermissao> UsuarioPermissoes => Set<UsuarioPermissao>();
@@ -67,6 +75,12 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(x => x.PerfilId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<ApplicationUser>()
+            .HasOne(x => x.Empresa)
+            .WithMany()
+            .HasForeignKey(x => x.EmpresaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         modelBuilder.Entity<PerfilPermissao>()
             .HasIndex(x => new { x.PerfilId, x.Permissao })
             .IsUnique();
@@ -96,7 +110,7 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasPrecision(10, 2);
 
         modelBuilder.Entity<Tutor>()
-            .HasIndex(x => x.Cpf)
+            .HasIndex(x => new { x.EmpresaId, x.Cpf })
             .IsUnique();
 
         modelBuilder.Entity<Tutor>()
@@ -106,7 +120,7 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Unidade>()
-            .HasIndex(x => x.Codigo)
+            .HasIndex(x => new { x.EmpresaId, x.Codigo })
             .IsUnique();
 
         modelBuilder.Entity<Tutor>()
@@ -128,11 +142,11 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<CategoriaFornecedor>()
-            .HasIndex(x => x.Nome)
+            .HasIndex(x => new { x.EmpresaId, x.Nome })
             .IsUnique();
 
         modelBuilder.Entity<Colaborador>()
-            .HasIndex(x => x.Cpf)
+            .HasIndex(x => new { x.EmpresaId, x.Cpf })
             .IsUnique();
 
         modelBuilder.Entity<Colaborador>()
@@ -154,7 +168,7 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasDefaultValue("Aberta");
 
         modelBuilder.Entity<Competencia>()
-            .HasIndex(x => new { x.Mes, x.Ano })
+            .HasIndex(x => new { x.EmpresaId, x.Mes, x.Ano })
             .IsUnique();
 
         modelBuilder.Entity<PlanoConta>()
@@ -162,7 +176,7 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasDefaultValue(true);
 
         modelBuilder.Entity<PlanoConta>()
-            .HasIndex(x => x.Nome)
+            .HasIndex(x => new { x.EmpresaId, x.Nome })
             .IsUnique();
 
         modelBuilder.Entity<FormaPagamento>()
@@ -170,7 +184,7 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasDefaultValue(true);
 
         modelBuilder.Entity<FormaPagamento>()
-            .HasIndex(x => x.Nome)
+            .HasIndex(x => new { x.EmpresaId, x.Nome })
             .IsUnique();
 
         modelBuilder.Entity<Fornecedor>()
@@ -445,6 +459,9 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
 
         modelBuilder.Entity<RegistroAuditoria>()
             .HasIndex(x => x.UsuarioId);
+
+        // === Multi-empresa (tenant): FK EmpresaId + filtro global por empresa ===
+        ConfigurarMultiEmpresa(modelBuilder);
 
         // === CNAB BTG (subsistema de geração de remessa) ===
         ConfigurarCnabBtg(modelBuilder);

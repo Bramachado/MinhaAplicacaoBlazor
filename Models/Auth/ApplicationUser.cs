@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using MinhaAplicacaoBlazor.Models;
 
 namespace MinhaAplicacaoBlazor.Models.Auth;
 
@@ -8,6 +9,10 @@ namespace MinhaAplicacaoBlazor.Models.Auth;
 public class ApplicationUser : IdentityUser
 {
     public string NomeCompleto { get; set; } = string.Empty;
+
+    /// <summary>Empresa (tenant) à qual o usuário pertence. Define quais registros ele enxerga.</summary>
+    public int EmpresaId { get; set; }
+    public Empresa? Empresa { get; set; }
 
     /// <summary>Quando falso, o usuário existe mas não consegue entrar.</summary>
     public bool Ativo { get; set; } = true;

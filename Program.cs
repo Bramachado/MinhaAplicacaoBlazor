@@ -20,6 +20,14 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// === Multi-empresa (tenant) ===
+// A empresa do usuário logado é resolvida por escopo e carimbada em todo contexto.
+// Registrado DEPOIS do AddDbContextFactory para substituir a fábrica padrão:
+// assim todo serviço que injeta IDbContextFactory<AppDbContext> passa a receber
+// contextos já isolados por empresa, sem alterar os serviços existentes.
+builder.Services.AddScoped<MinhaAplicacaoBlazor.Services.Auth.TenantContext>();
+builder.Services.AddScoped<IDbContextFactory<AppDbContext>, TenantAwareDbContextFactory>();
+
 // O ASP.NET Core Identity precisa de um AppDbContext "scoped"; como usamos
 // IDbContextFactory, criamos um a partir da factory por escopo.
 builder.Services.AddScoped<AppDbContext>(sp =>
@@ -87,14 +95,32 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    // Cria perfil Administrador + usuário admin inicial.
-    var identitySeeder = scope.ServiceProvider.GetRequiredService<IdentitySeeder>();
-    await identitySeeder.SeedAsync();
+    var sp = scope.ServiceProvider;
+    var dbFactory = sp.GetRequiredService<IDbContextFactory<AppDbContext>>();
 
-    var seed = scope.ServiceProvider.GetRequiredService<CategoriaFornecedorService>();
+    // 1) Garante a empresa (tenant) padrão e define-a como empresa deste escopo de
+    //    seeding — assim todos os cadastros iniciais nascem carimbados nela.
+    int empresaPadraoId;
+    await using (var dbInit = await dbFactory.CreateDbContextAsync())
+    {
+        var empresa = await dbInit.Empresas.FirstOrDefaultAsync();
+        if (empresa is null)
+        {
+            empresa = new Empresa { Nome = "Empresa Padrão", Ativa = true };
+            dbInit.Empresas.Add(empresa);
+            await dbInit.SaveChangesAsync();
+        }
+        empresaPadraoId = empresa.Id;
+    }
+    sp.GetRequiredService<MinhaAplicacaoBlazor.Services.Auth.TenantContext>().EmpresaId = empresaPadraoId;
+
+    // 2) Cria perfil Administrador + usuário admin inicial (vinculado à empresa padrão).
+    var identitySeeder = sp.GetRequiredService<IdentitySeeder>();
+    await identitySeeder.SeedAsync(empresaPadraoId);
+
+    var seed = sp.GetRequiredService<CategoriaFornecedorService>();
     await seed.SeedAsync();
 
-    var dbFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>();
     await using var dbCtx = await dbFactory.CreateDbContextAsync();
 
     var planosIniciais = new[]

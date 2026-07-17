@@ -2,9 +2,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MinhaAplicacaoBlazor.Models;
 
-public class Competencia
+public class Competencia : IEntidadeEmpresa
 {
     public int Id { get; set; }
+
+    /// <summary>Empresa (tenant) dona do registro; carimbada automaticamente.</summary>
+    public int EmpresaId { get; set; }
 
     [Range(1, 12, ErrorMessage = "O mês deve estar entre 1 e 12.")]
     public int Mes { get; set; }

@@ -25,7 +25,7 @@ public class IdentitySeeder
         _config = config;
     }
 
-    public async Task SeedAsync()
+    public async Task SeedAsync(int empresaId)
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
 
@@ -71,7 +71,8 @@ public class IdentitySeeder
                 EmailConfirmed = true,
                 NomeCompleto = "Administrador",
                 Ativo = true,
-                PerfilId = admin.Id
+                PerfilId = admin.Id,
+                EmpresaId = empresaId
             };
 
             var resultado = await _userManager.CreateAsync(usuarioAdmin, adminSenha);
@@ -81,10 +82,22 @@ public class IdentitySeeder
                 throw new InvalidOperationException($"Falha ao criar admin inicial: {erros}");
             }
         }
-        else if (usuarioAdmin.PerfilId is null)
+        else
         {
-            usuarioAdmin.PerfilId = admin.Id;
-            await _userManager.UpdateAsync(usuarioAdmin);
+            var alterado = false;
+            if (usuarioAdmin.PerfilId is null)
+            {
+                usuarioAdmin.PerfilId = admin.Id;
+                alterado = true;
+            }
+            // Migração de base pré-existente: garante a empresa do admin.
+            if (usuarioAdmin.EmpresaId == 0)
+            {
+                usuarioAdmin.EmpresaId = empresaId;
+                alterado = true;
+            }
+            if (alterado)
+                await _userManager.UpdateAsync(usuarioAdmin);
         }
     }
 }

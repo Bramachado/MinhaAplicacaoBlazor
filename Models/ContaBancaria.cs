@@ -29,9 +29,12 @@ public enum TipoChavePix
     Aleatoria
 }
 
-public class ContaBancaria : IValidatableObject
+public class ContaBancaria : IValidatableObject, IEntidadeEmpresa
 {
     public int Id { get; set; }
+
+    /// <summary>Empresa (tenant) dona do registro; carimbada automaticamente.</summary>
+    public int EmpresaId { get; set; }
 
     [Required]
     [MaxLength(150)]

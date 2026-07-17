@@ -2,9 +2,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MinhaAplicacaoBlazor.Models;
 
-public class Fornecedor
+public class Fornecedor : IEntidadeEmpresa
 {
     public int Id { get; set; }
+
+    /// <summary>Empresa (tenant) dona do registro; carimbada automaticamente.</summary>
+    public int EmpresaId { get; set; }
 
     [Required(ErrorMessage = "O nome/razão social é obrigatório.")]
     [MaxLength(200)]
