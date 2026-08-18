@@ -238,6 +238,9 @@ public class FolhaFornecedor2LinhaDto
     /// <summary>Marcação do usuário para exportar (ou não) esta linha para o Excel.</summary>
     public bool Selecionado { get; set; } = true;
 
+    /// <summary>Id do FolhaFornecedorItem de origem, usado para abrir os detalhes.</summary>
+    public int ItemId { get; set; }
+
     public string Fornecedor { get; set; } = string.Empty;
     public string? CpfCnpjFornecedor { get; set; }
     public string? TipoPagamento { get; set; }
@@ -269,6 +272,9 @@ public class FolhaColaborador2LinhaDto
     /// <summary>Marcação do usuário para exportar (ou não) esta linha para o Excel.</summary>
     public bool Selecionado { get; set; } = true;
 
+    /// <summary>Id do FolhaColaboradorItem de origem, usado para abrir os detalhes.</summary>
+    public int ItemId { get; set; }
+
     public string Colaborador { get; set; } = string.Empty;
     public string? Cpf { get; set; }
     public decimal ValorTotal { get; set; }
@@ -296,6 +302,9 @@ public class FolhaTutor2LinhaDto
 {
     /// <summary>Marcação do usuário para exportar (ou não) esta linha para o Excel.</summary>
     public bool Selecionado { get; set; } = true;
+
+    /// <summary>Id do FolhaTutorItem de origem, usado para abrir os detalhes.</summary>
+    public int ItemId { get; set; }
 
     public string Tutor { get; set; } = string.Empty;
     public string? Cpf { get; set; }

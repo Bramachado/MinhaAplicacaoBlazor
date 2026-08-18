@@ -371,6 +371,7 @@ public class RelatorioFinanceiroService
                 var conta = forn?.ContaBancaria;
                 linhas.Add(new FolhaFornecedor2LinhaDto
                 {
+                    ItemId = item.Id,
                     Fornecedor = forn?.NomeRazaoSocial ?? "(?)",
                     CpfCnpjFornecedor = forn?.CpfCnpj,
                     TipoPagamento = forn?.TipoPagamento,
@@ -426,6 +427,7 @@ public class RelatorioFinanceiroService
 
                 linhas.Add(new FolhaColaborador2LinhaDto
                 {
+                    ItemId = item.Id,
                     Colaborador = colab?.Nome ?? "(?)",
                     Cpf = colab?.Cpf,
                     ValorTotal = item.ValorTotal,
@@ -476,6 +478,7 @@ public class RelatorioFinanceiroService
 
                 linhas.Add(new FolhaTutor2LinhaDto
                 {
+                    ItemId = item.Id,
                     Tutor = tutor?.Nome ?? "(?)",
                     Cpf = tutor?.Cpf,
                     ValorTotalReceber = item.ValorTotalReceber,

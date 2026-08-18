@@ -4,10 +4,14 @@
 
 @using System.Text
 @using System.Globalization
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
 @using MinhaAplicacaoBlazor.Models.Reports
 @using MinhaAplicacaoBlazor.Services
 
 @inject RelatorioFinanceiroService Service
+@inject IDbContextFactory<AppDbContext> DbFactory
 
 <PageTitle>Folha de Tutores 2</PageTitle>
 
@@ -101,6 +105,7 @@
                         <th style="width:38px;" class="text-center">
                             <input type="checkbox" class="form-check-input" checked="@TodosSelecionados" @onchange="AlternarTodos" title="Selecionar todos" />
                         </th>
+                        <th style="width:38px;" class="text-center">Detalhes</th>
                         @foreach (var col in Colunas)
                         {
                             <th role="button" class="user-select-none @(col.Numerico ? "text-end" : "")" @onclick="() => Ordenar(col.Chave)">
@@ -115,6 +120,15 @@
                         <tr class="@(l.Selecionado ? "table-active" : "")">
                             <td class="text-center">
                                 <input type="checkbox" class="form-check-input" @bind="l.Selecionado" />
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-primary" title="Visualizar detalhes"
+                                        @onclick="() => VisualizarItemAsync(l.ItemId)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
+                                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
+                                    </svg>
+                                </button>
                             </td>
                             <td>@l.Tutor</td>
                             <td>@l.Cpf</td>
@@ -134,7 +148,7 @@
                 </tbody>
                 <tfoot class="table-light">
                     <tr>
-                        <td colspan="3" class="text-end fw-bold">Total selecionado</td>
+                        <td colspan="4" class="text-end fw-bold">Total selecionado</td>
                         <td class="text-end fw-bold">@Moeda(TotalSelecionado)</td>
                         <td colspan="10"></td>
                     </tr>
@@ -143,6 +157,115 @@
         </div>
     }
 </div>
+
+@if (itemDetalhe is not null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Detalhes do Item — @itemDetalhe.Tutor?.Nome</h5>
+                    <button type="button" class="btn-close" @onclick="FecharDetalhe"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted mb-0">Tutor</label>
+                            <div class="fw-semibold">@itemDetalhe.Tutor?.Nome</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">CPF</label>
+                            <div>@(itemDetalhe.Tutor?.Cpf ?? "—")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Status Pagamento</label>
+                            <div>@(itemDetalhe.StatusPagamento ?? "—")</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label text-muted mb-0">Cargo</label>
+                            <div>@(itemDetalhe.Cargo ?? "—")</div>
+                        </div>
+
+                        <div class="col-12"><hr class="my-1" /></div>
+                        <div class="col-12"><h6 class="mb-0">Aulas</h6></div>
+
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Total Horas Normais</label>
+                            <div>@itemDetalhe.TotalHorasNormais.ToString("0.##")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Valor Hora Normal</label>
+                            <div>@itemDetalhe.ValorHoraNormal.ToString("C")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Total Horas Práticas</label>
+                            <div>@itemDetalhe.TotalHorasPraticas.ToString("0.##")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Valor Hora Prática</label>
+                            <div>@itemDetalhe.ValorHoraPratica.ToString("C")</div>
+                        </div>
+
+                        <div class="col-12"><hr class="my-1" /></div>
+                        <div class="col-12"><h6 class="mb-0">Resumo</h6></div>
+
+                        <div class="col-md-4">
+                            <label class="form-label text-muted mb-0">Valor Aulas Normais</label>
+                            <div>@itemDetalhe.ValorAulaNormal.ToString("C")</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted mb-0">Valor Aulas Práticas</label>
+                            <div>@itemDetalhe.ValorAulaPratica.ToString("C")</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted mb-0">Valor Total a Receber</label>
+                            <div class="fw-semibold text-primary">@itemDetalhe.ValorTotalReceber.ToString("C")</div>
+                        </div>
+
+                        <div class="col-12"><hr class="my-1" /></div>
+                        <div class="col-12"><h6 class="mb-0">Dados Bancários</h6></div>
+
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Banco</label>
+                            <div>@(itemDetalhe.Banco ?? "—")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Agência</label>
+                            <div>@(itemDetalhe.Agencia ?? "—")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Conta</label>
+                            <div>@(itemDetalhe.Conta ?? "—")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Chave PIX</label>
+                            <div>@(itemDetalhe.ChavePix ?? "—")</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted mb-0">Nome do Titular da Conta</label>
+                            <div>@(itemDetalhe.NomeTitularConta ?? "—")</div>
+                        </div>
+
+                        <div class="col-12"><hr class="my-1" /></div>
+
+                        <div class="col-12">
+                            <label class="form-label text-muted mb-0">Observação</label>
+                            <div style="white-space:pre-wrap;">@(string.IsNullOrWhiteSpace(itemDetalhe.Observacao) ? "—" : itemDetalhe.Observacao)</div>
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h6 class="mb-2">Anexos</h6>
+                    <div class="alert alert-info mb-0">Nenhum anexo para este item.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="FecharDetalhe">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private List<CompetenciaSelecaoDto> competencias = new();
@@ -157,6 +280,8 @@
     private bool ordemAsc = true;
 
     [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private FolhaTutorItem? itemDetalhe;
 
     // Definição das colunas ordenáveis (rótulo, chave de ordenação e alinhamento).
     private sealed record Coluna(string Chave, string Titulo, Func<FolhaTutor2LinhaDto, object?> Selector, bool Numerico = false);
@@ -353,4 +478,16 @@
         string.IsNullOrEmpty(s) ? "" : System.Net.WebUtility.HtmlEncode(s);
 
     private static string Moeda(decimal v) => v.ToString("C", CultureInfo.GetCultureInfo("pt-BR"));
+
+    private async Task VisualizarItemAsync(int itemId)
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        itemDetalhe = await context.FolhasTutoresItens
+            .AsNoTracking()
+            .Include(i => i.Tutor)
+            .FirstOrDefaultAsync(i => i.Id == itemId);
+    }
+
+    private void FecharDetalhe() => itemDetalhe = null;
 }

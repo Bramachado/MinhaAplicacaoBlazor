@@ -4,10 +4,14 @@
 
 @using System.Text
 @using System.Globalization
+@using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.Data
+@using MinhaAplicacaoBlazor.Models
 @using MinhaAplicacaoBlazor.Models.Reports
 @using MinhaAplicacaoBlazor.Services
 
 @inject RelatorioFinanceiroService Service
+@inject IDbContextFactory<AppDbContext> DbFactory
 
 <PageTitle>Folha de Fornecedores 2</PageTitle>
 
@@ -109,6 +113,7 @@
                         <th style="width:38px;" class="text-center">
                             <input type="checkbox" class="form-check-input" checked="@TodosSelecionados" @onchange="AlternarTodos" title="Selecionar todos" />
                         </th>
+                        <th style="width:38px;" class="text-center">Detalhes</th>
                         @foreach (var col in Colunas)
                         {
                             <th role="button" class="user-select-none @(col.Numerico ? "text-end" : "")" @onclick="() => Ordenar(col.Chave)">
@@ -123,6 +128,15 @@
                         <tr class="@(l.Selecionado ? "table-active" : "")">
                             <td class="text-center">
                                 <input type="checkbox" class="form-check-input" @bind="l.Selecionado" />
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-primary" title="Visualizar detalhes"
+                                        @onclick="() => VisualizarItemAsync(l.ItemId)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
+                                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
+                                    </svg>
+                                </button>
                             </td>
                             <td>@l.Fornecedor</td>
                             <td>@l.CpfCnpjFornecedor</td>
@@ -149,11 +163,11 @@
                 </tbody>
                 <tfoot class="table-light">
                     <tr>
-                        <th colspan="5" class="text-end">Total selecionado</th>
+                        <th colspan="6" class="text-end">Total selecionado</th>
                         <th colspan="11"></th>
                     </tr>
                     <tr>
-                        <td colspan="4"></td>
+                        <td colspan="5"></td>
                         <td class="text-end fw-bold">@Moeda(TotalSelecionado)</td>
                         <td colspan="11"></td>
                     </tr>
@@ -162,6 +176,184 @@
         </div>
     }
 </div>
+
+@if (itemDetalhe is not null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Detalhes do Item — @itemDetalhe.Fornecedor?.NomeRazaoSocial</h5>
+                    <button type="button" class="btn-close" @onclick="FecharDetalhe"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted mb-0">Fornecedor</label>
+                            <div class="fw-semibold">@itemDetalhe.Fornecedor?.NomeRazaoSocial</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">CPF/CNPJ</label>
+                            <div>@(itemDetalhe.Fornecedor?.CpfCnpj ?? "—")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Status Pagamento</label>
+                            <div>@(itemDetalhe.StatusPagamento ?? "—")</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label text-muted mb-0">Tipo de Pagamento</label>
+                            <div>@(itemDetalhe.TipoPagamento ?? "—")</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted mb-0">Banco Pagador</label>
+                            <div>@(itemDetalhe.BancoPagador?.NomeBanco ?? "—")</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted mb-0">Data Vencimento</label>
+                            <div>@(itemDetalhe.DataVencimento?.ToString("dd/MM/yyyy") ?? "—")</div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label text-muted mb-0">Descrição</label>
+                            <div>@(itemDetalhe.Descricao ?? "—")</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted mb-0">Nº Documento / NF</label>
+                            <div>@(itemDetalhe.NumeroDocumento ?? "—")</div>
+                        </div>
+
+                        <div class="col-12"><hr class="my-1" /></div>
+
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Quantidade</label>
+                            <div>@itemDetalhe.Quantidade.ToString("0.##")</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted mb-0">Valor Unitário</label>
+                            <div>@itemDetalhe.ValorUnitario.ToString("C")</div>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label text-muted mb-0">Valor Total a Pagar</label>
+                            <div class="fw-semibold text-primary">@itemDetalhe.ValorTotalPagar.ToString("C")</div>
+                        </div>
+
+                        <div class="col-12"><hr class="my-1" /></div>
+
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Banco</label>
+                            <div>@(itemDetalhe.Banco ?? "—")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Agência</label>
+                            <div>@(itemDetalhe.Agencia ?? "—")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Conta</label>
+                            <div>@(itemDetalhe.Conta ?? "—")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted mb-0">Chave PIX</label>
+                            <div>@(itemDetalhe.ChavePix ?? "—")</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted mb-0">Nome do Titular da Conta</label>
+                            <div>@(itemDetalhe.NomeTitularConta ?? "—")</div>
+                        </div>
+
+                        <div class="col-12"><hr class="my-1" /></div>
+
+                        <div class="col-12">
+                            <label class="form-label text-muted mb-0">Observação</label>
+                            <div style="white-space:pre-wrap;">@(string.IsNullOrWhiteSpace(itemDetalhe.Observacao) ? "—" : itemDetalhe.Observacao)</div>
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h6 class="mb-2">Anexos</h6>
+                    @if (anexosDetalhe.Count == 0)
+                    {
+                        <div class="alert alert-info mb-0">Nenhum anexo para este item.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped align-middle mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Descrição</th>
+                                        <th>Arquivo</th>
+                                        <th class="text-end">Tamanho</th>
+                                        <th class="text-end">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var a in anexosDetalhe)
+                                    {
+                                        <tr>
+                                            <td>@a.Data.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@a.Descricao</td>
+                                            <td>@a.NomeArquivo</td>
+                                            <td class="text-end">@FormatarTamanho(a.TamanhoBytes)</td>
+                                            <td class="text-end">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" title="Visualizar anexo"
+                                                        @onclick="() => VisualizarAnexoAsync(a.Id)">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
+                                                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
+                                                    </svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="FecharDetalhe">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (anexoVisualizado is not null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6); z-index: 1080;">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        @anexoVisualizado.Descricao
+                        <small class="text-muted d-block">@anexoVisualizado.NomeArquivo</small>
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="FecharAnexo"></button>
+                </div>
+                <div class="modal-body text-center" style="min-height: 60vh;">
+                    @if (IsImagem(anexoVisualizado.ContentType))
+                    {
+                        <img src="@anexoDataUrl" alt="@anexoVisualizado.NomeArquivo" class="img-fluid" style="max-height: 75vh;" />
+                    }
+                    else if (IsPdf(anexoVisualizado.ContentType))
+                    {
+                        <iframe src="@anexoDataUrl" style="width: 100%; height: 75vh; border: none;" title="@anexoVisualizado.NomeArquivo"></iframe>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Pré-visualização não disponível para este tipo de arquivo.</p>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <a class="btn btn-outline-primary me-auto" href="@anexoDataUrl" download="@anexoVisualizado.NomeArquivo">Baixar</a>
+                    <button type="button" class="btn btn-secondary" @onclick="FecharAnexo">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private List<CompetenciaSelecaoDto> competencias = new();
@@ -177,6 +369,11 @@
     private bool ordemAsc = true;
 
     [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private FolhaFornecedorItem? itemDetalhe;
+    private List<Arquivo> anexosDetalhe = new();
+    private Arquivo? anexoVisualizado;
+    private string? anexoDataUrl;
 
     // Definição das colunas ordenáveis (rótulo, chave de ordenação e alinhamento).
     private sealed record Coluna(string Chave, string Titulo, Func<FolhaFornecedor2LinhaDto, object?> Selector, bool Numerico = false);
@@ -385,4 +582,67 @@
         "Transferência" => "bg-primary",
         _ => "bg-light text-dark"
     };
+
+    private async Task VisualizarItemAsync(int itemId)
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        itemDetalhe = await context.FolhasFornecedoresItens
+            .AsNoTracking()
+            .Include(i => i.Fornecedor)
+            .Include(i => i.BancoPagador)
+            .FirstOrDefaultAsync(i => i.Id == itemId);
+
+        anexosDetalhe = await context.Arquivos
+            .AsNoTracking()
+            .Where(a => a.FolhaFornecedorItemId == itemId)
+            .OrderByDescending(a => a.Data)
+            .Select(a => new Arquivo
+            {
+                Id = a.Id,
+                Data = a.Data,
+                Descricao = a.Descricao,
+                NomeArquivo = a.NomeArquivo,
+                ContentType = a.ContentType,
+                TamanhoBytes = a.TamanhoBytes,
+                Conteudo = Array.Empty<byte>()
+            })
+            .ToListAsync();
+    }
+
+    private void FecharDetalhe()
+    {
+        itemDetalhe = null;
+        anexosDetalhe = new();
+        FecharAnexo();
+    }
+
+    private async Task VisualizarAnexoAsync(int id)
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+        var arquivo = await context.Arquivos.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id);
+        if (arquivo is null) return;
+
+        anexoVisualizado = arquivo;
+        anexoDataUrl = $"data:{arquivo.ContentType};base64,{Convert.ToBase64String(arquivo.Conteudo)}";
+    }
+
+    private void FecharAnexo()
+    {
+        anexoVisualizado = null;
+        anexoDataUrl = null;
+    }
+
+    private static bool IsImagem(string contentType) =>
+        contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsPdf(string contentType) =>
+        contentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase);
+
+    private static string FormatarTamanho(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024d:0.#} KB";
+        return $"{bytes / (1024d * 1024d):0.#} MB";
+    }
 }
