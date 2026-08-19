@@ -370,15 +370,15 @@
         var numEnt = new HashSet<int> { 4, 5, 6 };
         var txtEnt = new HashSet<int>();
 
-        var hForn = new[] { "Fornecedor", "Descrição", "Documento", "Vencimento", "Status", "Qtd", "V. Unit.", "Total", "Banco", "Ag.", "Conta", "PIX", "Titular", "Obs." };
+        var hForn = new[] { "Fornecedor", "Descrição", "Documento(s)", "Vencimento", "Status", "Total", "Banco", "Ag.", "Conta", "PIX", "Titular", "Obs." };
         var rForn = (r.FolhaFornecedor?.Itens ?? new()).Select(i => new[]
         {
-            i.Fornecedor, i.Descricao ?? "", i.NumeroDocumento ?? "", DT(i.DataVencimento), i.StatusPagamento ?? "",
-            N(i.Quantidade), N(i.ValorUnitario), N(i.ValorTotalPagar),
+            i.Fornecedor, i.Descricao ?? "", i.DocumentosResumo ?? "", DT(i.DataVencimento), i.StatusPagamento ?? "",
+            N(i.ValorTotalPagar),
             i.Banco ?? "", i.Agencia ?? "", i.Conta ?? "", i.ChavePix ?? "", i.NomeTitularConta ?? "", i.Observacao ?? ""
         }).ToList();
-        var numForn = new HashSet<int> { 5, 6, 7 };
-        var txtForn = new HashSet<int> { 2, 9, 10 };
+        var numForn = new HashSet<int> { 5 };
+        var txtForn = new HashSet<int> { 2, 7, 8 };
 
         var hTut = new[] { "Tutor", "Unidade", "Titulação", "Cargo", "Status", "Hs Norm.", "Hs Prát.", "V. Hora N.", "V. Hora P.", "V. Aulas N.", "V. Aulas P.", "Total Receber", "Banco", "Ag.", "Conta", "PIX", "Titular", "Obs." };
         var rTut = (r.FolhaTutor?.Itens ?? new()).Select(i => new[]
@@ -953,8 +953,6 @@
                             <th>Tipo de Pagamento</th>
                             <th>Vencimento</th>
                             <th>Status Pgto</th>
-                            <th class="text-end">Qtd</th>
-                            <th class="text-end">V. Unit.</th>
                             <th class="text-end">Total</th>
                         </tr>
                     </thead>
@@ -978,15 +976,13 @@
                                         <span class="badge @StatusBadge(i.StatusPagamento!)">@i.StatusPagamento</span>
                                     }
                                 </td>
-                                <td class="text-end">@i.Quantidade.ToString("0.##")</td>
-                                <td class="text-end">@Moeda(i.ValorUnitario)</td>
                                 <td class="text-end fw-semibold">@Moeda(i.ValorTotalPagar)</td>
                             </tr>
                         }
                     </tbody>
                     <tfoot class="table-light">
                         <tr>
-                            <th colspan="8" class="text-end">Total Fornecedores</th>
+                            <th colspan="6" class="text-end">Total Fornecedores</th>
                             <th class="text-end">@Moeda(dadosFolhaForn.ValorTotal)</th>
                         </tr>
                     </tfoot>
@@ -1115,11 +1111,9 @@
                                                     <tr>
                                                         <th>Fornecedor</th>
                                                         <th>Descrição</th>
-                                                        <th>Documento</th>
+                                                        <th>Documento(s)</th>
                                                         <th>Vencimento</th>
                                                         <th>Status</th>
-                                                        <th class="text-end">Qtd</th>
-                                                        <th class="text-end">V. Unit.</th>
                                                         <th class="text-end">Total</th>
                                                         <th>Banco</th>
                                                         <th>Ag.</th>
@@ -1135,7 +1129,7 @@
                                                         <tr>
                                                             <td>@i.Fornecedor</td>
                                                             <td>@i.Descricao</td>
-                                                            <td>@i.NumeroDocumento</td>
+                                                            <td>@i.DocumentosResumo</td>
                                                             <td>@Data(i.DataVencimento)</td>
                                                             <td>
                                                                 @if (!string.IsNullOrWhiteSpace(i.StatusPagamento))
@@ -1143,8 +1137,6 @@
                                                                     <span class="badge @StatusBadge(i.StatusPagamento!)">@i.StatusPagamento</span>
                                                                 }
                                                             </td>
-                                                            <td class="text-end">@i.Quantidade.ToString("0.##")</td>
-                                                            <td class="text-end">@Moeda(i.ValorUnitario)</td>
                                                             <td class="text-end fw-semibold">@Moeda(i.ValorTotalPagar)</td>
                                                             <td>@i.Banco</td>
                                                             <td>@i.Agencia</td>
@@ -1157,7 +1149,7 @@
                                                 </tbody>
                                                 <tfoot class="table-light">
                                                     <tr>
-                                                        <th colspan="7" class="text-end">Total Fornecedores</th>
+                                                        <th colspan="5" class="text-end">Total Fornecedores</th>
                                                         <th class="text-end">@Moeda(dadosResumo.FolhaFornecedor.ValorTotal)</th>
                                                         <th colspan="6"></th>
                                                     </tr>

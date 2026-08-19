@@ -25,6 +25,7 @@
                     <div class="mb-4">
                         <UploadArquivo Titulo="Anexar Comprovante / Nota"
                                        FolhaFornecedorItemId="FolhaFornecedorItemId"
+                                       FolhaFornecedorItemNotaId="FolhaFornecedorItemNotaId"
                                        OnUploaded="CarregarArquivosAsync" />
                     </div>
 
@@ -121,7 +122,10 @@
 }
 
 @code {
-    [Parameter] public int FolhaFornecedorItemId { get; set; }
+    // Informe FolhaFornecedorItemId para anexos do pagamento consolidado, ou
+    // FolhaFornecedorItemNotaId para anexos de uma nota específica (apenas um dos dois).
+    [Parameter] public int? FolhaFornecedorItemId { get; set; }
+    [Parameter] public int? FolhaFornecedorItemNotaId { get; set; }
 
     // Notifica o pai quando a quantidade de anexos muda (ex.: para atualizar contadores).
     [Parameter] public EventCallback<int> OnQuantidadeAlterada { get; set; }
@@ -143,7 +147,7 @@
         await using var context = await DbFactory.CreateDbContextAsync();
         quantidade = await context.Arquivos
             .AsNoTracking()
-            .CountAsync(a => a.FolhaFornecedorItemId == FolhaFornecedorItemId);
+            .CountAsync(a => a.FolhaFornecedorItemId == FolhaFornecedorItemId && a.FolhaFornecedorItemNotaId == FolhaFornecedorItemNotaId);
     }
 
     private async Task AbrirModalAsync()
@@ -161,7 +165,7 @@
         // Projeta sem o conteúdo binário; ele é buscado sob demanda ao visualizar.
         arquivos = await context.Arquivos
             .AsNoTracking()
-            .Where(a => a.FolhaFornecedorItemId == FolhaFornecedorItemId)
+            .Where(a => a.FolhaFornecedorItemId == FolhaFornecedorItemId && a.FolhaFornecedorItemNotaId == FolhaFornecedorItemNotaId)
             .OrderByDescending(a => a.Data)
             .Select(a => new Arquivo
             {

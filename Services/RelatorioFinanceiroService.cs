@@ -267,6 +267,8 @@ public class RelatorioFinanceiroService
                 .ThenInclude(i => i.Fornecedor)
             .Include(f => f.Itens)
                 .ThenInclude(i => i.BancoPagador)
+            .Include(f => f.Itens)
+                .ThenInclude(i => i.Notas)
             .FirstOrDefaultAsync(f => f.CompetenciaId == competenciaId);
 
         if (folha is null) return null;
@@ -285,13 +287,14 @@ public class RelatorioFinanceiroService
                 {
                     Fornecedor = i.Fornecedor?.NomeRazaoSocial ?? "(?)",
                     Descricao = i.Descricao,
-                    NumeroDocumento = i.NumeroDocumento,
+                    DocumentosResumo = string.Join(", ", i.Notas
+                        .Where(n => !string.IsNullOrWhiteSpace(n.NumeroDocumento))
+                        .Select(n => n.NumeroDocumento)),
+                    QuantidadeNotas = i.Notas.Count,
                     TipoPagamento = i.TipoPagamento,
                     BancoPagador = i.BancoPagador != null ? i.BancoPagador.NomeBanco : null,
                     DataVencimento = i.DataVencimento,
                     StatusPagamento = i.StatusPagamento,
-                    Quantidade = i.Quantidade,
-                    ValorUnitario = i.ValorUnitario,
                     ValorTotalPagar = i.ValorTotalPagar,
                     Banco = i.Banco,
                     Agencia = i.Agencia,

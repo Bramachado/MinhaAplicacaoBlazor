@@ -57,6 +57,7 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<FolhaTutorItem> FolhasTutoresItens => Set<FolhaTutorItem>();
     public DbSet<FolhaFornecedor> FolhasFornecedores => Set<FolhaFornecedor>();
     public DbSet<FolhaFornecedorItem> FolhasFornecedoresItens => Set<FolhaFornecedorItem>();
+    public DbSet<FolhaFornecedorItemNota> FolhasFornecedoresItensNotas => Set<FolhaFornecedorItemNota>();
 
     public DbSet<RegistroAuditoria> RegistrosAuditoria => Set<RegistroAuditoria>();
 
@@ -407,6 +408,20 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(x => x.BancoPagadorId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<FolhaFornecedorItemNota>()
+            .HasOne(x => x.FolhaFornecedorItem)
+            .WithMany(x => x.Notas)
+            .HasForeignKey(x => x.FolhaFornecedorItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<FolhaFornecedorItemNota>()
+            .Property(x => x.NumeroParcela)
+            .HasDefaultValue(1);
+
+        modelBuilder.Entity<FolhaFornecedorItemNota>()
+            .Property(x => x.TotalParcelas)
+            .HasDefaultValue(1);
+
         modelBuilder.Entity<Banco>()
             .HasIndex(x => x.NomeBanco)
             .IsUnique();
@@ -416,6 +431,15 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .WithMany(x => x.Arquivos)
             .HasForeignKey(x => x.FolhaFornecedorItemId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Restrict (não Cascade): evita múltiplos caminhos de cascade em Arquivos
+        // (Item → Arquivos direto, e Item → Nota → Arquivos). A limpeza dos anexos
+        // da nota é feita manualmente no código antes de excluir a nota/o item.
+        modelBuilder.Entity<Arquivo>()
+            .HasOne(x => x.FolhaFornecedorItemNota)
+            .WithMany(x => x.Arquivos)
+            .HasForeignKey(x => x.FolhaFornecedorItemNotaId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Entrada>()
             .HasOne(x => x.Fornecedor)

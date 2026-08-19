@@ -46,6 +46,7 @@ public partial class AppDbContext
         Tenant<FolhaColaboradorItem>();
         Tenant<FolhaTutorItem>();
         Tenant<FolhaFornecedorItem>();
+        Tenant<FolhaFornecedorItemNota>();
         Tenant<ContaBancaria>();
         Tenant<EscalaAulaPratica>();
         Tenant<Arquivo>();

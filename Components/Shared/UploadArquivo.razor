@@ -53,8 +53,11 @@
     // Notifica o componente pai que um arquivo foi salvo (ex.: para recarregar a lista).
     [Parameter] public EventCallback OnUploaded { get; set; }
 
-    // Quando informado, o arquivo é vinculado a este item da folha de fornecedores.
+    // Quando informado, o arquivo é vinculado a este item (pagamento) da folha de fornecedores.
     [Parameter] public int? FolhaFornecedorItemId { get; set; }
+
+    // Quando informado, o arquivo é vinculado a esta nota fiscal específica.
+    [Parameter] public int? FolhaFornecedorItemNotaId { get; set; }
 
     // Quando informado, o arquivo é vinculado a esta entrada financeira.
     [Parameter] public int? EntradaId { get; set; }
@@ -136,6 +139,7 @@
                 TamanhoBytes = conteudo.LongLength,
                 Conteudo = conteudo,
                 FolhaFornecedorItemId = FolhaFornecedorItemId,
+                FolhaFornecedorItemNotaId = FolhaFornecedorItemNotaId,
                 EntradaId = EntradaId
             };
 

@@ -214,26 +214,43 @@
                             <div>@(itemDetalhe.DataVencimento?.ToString("dd/MM/yyyy") ?? "—")</div>
                         </div>
 
-                        <div class="col-md-8">
+                        <div class="col-12">
                             <label class="form-label text-muted mb-0">Descrição</label>
                             <div>@(itemDetalhe.Descricao ?? "—")</div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted mb-0">Nº Documento / NF</label>
-                            <div>@(itemDetalhe.NumeroDocumento ?? "—")</div>
                         </div>
 
                         <div class="col-12"><hr class="my-1" /></div>
 
-                        <div class="col-md-3">
-                            <label class="form-label text-muted mb-0">Quantidade</label>
-                            <div>@itemDetalhe.Quantidade.ToString("0.##")</div>
+                        <div class="col-12">
+                            <label class="form-label text-muted mb-2">Notas deste pagamento</label>
+                            @if (itemDetalhe.Notas.Count == 0)
+                            {
+                                <div class="text-muted">Nenhuma nota lançada.</div>
+                            }
+                            else
+                            {
+                                <table class="table table-sm table-striped align-middle mb-0">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Nº Documento / NF</th>
+                                            <th>Descrição</th>
+                                            <th class="text-end">Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var n in itemDetalhe.Notas)
+                                        {
+                                            <tr>
+                                                <td>@(n.NumeroDocumento ?? "—")</td>
+                                                <td>@(n.Descricao ?? "—")</td>
+                                                <td class="text-end">@n.Valor.ToString("C")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted mb-0">Valor Unitário</label>
-                            <div>@itemDetalhe.ValorUnitario.ToString("C")</div>
-                        </div>
-                        <div class="col-md-5">
+                        <div class="col-12">
                             <label class="form-label text-muted mb-0">Valor Total a Pagar</label>
                             <div class="fw-semibold text-primary">@itemDetalhe.ValorTotalPagar.ToString("C")</div>
                         </div>
@@ -591,6 +608,7 @@
             .AsNoTracking()
             .Include(i => i.Fornecedor)
             .Include(i => i.BancoPagador)
+            .Include(i => i.Notas)
             .FirstOrDefaultAsync(i => i.Id == itemId);
 
         anexosDetalhe = await context.Arquivos

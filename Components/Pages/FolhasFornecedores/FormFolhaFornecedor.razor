@@ -140,10 +140,8 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th role="button" style="cursor:pointer;" @onclick='() => OrdenarPor("Fornecedor")'>Fornecedor@(IndicadorSort("Fornecedor"))</th>
-                                    <th role="button" style="cursor:pointer;" @onclick='() => OrdenarPor("Documento")'>Documento@(IndicadorSort("Documento"))</th>
+                                    <th class="text-center">Notas</th>
                                     <th role="button" style="cursor:pointer;" class="text-center" @onclick='() => OrdenarPor("Vencimento")'>Vencimento@(IndicadorSort("Vencimento"))</th>
-                                    <th role="button" style="cursor:pointer;" class="text-end" @onclick='() => OrdenarPor("Qtd")'>Qtd.@(IndicadorSort("Qtd"))</th>
-                                    <th role="button" style="cursor:pointer;" class="text-end" @onclick='() => OrdenarPor("VlrUnit")'>Vlr. Unit.@(IndicadorSort("VlrUnit"))</th>
                                     <th role="button" style="cursor:pointer;" class="text-end" @onclick='() => OrdenarPor("Total")'>Total@(IndicadorSort("Total"))</th>
                                     <th role="button" style="cursor:pointer;" class="text-center" @onclick='() => OrdenarPor("Pgto")'>Pgto@(IndicadorSort("Pgto"))</th>
                                     <th class="text-end">Ações</th>
@@ -154,10 +152,10 @@
                                 {
                                     <tr>
                                         <td>@item.Fornecedor?.NomeRazaoSocial</td>
-                                        <td>@item.NumeroDocumento</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary">@item.Notas.Count</span>
+                                        </td>
                                         <td class="text-center">@(item.DataVencimento?.ToString("dd/MM/yyyy") ?? "—")</td>
-                                        <td class="text-end">@item.Quantidade.ToString("0.##")</td>
-                                        <td class="text-end">@item.ValorUnitario.ToString("C")</td>
                                         <td class="text-end fw-semibold">@item.ValorTotalPagar.ToString("C")</td>
                                         <td class="text-center">
                                             @if (!string.IsNullOrWhiteSpace(item.StatusPagamento))
@@ -185,9 +183,7 @@
                             </tbody>
                             <tfoot class="table-light">
                                 <tr>
-                                    <th colspan="4" class="text-end">Totais:</th>
-                                    <th class="text-end">@itensVisiveis.Sum(i => i.Quantidade).ToString("0.##")</th>
-                                    <th></th>
+                                    <th colspan="3" class="text-end">Totais:</th>
                                     <th class="text-end">@itensVisiveis.Sum(i => i.ValorTotalPagar).ToString("C")</th>
                                     <th colspan="2"></th>
                                 </tr>
@@ -241,10 +237,7 @@
             Func<FolhaFornecedorItem, object?> chave = sortColuna switch
             {
                 "Descricao" => i => i.Descricao,
-                "Documento" => i => i.NumeroDocumento,
                 "Vencimento" => i => i.DataVencimento,
-                "Qtd" => i => i.Quantidade,
-                "VlrUnit" => i => i.ValorUnitario,
                 "Total" => i => i.ValorTotalPagar,
                 "Pgto" => i => i.StatusPagamento,
                 _ => i => i.Fornecedor?.NomeRazaoSocial
@@ -283,6 +276,8 @@
                 .AsNoTracking()
                 .Include(f => f.Itens)
                     .ThenInclude(i => i.Fornecedor)
+                .Include(f => f.Itens)
+                    .ThenInclude(i => i.Notas)
                 .FirstOrDefaultAsync(f => f.Id == Id);
 
             if (existente is null)
@@ -425,6 +420,18 @@
 
         if (item is not null)
         {
+            // FK Arquivo→Nota é Restrict (evita múltiplos caminhos de cascade), então os
+            // anexos das notas do item precisam ser removidos manualmente antes dele
+            // (a exclusão do item cascateia para as notas, mas não para os anexos delas).
+            var notaIds = await context.FolhasFornecedoresItensNotas
+                .Where(n => n.FolhaFornecedorItemId == itemId)
+                .Select(n => n.Id)
+                .ToListAsync();
+            var anexosDasNotas = await context.Arquivos
+                .Where(a => a.FolhaFornecedorItemNotaId != null && notaIds.Contains(a.FolhaFornecedorItemNotaId!.Value))
+                .ToListAsync();
+            context.Arquivos.RemoveRange(anexosDasNotas);
+
             context.FolhasFornecedoresItens.Remove(item);
             await context.SaveChangesAsync();
 

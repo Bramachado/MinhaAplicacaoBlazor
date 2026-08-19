@@ -327,13 +327,15 @@ public class RelatorioFolhaFornecedorItemDto
 {
     public string Fornecedor { get; set; } = string.Empty;
     public string? Descricao { get; set; }
-    public string? NumeroDocumento { get; set; }
+
+    /// <summary>Números das notas que compõem este pagamento, ex.: "NF001, NF002".</summary>
+    public string? DocumentosResumo { get; set; }
+    public int QuantidadeNotas { get; set; }
+
     public string? TipoPagamento { get; set; }
     public string? BancoPagador { get; set; }
     public DateTime? DataVencimento { get; set; }
     public string? StatusPagamento { get; set; }
-    public decimal Quantidade { get; set; }
-    public decimal ValorUnitario { get; set; }
     public decimal ValorTotalPagar { get; set; }
     public string? Banco { get; set; }
     public string? Agencia { get; set; }

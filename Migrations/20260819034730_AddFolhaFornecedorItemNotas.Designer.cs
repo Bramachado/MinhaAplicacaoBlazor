@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MinhaAplicacaoBlazor.Data;
 
@@ -11,9 +12,11 @@ using MinhaAplicacaoBlazor.Data;
 namespace MinhaAplicacaoBlazor.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260819034730_AddFolhaFornecedorItemNotas")]
+    partial class AddFolhaFornecedorItemNotas
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1334,16 +1337,6 @@ namespace MinhaAplicacaoBlazor.Migrations
                     b.Property<string>("NumeroDocumento")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("NumeroParcela")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.Property<int>("TotalParcelas")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
 
                     b.Property<decimal>("Valor")
                         .HasColumnType("decimal(12,2)");

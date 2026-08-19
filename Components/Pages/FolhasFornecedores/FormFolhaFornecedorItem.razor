@@ -13,13 +13,13 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
-<PageTitle>@(IsNovo ? "Novo Item da Folha" : "Editar Item da Folha")</PageTitle>
+<PageTitle>@(IsNovo ? "Novo Pagamento da Folha" : "Editar Pagamento da Folha")</PageTitle>
 
 <div class="container-fluid mt-4">
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="mb-0">
-                @(IsNovo ? "Novo Item da Folha de Fornecedor" : "Editar Item da Folha de Fornecedor")
+                @(IsNovo ? "Novo Pagamento da Folha de Fornecedor" : "Editar Pagamento da Folha de Fornecedor")
                 @if (folha is not null && folha.Competencia is not null)
                 {
                     <small class="text-muted">— Competência @($"{folha.Competencia.Mes:00}/{folha.Competencia.Ano}")</small>
@@ -87,28 +87,13 @@
 
                     <div class="row">
                         <div class="col-md-8 mb-3">
-                            <label class="form-label">Descrição</label>
+                            <label class="form-label">Descrição (geral do pagamento)</label>
                             <InputText class="form-control" @bind-Value="item.Descricao" />
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Nº Documento / NF</label>
-                            <InputText class="form-control" @bind-Value="item.NumeroDocumento" />
-                        </div>
-                    </div>
-                    <hr />
-                    <h5>Valores</h5>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Quantidade</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.Quantidade" step="0.01" @bind-Value:after="Recalcular" />
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Valor Unitário</label>
-                            <InputNumber class="form-control text-end" @bind-Value="item.ValorUnitario" step="0.01" @bind-Value:after="Recalcular" />
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Valor Total a Pagar</label>
                             <input type="text" class="form-control text-end fw-semibold text-primary" value="@item.ValorTotalPagar.ToString("C")" readonly />
+                            <small class="text-muted">Soma das notas lançadas abaixo.</small>
                         </div>
                     </div>
                     <div class="row">
@@ -117,7 +102,7 @@
                             <InputTextArea class="form-control" rows="2" @bind-Value="item.Observacao" />
                         </div>
                     </div>
-                    
+
                     @if (!string.IsNullOrEmpty(mensagemErro))
                     {
                         <div class="alert alert-danger">@mensagemErro</div>
@@ -135,13 +120,92 @@
     {
         <div class="card mt-3">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">Anexos (Comprovantes / Notas)</h4>
+                <h4 class="mb-0">Notas deste Pagamento</h4>
+                <button class="btn btn-success" @onclick="NovaNota" disabled="@FolhaFechada">+ Nova Nota</button>
+            </div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(mensagemErroNotas))
+                {
+                    <div class="alert alert-danger">@mensagemErroNotas</div>
+                }
+                @if (notas.Count == 0)
+                {
+                    <div class="alert alert-info mb-0">
+                        Nenhuma nota lançada. Clique em "+ Nova Nota" para adicionar a primeira NF/despesa deste pagamento.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover align-middle mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Nº Documento / NF</th>
+                                    <th>Descrição</th>
+                                    <th class="text-center">Parcela</th>
+                                    <th class="text-end">Valor</th>
+                                    <th>Anexo</th>
+                                    <th class="text-end">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var n in notas)
+                                {
+                                    <tr>
+                                        <td>@(n.NumeroDocumento ?? "—")</td>
+                                        <td>@(n.Descricao ?? "—")</td>
+                                        <td class="text-center">
+                                            @if (n.TotalParcelas > 1)
+                                            {
+                                                <span class="badge bg-info text-dark">@n.NumeroParcela/@n.TotalParcelas</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">À vista</span>
+                                            }
+                                        </td>
+                                        <td class="text-end fw-semibold">@n.Valor.ToString("C")</td>
+                                        <td><AnexosFolhaFornecedorItem FolhaFornecedorItemNotaId="n.Id" /></td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-secondary me-1" title="@(FolhaFechada ? "Folha fechada" : "Editar")"
+                                                    @onclick="() => EditarNota(n)" disabled="@FolhaFechada">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                                                </svg>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" title="@(FolhaFechada ? "Folha fechada" : "Remover")"
+                                                    @onclick="() => RemoverNotaAsync(n.Id)" disabled="@FolhaFechada">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                                    <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                                                </svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-light fw-semibold">
+                                <tr>
+                                    <td colspan="3" class="text-end">Total:</td>
+                                    <td class="text-end">@notas.Sum(n => n.Valor).ToString("C")</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Anexo do Pagamento (comprovante do PIX/boleto único)</h4>
                 <AnexosFolhaFornecedorItem FolhaFornecedorItemId="Id!.Value" />
             </div>
             <div class="card-body">
                 <p class="text-muted mb-0">
-                    Clique em <strong>Anexos</strong> para abrir a janela e anexar um ou mais arquivos
-                    (PDF, JPG ou PNG) a este item.
+                    Use este anexo para o comprovante do pagamento consolidado (ex.: comprovante do PIX/TED).
+                    Para anexar cada NF individualmente, use o botão "Anexo" na linha da nota correspondente acima.
                 </p>
             </div>
         </div>
@@ -149,10 +213,88 @@
     else if (!carregando && IsNovo)
     {
         <div class="alert alert-info mt-3">
-            Salve o item primeiro para poder anexar comprovantes e notas.
+            Salve o pagamento primeiro para poder lançar as notas e anexar comprovantes.
         </div>
     }
 </div>
+
+@if (mostrarModalNota && notaEditando is not null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <EditForm Model="notaEditando" OnValidSubmit="SalvarNotaAsync" FormName="form-nota-folha-fornecedor">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(notaEditando.Id == 0 ? "Nova Nota" : "Editar Nota")</h5>
+                        <button type="button" class="btn-close" @onclick="FecharModalNota"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ValidationSummary class="text-danger" />
+                        <div class="mb-3">
+                            <label class="form-label">Nº Documento / NF</label>
+                            <InputText class="form-control" @bind-Value="notaEditando.NumeroDocumento" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descrição</label>
+                            <InputText class="form-control" @bind-Value="notaEditando.Descricao" />
+                        </div>
+
+                        @if (notaEditando.Id == 0)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Tipo</label>
+                                <select class="form-select" @bind="tipoLancamentoNota">
+                                    <option value="AVista">À Vista</option>
+                                    <option value="Parcelada">Parcelada</option>
+                                </select>
+                            </div>
+                        }
+                        else if (notaEditando.TotalParcelas > 1)
+                        {
+                            <div class="mb-3">
+                                <span class="badge bg-info text-dark">Parcela @notaEditando.NumeroParcela de @notaEditando.TotalParcelas</span>
+                            </div>
+                        }
+
+                        @if (notaEditando.Id == 0 && tipoLancamentoNota == "Parcelada")
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Quantidade de Parcelas</label>
+                                <InputNumber class="form-control" @bind-Value="quantidadeParcelas" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Valor de Cada Parcela <span class="text-danger">*</span></label>
+                                <InputNumber class="form-control text-end" @bind-Value="notaEditando.Valor" step="0.01" />
+                                <small class="text-muted">
+                                    Total do parcelamento: @((notaEditando.Valor * quantidadeParcelas).ToString("C"))
+                                    — a 1ª parcela fica nesta competência; as demais são lançadas automaticamente
+                                    nas competências seguintes, para este mesmo fornecedor.
+                                </small>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Valor <span class="text-danger">*</span></label>
+                                <InputNumber class="form-control text-end" @bind-Value="notaEditando.Valor" step="0.01" />
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(mensagemErroNota))
+                        {
+                            <div class="alert alert-danger mb-0" style="white-space:pre-line;">@mensagemErroNota</div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="FecharModalNota">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar Nota</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     [Parameter] public int FolhaId { get; set; }
@@ -164,6 +306,16 @@
     private bool carregando = true;
     private string? mensagemErro;
     private bool IsNovo => Id is null or 0;
+    private bool FolhaFechada => folha is not null && folha.Status != "Aberta";
+
+    private List<FolhaFornecedorItemNota> notas = new();
+    private FolhaFornecedorItemNota? notaEditando;
+    private bool mostrarModalNota;
+    private string? mensagemErroNota;
+    private string? mensagemErroNotas;
+    private string tipoLancamentoNota = "AVista";
+    private int quantidadeParcelas = 2;
+
     private int FornecedorIdValue
     {
         get => item.FornecedorId;
@@ -227,6 +379,12 @@
             }
 
             item = existente;
+
+            notas = await context.FolhasFornecedoresItensNotas
+                .AsNoTracking()
+                .Where(n => n.FolhaFornecedorItemId == Id)
+                .OrderBy(n => n.Id)
+                .ToListAsync();
         }
         else
         {
@@ -250,11 +408,7 @@
 
         // Tipo de pagamento derivado do fornecedor: com conta → Transferência, sem conta → Boleto.
         item.TipoPagamento = fornecedor.TipoPagamento;
-
-        item.Recalcular();
     }
-
-    private void Recalcular() => item.Recalcular();
 
     private async Task SalvarAsync()
     {
@@ -271,7 +425,6 @@
         }
 
         item.FolhaFornecedorId = FolhaId;
-        item.Recalcular();
         mensagemErro = null;
 
         await using var context = await DbFactory.CreateDbContextAsync();
@@ -289,13 +442,184 @@
             }
 
             context.FolhasFornecedoresItens.Add(item);
+            await context.SaveChangesAsync();
+
+            Navigation.NavigateTo($"/folhas-fornecedores/{FolhaId}/itens/editar/{item.Id}");
+            return;
+        }
+
+        context.FolhasFornecedoresItens.Update(item);
+        await context.SaveChangesAsync();
+
+        Navigation.NavigateTo($"/folhas-fornecedores/editar/{FolhaId}");
+    }
+
+    private void Voltar() => Navigation.NavigateTo($"/folhas-fornecedores/editar/{FolhaId}");
+
+    private void NovaNota()
+    {
+        notaEditando = new FolhaFornecedorItemNota { FolhaFornecedorItemId = Id!.Value };
+        tipoLancamentoNota = "AVista";
+        quantidadeParcelas = 2;
+        mensagemErroNota = null;
+        mostrarModalNota = true;
+    }
+
+    private void EditarNota(FolhaFornecedorItemNota nota)
+    {
+        notaEditando = new FolhaFornecedorItemNota
+        {
+            Id = nota.Id,
+            FolhaFornecedorItemId = nota.FolhaFornecedorItemId,
+            NumeroDocumento = nota.NumeroDocumento,
+            Descricao = nota.Descricao,
+            Valor = nota.Valor,
+            NumeroParcela = nota.NumeroParcela,
+            TotalParcelas = nota.TotalParcelas
+        };
+        mensagemErroNota = null;
+        mostrarModalNota = true;
+    }
+
+    private void FecharModalNota()
+    {
+        mostrarModalNota = false;
+        notaEditando = null;
+        mensagemErroNota = null;
+    }
+
+    private async Task SalvarNotaAsync()
+    {
+        if (notaEditando is null) return;
+
+        if (!await FolhaService.ValidarFolhaAbertaAsync(FolhaId))
+        {
+            mensagemErroNotas = "Esta folha está fechada. Reabra a folha para realizar alterações.";
+            FecharModalNota();
+            return;
+        }
+
+        if (notaEditando.Valor <= 0)
+        {
+            mensagemErroNota = "Informe um valor maior que zero.";
+            return;
+        }
+
+        // Nota nova + parcelada: a 1ª parcela e as demais (nas competências seguintes)
+        // são criadas juntas pelo serviço, que valida antes se todas as competências existem.
+        if (notaEditando.Id == 0 && tipoLancamentoNota == "Parcelada")
+        {
+            if (quantidadeParcelas < 2)
+            {
+                mensagemErroNota = "Informe pelo menos 2 parcelas.";
+                return;
+            }
+
+            var resultado = await FolhaService.LancarNotaComParcelasAsync(
+                Id!.Value, notaEditando.NumeroDocumento, notaEditando.Descricao, notaEditando.Valor, quantidadeParcelas);
+
+            if (!resultado.Sucesso)
+            {
+                var partes = new List<string>();
+                if (resultado.CompetenciasFaltantes.Count > 0)
+                    partes.Add($"Crie primeiro as competências: {string.Join(", ", resultado.CompetenciasFaltantes)}.");
+                if (resultado.CompetenciasFechadas.Count > 0)
+                    partes.Add($"Reabra a folha de fornecedores das competências: {string.Join(", ", resultado.CompetenciasFechadas)}.");
+
+                mensagemErroNota = "Não é possível lançar todas as parcelas ainda.\n" + string.Join("\n", partes);
+                return;
+            }
+
+            mensagemErroNotas = null;
+            FecharModalNota();
+            await RecarregarItemAsync();
+            await CarregarNotasAsync();
+            return;
+        }
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        if (notaEditando.Id == 0)
+        {
+            context.FolhasFornecedoresItensNotas.Add(notaEditando);
         }
         else
         {
-            context.FolhasFornecedoresItens.Update(item);
+            context.FolhasFornecedoresItensNotas.Update(notaEditando);
         }
 
         await context.SaveChangesAsync();
+
+        mensagemErroNotas = null;
+        FecharModalNota();
+        await RecalcularTotalItemAsync();
+        await CarregarNotasAsync();
+    }
+
+    private async Task RecarregarItemAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+        var itemEntity = await context.FolhasFornecedoresItens.AsNoTracking().FirstOrDefaultAsync(i => i.Id == Id);
+        if (itemEntity is not null)
+            item.ValorTotalPagar = itemEntity.ValorTotalPagar;
+    }
+
+    private async Task RemoverNotaAsync(int notaId)
+    {
+        if (!await FolhaService.ValidarFolhaAbertaAsync(FolhaId))
+        {
+            mensagemErroNotas = "Esta folha está fechada. Reabra a folha para realizar alterações.";
+            return;
+        }
+
+        var confirmado = await JS.InvokeAsync<bool>("confirm", "Deseja remover esta nota?");
+        if (!confirmado) return;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+        var nota = await context.FolhasFornecedoresItensNotas.FindAsync(notaId);
+        if (nota is not null)
+        {
+            // FK Arquivo→Nota é Restrict (evita múltiplos caminhos de cascade), então
+            // os anexos da nota precisam ser removidos manualmente antes dela.
+            var anexosDaNota = await context.Arquivos
+                .Where(a => a.FolhaFornecedorItemNotaId == notaId)
+                .ToListAsync();
+            context.Arquivos.RemoveRange(anexosDaNota);
+
+            context.FolhasFornecedoresItensNotas.Remove(nota);
+            await context.SaveChangesAsync();
+        }
+
+        await RecalcularTotalItemAsync();
+        await CarregarNotasAsync();
+    }
+
+    private async Task CarregarNotasAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+        notas = await context.FolhasFornecedoresItensNotas
+            .AsNoTracking()
+            .Where(n => n.FolhaFornecedorItemId == Id)
+            .OrderBy(n => n.Id)
+            .ToListAsync();
+    }
+
+    private async Task RecalcularTotalItemAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        var total = await context.FolhasFornecedoresItensNotas
+            .Where(n => n.FolhaFornecedorItemId == Id)
+            .SumAsync(n => (decimal?)n.Valor) ?? 0m;
+
+        var itemEntity = await context.FolhasFornecedoresItens.FindAsync(Id);
+        if (itemEntity is not null)
+        {
+            itemEntity.ValorTotalPagar = total;
+            await context.SaveChangesAsync();
+        }
+
+        item.ValorTotalPagar = total;
 
         var folhaEntity = await context.FolhasFornecedores.FindAsync(FolhaId);
         if (folhaEntity is not null)
@@ -305,9 +629,5 @@
                 .SumAsync(i => (decimal?)i.ValorTotalPagar) ?? 0m;
             await context.SaveChangesAsync();
         }
-
-        Navigation.NavigateTo($"/folhas-fornecedores/editar/{FolhaId}");
     }
-
-    private void Voltar() => Navigation.NavigateTo($"/folhas-fornecedores/editar/{FolhaId}");
 }

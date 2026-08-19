@@ -29,9 +29,13 @@ public class Arquivo : IEntidadeEmpresa
     [Required]
     public byte[] Conteudo { get; set; } = Array.Empty<byte>();
 
-    // Vínculo opcional a um item da folha de fornecedores (anexo).
+    // Vínculo opcional a um item (pagamento) da folha de fornecedores (anexo).
     public int? FolhaFornecedorItemId { get; set; }
     public FolhaFornecedorItem? FolhaFornecedorItem { get; set; }
+
+    // Vínculo opcional a uma nota fiscal específica dentro de um pagamento (anexo).
+    public int? FolhaFornecedorItemNotaId { get; set; }
+    public FolhaFornecedorItemNota? FolhaFornecedorItemNota { get; set; }
 
     // Vínculo opcional a uma entrada financeira (anexo).
     public int? EntradaId { get; set; }
