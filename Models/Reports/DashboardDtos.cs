@@ -36,6 +36,7 @@ public class DashboardDto
     public List<DashboardPlanoContaLinhaDto> PorPlanoConta { get; set; } = new();
     public List<DashboardEvolucaoPontoDto> Evolucao { get; set; } = new();
     public List<DashboardVencimentoDto> ProximosVencimentos { get; set; } = new();
+    public List<DashboardProventoLinhaDto> ComposicaoProventosColaboradores { get; set; } = new();
 }
 
 public class DashboardUnidadeLinhaDto
@@ -61,6 +62,16 @@ public class DashboardEvolucaoPontoDto
     public decimal Receitas { get; set; }
     public decimal Despesas { get; set; }
     public decimal Saldo => Receitas - Despesas;
+}
+
+/// <summary>
+/// Somatório de um campo da folha de colaboradores (proventos) na
+/// competência selecionada, usado no gráfico "Composição da Folha".
+/// </summary>
+public class DashboardProventoLinhaDto
+{
+    public string Rotulo { get; set; } = string.Empty;
+    public decimal Total { get; set; }
 }
 
 public class DashboardVencimentoDto

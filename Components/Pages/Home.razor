@@ -196,6 +196,29 @@
                     </div>
                 </div>
 
+                <!-- ===== Linha 2b: Composição da folha de colaboradores ===== -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12">
+                        <div class="card h-100">
+                            <div class="card-header fw-semibold">Composição da Folha de Colaboradores (@dados.CompetenciaTexto)</div>
+                            <div class="card-body">
+                                @if (dados.ComposicaoProventosColaboradores.Count == 0 || dados.ComposicaoProventosColaboradores.Sum(c => c.Total) == 0)
+                                {
+                                    <p class="text-muted mb-0">Nenhum lançamento de folha de colaboradores nesta competência.</p>
+                                }
+                                else
+                                {
+                                    <ApexChart TItem="DashboardProventoLinhaDto" Options="opcoesBarraProventos" Height="320" @key="@($"pr-{chaveDados}")">
+                                        <ApexPointSeries TItem="DashboardProventoLinhaDto" Items="dados.ComposicaoProventosColaboradores"
+                                            Name="Total" SeriesType="SeriesType.Bar"
+                                            XValue="@(e => e.Rotulo)" YValue="@(e => e.Total)" />
+                                    </ApexChart>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- ===== Linha 3: Ranking + Vencimentos ===== -->
                 <div class="row g-3">
                     <div class="col-xl-7">
@@ -309,6 +332,7 @@
     private ApexChartOptions<DashboardEvolucaoPontoDto> opcoesLinha = new();
     private ApexChartOptions<DashboardPlanoContaLinhaDto> opcoesDonut = new();
     private ApexChartOptions<DashboardPlanoContaLinhaDto> opcoesBarraH = new();
+    private ApexChartOptions<DashboardProventoLinhaDto> opcoesBarraProventos = new();
 
     protected override void OnInitialized()
     {
@@ -405,6 +429,14 @@
             PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { Horizontal = true } },
             Legend = new Legend { Show = false },
             Xaxis = new XAxis { Labels = new XAxisLabels { Formatter = moedaFormatter } },
+            Tooltip = new Tooltip { Y = new TooltipY { Formatter = moedaFormatter } }
+        };
+
+        opcoesBarraProventos = new ApexChartOptions<DashboardProventoLinhaDto>
+        {
+            Colors = new() { "#20c997" },
+            Legend = new Legend { Show = false },
+            Yaxis = new() { new YAxis { Labels = new YAxisLabels { Formatter = moedaFormatter } } },
             Tooltip = new Tooltip { Y = new TooltipY { Formatter = moedaFormatter } }
         };
     }

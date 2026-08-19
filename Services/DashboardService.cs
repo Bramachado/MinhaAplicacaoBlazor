@@ -91,6 +91,9 @@ public class DashboardService
         // === Próximos vencimentos (folha de fornecedores em aberto) ===
         dto.ProximosVencimentos = await ObterProximosVencimentosAsync(ctx, competenciaId, unidadeId);
 
+        // === Composição da folha de colaboradores por tipo de provento ===
+        dto.ComposicaoProventosColaboradores = await ObterComposicaoProventosAsync(ctx, competenciaId, unidadeId);
+
         return dto;
     }
 
@@ -300,6 +303,49 @@ public class DashboardService
             .Where(x => x.Total > 0)
             .OrderByDescending(x => x.Total)
             .ToListAsync();
+    }
+
+    /// <summary>
+    /// Soma, por tipo de provento (Salário Base, Premiações, 13º, Férias 1/3
+    /// etc.), os itens da folha de colaboradores da competência selecionada.
+    /// Usado no gráfico "Composição da Folha de Colaboradores" da Home.
+    /// </summary>
+    private static async Task<List<DashboardProventoLinhaDto>> ObterComposicaoProventosAsync(AppDbContext ctx, int competenciaId, int? unidadeId)
+    {
+        var agregado = await ctx.FolhasColaboradoresItens
+            .AsNoTracking()
+            .Where(i => i.FolhaColaborador!.CompetenciaId == competenciaId)
+            .Where(i => unidadeId == null || i.Colaborador!.UnidadeId == unidadeId)
+            .GroupBy(i => 1)
+            .Select(g => new
+            {
+                SalarioBase = g.Sum(x => x.SalarioBase),
+                PremiacaoFixa = g.Sum(x => x.PremiacaoFixa),
+                PremiacaoVariavel = g.Sum(x => x.PremiacaoVariavel),
+                OutrosProventos = g.Sum(x => x.OutrosProventos),
+                SalarioFamilia = g.Sum(x => x.SalarioFamilia),
+                DecimoTerceiro = g.Sum(x => x.DecimoTerceiro),
+                FeriasUmTerco = g.Sum(x => x.FeriasUmTerco),
+                PlanoSaude = g.Sum(x => x.PlanoSaude)
+            })
+            .FirstOrDefaultAsync();
+
+        if (agregado is null)
+            return new();
+
+        var lista = new List<DashboardProventoLinhaDto>
+        {
+            new() { Rotulo = "Salário Base", Total = agregado.SalarioBase },
+            new() { Rotulo = "Premiação Fixa", Total = agregado.PremiacaoFixa },
+            new() { Rotulo = "Premiação Variável", Total = agregado.PremiacaoVariavel },
+            new() { Rotulo = "Outros Proventos", Total = agregado.OutrosProventos },
+            new() { Rotulo = "Salário Família", Total = agregado.SalarioFamilia },
+            new() { Rotulo = "13º Salário", Total = agregado.DecimoTerceiro },
+            new() { Rotulo = "Férias 1/3", Total = agregado.FeriasUmTerco },
+            new() { Rotulo = "Plano de Saúde", Total = agregado.PlanoSaude },
+        };
+
+        return lista.OrderByDescending(x => x.Total).ToList();
     }
 
     private static async Task<List<DashboardVencimentoDto>> ObterProximosVencimentosAsync(AppDbContext ctx, int competenciaId, int? unidadeId)
