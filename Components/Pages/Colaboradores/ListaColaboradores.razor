@@ -85,6 +85,16 @@
                 <PropertyColumn Property="@(c => c.Cpf)" Title="CPF" Sortable="true" />
                 <PropertyColumn Property="@(c => c.Cargo)" Title="Cargo" Sortable="true" />
                 <PropertyColumn Property="@(c => c.Unidade!.Nome)" Title="Unidade" Sortable="true" />
+                <TemplateColumn Title="Situação" Sortable="true" SortBy="@sortPorSituacaoCpf" Align="Align.Center">
+                    @if (context.SituacaoCpf == SituacaoCpfStatus.OK)
+                    {
+                        <span class="badge bg-success">OK</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">@(context.SituacaoCpf?.ToString() ?? "Não verificado")</span>
+                    }
+                </TemplateColumn>
                 <TemplateColumn Title="Ativo" Sortable="true" SortBy="@sortPorAtivo" Align="Align.Center">
                     @if (context.Ativo)
                     {
@@ -150,6 +160,8 @@
     private readonly GridSort<Colaborador> sortPorNome = GridSort<Colaborador>.ByAscending(c => c.Nome);
 
     private readonly GridSort<Colaborador> sortPorAtivo = GridSort<Colaborador>.ByAscending(c => c.Ativo);
+
+    private readonly GridSort<Colaborador> sortPorSituacaoCpf = GridSort<Colaborador>.ByAscending(c => c.SituacaoCpf);
 
     private readonly GridSort<Colaborador> sortPorConta = GridSort<Colaborador>.ByAscending(c => c.ContaBancariaId != null);
 

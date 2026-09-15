@@ -114,6 +114,7 @@
                             <input type="checkbox" class="form-check-input" checked="@TodosSelecionados" @onchange="AlternarTodos" title="Selecionar todos" />
                         </th>
                         <th style="width:38px;" class="text-center">Detalhes</th>
+                        <th class="text-center">Status</th>
                         @foreach (var col in Colunas)
                         {
                             <th role="button" class="user-select-none @(col.Numerico ? "text-end" : "")" @onclick="() => Ordenar(col.Chave)">
@@ -138,6 +139,24 @@
                                     </svg>
                                 </button>
                             </td>
+                            <td class="text-center">
+                                @if (DadosBancariosConferem(l.Cpf, l.CpfCnpjConta))
+                                {
+                                    <span class="text-success" title="CPF/CNPJ da conta bancária confere com o cadastro do colaborador.">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                                            <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                                        </svg>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-warning" title="CPF/CNPJ da conta bancária diverge do CPF cadastrado para este colaborador.">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                                            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
+                                        </svg>
+                                    </span>
+                                }
+                            </td>
                             <td>@l.Colaborador</td>
                             <td>@l.Cpf</td>
                             <td>@(l.DataNascimento?.ToString("dd/MM/yyyy") ?? "—")</td>
@@ -158,7 +177,7 @@
                 </tbody>
                 <tfoot class="table-light">
                     <tr>
-                        <td colspan="5" class="text-end fw-bold">Totais selecionados</td>
+                        <td colspan="6" class="text-end fw-bold">Totais selecionados</td>
                         <td class="text-end fw-bold">@Moeda(TotalSelecionado)</td>
                         <td class="text-end fw-bold">@Moeda(TotalPixSelecionado)</td>
                         <td colspan="10"></td>
@@ -616,6 +635,17 @@
 
     private static string Esc(string? s) =>
         string.IsNullOrEmpty(s) ? "" : System.Net.WebUtility.HtmlEncode(s);
+
+    /// <summary>Compara CPF/CNPJ (só dígitos) do colaborador com o titular da conta bancária vinculada.</summary>
+    private static bool DadosBancariosConferem(string? cpfPessoa, string? cpfCnpjConta)
+    {
+        var pessoa = ApenasDigitos(cpfPessoa);
+        var conta = ApenasDigitos(cpfCnpjConta);
+        return pessoa.Length > 0 && pessoa == conta;
+    }
+
+    private static string ApenasDigitos(string? valor) =>
+        valor is null ? "" : new string(valor.Where(char.IsDigit).ToArray());
 
     private static string Moeda(decimal v) => v.ToString("C", CultureInfo.GetCultureInfo("pt-BR"));
 

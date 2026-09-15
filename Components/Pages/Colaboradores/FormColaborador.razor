@@ -131,8 +131,18 @@
                     }
 
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">Salvar</button>
-                        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" disabled="@validandoCpf">
+                            @if (validandoCpf)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                                <span>Validando CPF na Receita Federal...</span>
+                            }
+                            else
+                            {
+                                <span>Salvar</span>
+                            }
+                        </button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancelar" disabled="@validandoCpf">Cancelar</button>
                     </div>
                 </EditForm>
             }
@@ -149,6 +159,7 @@
     private List<Unidade> unidades = new();
     private bool carregando = true;
     private string? mensagemErro;
+    private bool validandoCpf;
 
     private bool IsNovo => Id is null or 0;
 
@@ -204,15 +215,44 @@
             return;
         }
 
-        if (!string.IsNullOrEmpty(cpf) && colaborador.DataNascimento is DateTime dataNascimento)
+        if (string.IsNullOrEmpty(cpf) || colaborador.DataNascimento is not DateTime dataNascimento)
         {
-            var consulta = await SerproService.ConsultarAsync(cpf, dataNascimento);
-            if (consulta.Sucesso)
-            {
-                colaborador.SituacaoCpf = SerproCpfConsultaService.NomesCorrespondem(colaborador.Nome, consulta.Nome)
-                    ? SituacaoCpfStatus.OK
-                    : SituacaoCpfStatus.DIVERGENTE;
-            }
+            mensagemErro = "Informe CPF e Data de Nascimento para validar o cadastro.";
+            return;
+        }
+
+        validandoCpf = true;
+        StateHasChanged();
+
+        ConsultaCpfResultado consulta;
+        try
+        {
+            consulta = await SerproService.ConsultarAsync(cpf, dataNascimento);
+        }
+        finally
+        {
+            validandoCpf = false;
+        }
+
+        if (consulta.Sucesso)
+        {
+            colaborador.SituacaoCpf = SerproCpfConsultaService.NomesCorrespondem(colaborador.Nome, consulta.Nome)
+                ? SituacaoCpfStatus.OK
+                : SituacaoCpfStatus.DIVERGENTE;
+
+            if (!string.IsNullOrWhiteSpace(consulta.Nome))
+                colaborador.Nome = consulta.Nome;
+        }
+        else
+        {
+            colaborador.SituacaoCpf = SituacaoCpfStatus.DIVERGENTE;
+        }
+
+        if (colaborador.Ativo && colaborador.SituacaoCpf != SituacaoCpfStatus.OK)
+        {
+            mensagemErro = "Não é possível ativar este colaborador: a Situação CPF precisa estar \"OK\". "
+                + "Desmarque \"Ativo\" ou corrija o CPF/Data de Nascimento e salve novamente.";
+            return;
         }
 
         if (IsNovo)
