@@ -6,9 +6,11 @@
 @using Microsoft.EntityFrameworkCore
 @using MinhaAplicacaoBlazor.Data
 @using MinhaAplicacaoBlazor.Models
+@using MinhaAplicacaoBlazor.Services
 
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject NavigationManager Navigation
+@inject SerproCpfConsultaService SerproService
 
 <PageTitle>@(IsNovo ? "Novo Tutor" : "Editar Tutor")</PageTitle>
 
@@ -76,7 +78,12 @@
                             <InputCpf class="form-control" @bind-Value="tutor.Cpf" />
                         </div>
 
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data de Nascimento</label>
+                            <InputDate class="form-control" @bind-Value="tutor.DataNascimento" />
+                        </div>
+
+                        <div class="col-md-3 mb-3">
                             <label class="form-label">RG</label>
                             <InputText class="form-control" @bind-Value="tutor.Rg" />
                         </div>
@@ -94,8 +101,8 @@
                         </div>
 
                         <div class="col-md-3 mb-3">
-                            <label class="form-label">Data de Nascimento</label>
-                            <InputDate class="form-control" @bind-Value="tutor.DataNascimento" />
+                            <label class="form-label">Situação CPF</label>
+                            <input class="form-control @SituacaoCssClass(tutor.SituacaoCpf)" value="@tutor.SituacaoCpf" readonly />
                         </div>
                     </div>
 
@@ -215,6 +222,17 @@
             return;
         }
 
+        if (!string.IsNullOrEmpty(cpf) && tutor.DataNascimento is DateTime dataNascimento)
+        {
+            var consulta = await SerproService.ConsultarAsync(cpf, dataNascimento);
+            if (consulta.Sucesso)
+            {
+                tutor.SituacaoCpf = SerproCpfConsultaService.NomesCorrespondem(tutor.Nome, consulta.Nome)
+                    ? SituacaoCpfStatus.OK
+                    : SituacaoCpfStatus.DIVERGENTE;
+            }
+        }
+
         if (IsNovo)
         {
             context.Tutores.Add(tutor);
@@ -241,4 +259,11 @@
     {
         Navigation.NavigateTo("/tutores");
     }
+
+    private static string SituacaoCssClass(SituacaoCpfStatus? situacao) => situacao switch
+    {
+        SituacaoCpfStatus.OK => "text-success fw-semibold",
+        SituacaoCpfStatus.DIVERGENTE => "text-danger fw-semibold",
+        _ => "",
+    };
 }

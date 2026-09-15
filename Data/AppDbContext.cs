@@ -114,6 +114,17 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasIndex(x => new { x.EmpresaId, x.Cpf })
             .IsUnique();
 
+        // [Required] em DataNascimento é só para validação de formulário;
+        // registros antigos sem data continuam válidos no banco.
+        modelBuilder.Entity<Tutor>()
+            .Property(x => x.DataNascimento)
+            .IsRequired(false);
+
+        modelBuilder.Entity<Tutor>()
+            .Property(x => x.SituacaoCpf)
+            .HasConversion<string>()
+            .HasMaxLength(20);
+
         modelBuilder.Entity<Tutor>()
             .HasOne(x => x.Titulacao)
             .WithMany(x => x.Tutores)
@@ -149,6 +160,17 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<Colaborador>()
             .HasIndex(x => new { x.EmpresaId, x.Cpf })
             .IsUnique();
+
+        // [Required] em DataNascimento é só para validação de formulário;
+        // registros antigos sem data continuam válidos no banco.
+        modelBuilder.Entity<Colaborador>()
+            .Property(x => x.DataNascimento)
+            .IsRequired(false);
+
+        modelBuilder.Entity<Colaborador>()
+            .Property(x => x.SituacaoCpf)
+            .HasConversion<string>()
+            .HasMaxLength(20);
 
         modelBuilder.Entity<Colaborador>()
             .HasOne(x => x.Unidade)

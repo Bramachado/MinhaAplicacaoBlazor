@@ -431,8 +431,10 @@ public class RelatorioFinanceiroService
                 linhas.Add(new FolhaColaborador2LinhaDto
                 {
                     ItemId = item.Id,
+                    ColaboradorId = colab?.Id ?? 0,
                     Colaborador = colab?.Nome ?? "(?)",
                     Cpf = colab?.Cpf,
+                    DataNascimento = colab?.DataNascimento,
                     ValorTotal = item.ValorTotal,
                     ValorReceberPix = item.ValorReceberPix,
                     NomeTitular = conta.NomeTitular,
@@ -482,8 +484,10 @@ public class RelatorioFinanceiroService
                 linhas.Add(new FolhaTutor2LinhaDto
                 {
                     ItemId = item.Id,
+                    TutorId = tutor?.Id ?? 0,
                     Tutor = tutor?.Nome ?? "(?)",
                     Cpf = tutor?.Cpf,
+                    DataNascimento = tutor?.DataNascimento,
                     ValorTotalReceber = item.ValorTotalReceber,
                     NomeTitular = conta.NomeTitular,
                     CpfCnpjConta = conta.CpfCnpj,

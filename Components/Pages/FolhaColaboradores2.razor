@@ -12,6 +12,7 @@
 
 @inject RelatorioFinanceiroService Service
 @inject IDbContextFactory<AppDbContext> DbFactory
+@inject SerproCpfConsultaService SerproService
 
 <PageTitle>Folha de Colaboradores 2</PageTitle>
 
@@ -71,6 +72,12 @@
                             <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5z"/>
                         </svg>
                         Exportar Excel (@QuantidadeSelecionadas)
+                    </button>
+                    <button class="btn btn-info text-white" @onclick="AbrirConferenciaAsync" disabled="@(!gerado || linhas.Count == 0)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1" style="vertical-align:-2px;">
+                            <path d="M13.485 1.431a1.473 1.473 0 0 1 2.104 2.062l-7.84 9.801a1.473 1.473 0 0 1-2.12.04L.431 8.138a1.473 1.473 0 0 1 2.084-2.083l4.111 4.112 6.82-8.69a.486.486 0 0 1 .04-.045z"/>
+                        </svg>
+                        Conferência de Dados
                     </button>
                 </div>
             </div>
@@ -133,6 +140,7 @@
                             </td>
                             <td>@l.Colaborador</td>
                             <td>@l.Cpf</td>
+                            <td>@(l.DataNascimento?.ToString("dd/MM/yyyy") ?? "—")</td>
                             <td class="text-end fw-semibold">@Moeda(l.ValorTotal)</td>
                             <td class="text-end">@Moeda(l.ValorReceberPix)</td>
                             <td>@l.NomeTitular</td>
@@ -150,7 +158,7 @@
                 </tbody>
                 <tfoot class="table-light">
                     <tr>
-                        <td colspan="4" class="text-end fw-bold">Totais selecionados</td>
+                        <td colspan="5" class="text-end fw-bold">Totais selecionados</td>
                         <td class="text-end fw-bold">@Moeda(TotalSelecionado)</td>
                         <td class="text-end fw-bold">@Moeda(TotalPixSelecionado)</td>
                         <td colspan="10"></td>
@@ -298,6 +306,87 @@
     </div>
 }
 
+@if (conferenciaAberta)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Conferência de Dados — CPF na SERPRO</h5>
+                    @if (!conferenciaRodando)
+                    {
+                        <button type="button" class="btn-close" @onclick="FecharConferencia"></button>
+                    }
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-2">
+                        Consultando CPF + Data de Nascimento de cada colaborador na SERPRO e comparando
+                        com o nome cadastrado no sistema.
+                    </p>
+
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        @if (conferenciaRodando)
+                        {
+                            <span class="spinner-border spinner-border-sm text-info"></span>
+                        }
+                        <strong>@conferenciaProcessados / @conferenciaTotal</strong>
+                    </div>
+
+                    <div class="progress mb-3" style="height: 22px;">
+                        <div class="progress-bar @(conferenciaRodando ? "progress-bar-striped progress-bar-animated" : "bg-success")"
+                             role="progressbar" style="width:@ConferenciaPercentual%">
+                            @ConferenciaPercentual%
+                        </div>
+                    </div>
+
+                    <div class="row text-center mb-2">
+                        <div class="col-4">
+                            <div class="fw-bold text-success">@conferenciaOk</div>
+                            <div class="small text-muted">OK</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold text-danger">@conferenciaDivergentes</div>
+                            <div class="small text-muted">Divergentes</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold text-warning">@conferenciaErros</div>
+                            <div class="small text-muted">Não verificados</div>
+                        </div>
+                    </div>
+
+                    @if (conferenciaLog.Count > 0)
+                    {
+                        <div class="border rounded p-2" style="max-height:160px; overflow-y:auto;">
+                            @foreach (var linha in conferenciaLog)
+                            {
+                                <div class="small">@linha</div>
+                            }
+                        </div>
+                    }
+
+                    @if (!conferenciaRodando)
+                    {
+                        <div class="alert alert-secondary mt-3 mb-0">
+                            Conferência concluída. As situações ficam salvas no cadastro de cada colaborador
+                            (campo "Situação CPF").
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    @if (conferenciaRodando)
+                    {
+                        <button type="button" class="btn btn-outline-danger" @onclick="CancelarConferencia">Cancelar</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-secondary" @onclick="FecharConferencia">Fechar</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<CompetenciaSelecaoDto> competencias = new();
     private int competenciaSelecionadaId;
@@ -314,6 +403,19 @@
 
     private FolhaColaboradorItem? itemDetalhe;
 
+    // ---- Conferência de Dados (SERPRO em lote) ----
+    private bool conferenciaAberta;
+    private bool conferenciaRodando;
+    private int conferenciaTotal;
+    private int conferenciaProcessados;
+    private int conferenciaOk;
+    private int conferenciaDivergentes;
+    private int conferenciaErros;
+    private List<string> conferenciaLog = new();
+    private CancellationTokenSource? conferenciaCts;
+
+    private int ConferenciaPercentual => conferenciaTotal == 0 ? 0 : conferenciaProcessados * 100 / conferenciaTotal;
+
     // Definição das colunas ordenáveis (rótulo, chave de ordenação e alinhamento).
     private sealed record Coluna(string Chave, string Titulo, Func<FolhaColaborador2LinhaDto, object?> Selector, bool Numerico = false);
 
@@ -321,6 +423,7 @@
     {
         new("Colaborador",     "Colaborador",     l => l.Colaborador),
         new("Cpf",             "CPF",             l => l.Cpf),
+        new("DataNascimento",  "Dt. Nascimento",  l => l.DataNascimento),
         new("ValorTotal",      "Valor Total",     l => l.ValorTotal, true),
         new("ValorReceberPix", "Receber PIX",     l => l.ValorReceberPix, true),
         new("NomeTitular",     "Nome Titular",    l => l.NomeTitular),
@@ -430,6 +533,7 @@
         {
             ("Colaborador",     l => l.Colaborador,                          false, false),
             ("CPF",             l => l.Cpf ?? "",                            true,  false),
+            ("Dt. Nascimento",  l => l.DataNascimento?.ToString("dd/MM/yyyy") ?? "", false, false),
             ("Valor Total",     l => l.ValorTotal.ToString("N2", ptBr),      false, true),
             ("Receber PIX",     l => l.ValorReceberPix.ToString("N2", ptBr), false, true),
             ("Nome Titular",    l => l.NomeTitular ?? "",                     false, false),
@@ -526,4 +630,78 @@
     }
 
     private void FecharDetalhe() => itemDetalhe = null;
+
+    /// <summary>
+    /// Consulta a SERPRO (CPF + Data de Nascimento) para cada colaborador distinto
+    /// das linhas geradas e grava SituacaoCpf ("OK"/"DIVERGENTE") comparando o nome
+    /// cadastrado com o nome retornado. Roda sequencialmente, com progresso ao vivo.
+    /// </summary>
+    private async Task AbrirConferenciaAsync()
+    {
+        var colaboradorIds = linhas.Select(l => l.ColaboradorId).Where(id => id > 0).Distinct().ToList();
+
+        conferenciaAberta = true;
+        conferenciaRodando = true;
+        conferenciaTotal = colaboradorIds.Count;
+        conferenciaProcessados = 0;
+        conferenciaOk = 0;
+        conferenciaDivergentes = 0;
+        conferenciaErros = 0;
+        conferenciaLog.Clear();
+        conferenciaCts = new CancellationTokenSource();
+        StateHasChanged();
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        foreach (var colaboradorId in colaboradorIds)
+        {
+            if (conferenciaCts.IsCancellationRequested)
+                break;
+
+            var colaborador = await context.Colaboradores.FirstOrDefaultAsync(c => c.Id == colaboradorId);
+            if (colaborador is null)
+            {
+                conferenciaErros++;
+            }
+            else if (string.IsNullOrWhiteSpace(colaborador.Cpf) || colaborador.DataNascimento is not DateTime dataNascimento)
+            {
+                conferenciaErros++;
+                conferenciaLog.Add($"{colaborador.Nome}: sem CPF ou Data de Nascimento cadastrada.");
+            }
+            else
+            {
+                var consulta = await SerproService.ConsultarAsync(colaborador.Cpf, dataNascimento, conferenciaCts.Token);
+                if (consulta.Sucesso)
+                {
+                    colaborador.SituacaoCpf = SerproCpfConsultaService.NomesCorrespondem(colaborador.Nome, consulta.Nome)
+                        ? SituacaoCpfStatus.OK
+                        : SituacaoCpfStatus.DIVERGENTE;
+                    await context.SaveChangesAsync();
+
+                    if (colaborador.SituacaoCpf == SituacaoCpfStatus.OK)
+                        conferenciaOk++;
+                    else
+                    {
+                        conferenciaDivergentes++;
+                        conferenciaLog.Add($"{colaborador.Nome}: DIVERGENTE (SERPRO: \"{consulta.Nome}\").");
+                    }
+                }
+                else
+                {
+                    conferenciaErros++;
+                    conferenciaLog.Add($"{colaborador.Nome}: {consulta.MensagemErro}");
+                }
+            }
+
+            conferenciaProcessados++;
+            StateHasChanged();
+        }
+
+        conferenciaRodando = false;
+        StateHasChanged();
+    }
+
+    private void CancelarConferencia() => conferenciaCts?.Cancel();
+
+    private void FecharConferencia() => conferenciaAberta = false;
 }

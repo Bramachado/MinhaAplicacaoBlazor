@@ -6,9 +6,11 @@
 @using Microsoft.EntityFrameworkCore
 @using MinhaAplicacaoBlazor.Data
 @using MinhaAplicacaoBlazor.Models
+@using MinhaAplicacaoBlazor.Services
 
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject NavigationManager Navigation
+@inject SerproCpfConsultaService SerproService
 
 <PageTitle>@(IsNovo ? "Novo Colaborador" : "Editar Colaborador")</PageTitle>
 
@@ -54,7 +56,12 @@
                             <InputCpf class="form-control" @bind-Value="colaborador.Cpf" />
                         </div>
 
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data de Nascimento</label>
+                            <InputDate class="form-control" @bind-Value="colaborador.DataNascimento" />
+                        </div>
+
+                        <div class="col-md-3 mb-3">
                             <label class="form-label">RG</label>
                             <InputText class="form-control" @bind-Value="colaborador.Rg" />
                         </div>
@@ -72,8 +79,8 @@
                         </div>
 
                         <div class="col-md-3 mb-3">
-                            <label class="form-label">Data de Nascimento</label>
-                            <InputDate class="form-control" @bind-Value="colaborador.DataNascimento" />
+                            <label class="form-label">Situação CPF</label>
+                            <input class="form-control @SituacaoCssClass(colaborador.SituacaoCpf)" value="@colaborador.SituacaoCpf" readonly />
                         </div>
                     </div>
 
@@ -197,6 +204,17 @@
             return;
         }
 
+        if (!string.IsNullOrEmpty(cpf) && colaborador.DataNascimento is DateTime dataNascimento)
+        {
+            var consulta = await SerproService.ConsultarAsync(cpf, dataNascimento);
+            if (consulta.Sucesso)
+            {
+                colaborador.SituacaoCpf = SerproCpfConsultaService.NomesCorrespondem(colaborador.Nome, consulta.Nome)
+                    ? SituacaoCpfStatus.OK
+                    : SituacaoCpfStatus.DIVERGENTE;
+            }
+        }
+
         if (IsNovo)
             context.Colaboradores.Add(colaborador);
         else
@@ -216,4 +234,11 @@
     }
 
     private void Cancelar() => Navigation.NavigateTo("/colaboradores");
+
+    private static string SituacaoCssClass(SituacaoCpfStatus? situacao) => situacao switch
+    {
+        SituacaoCpfStatus.OK => "text-success fw-semibold",
+        SituacaoCpfStatus.DIVERGENTE => "text-danger fw-semibold",
+        _ => "",
+    };
 }

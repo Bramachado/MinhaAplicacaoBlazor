@@ -91,6 +91,10 @@ builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<MinhaAplicacaoBlazor.CnabBtg.CnabBtgGeracaoService>();
 builder.Services.AddScoped<MinhaAplicacaoBlazor.CnabBtg.CnabBtgGerenciamentoService>();
 
+// === Consulta CPF (SERPRO) ===
+builder.Services.AddSingleton<SerproTokenCache>();
+builder.Services.AddHttpClient<SerproCpfConsultaService>();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())

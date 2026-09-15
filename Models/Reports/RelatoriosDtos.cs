@@ -275,8 +275,10 @@ public class FolhaColaborador2LinhaDto
     /// <summary>Id do FolhaColaboradorItem de origem, usado para abrir os detalhes.</summary>
     public int ItemId { get; set; }
 
+    public int ColaboradorId { get; set; }
     public string Colaborador { get; set; } = string.Empty;
     public string? Cpf { get; set; }
+    public DateTime? DataNascimento { get; set; }
     public decimal ValorTotal { get; set; }
     public decimal ValorReceberPix { get; set; }
 
@@ -306,8 +308,10 @@ public class FolhaTutor2LinhaDto
     /// <summary>Id do FolhaTutorItem de origem, usado para abrir os detalhes.</summary>
     public int ItemId { get; set; }
 
+    public int TutorId { get; set; }
     public string Tutor { get; set; } = string.Empty;
     public string? Cpf { get; set; }
+    public DateTime? DataNascimento { get; set; }
     public decimal ValorTotalReceber { get; set; }
 
     // Conta bancária do tutor.

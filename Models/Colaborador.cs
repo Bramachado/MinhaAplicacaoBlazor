@@ -28,7 +28,13 @@ public class Colaborador : IEntidadeEmpresa
     [MaxLength(20)]
     public string? Telefone { get; set; }
 
+    [Required]
     public DateTime? DataNascimento { get; set; }
+
+    /// <summary>Resultado da última comparação entre o Nome informado e o nome
+    /// retornado pela consulta de CPF na SERPRO. Somente leitura na tela; calculado
+    /// em <see cref="MinhaAplicacaoBlazor.Services.SerproCpfConsultaService"/>.</summary>
+    public SituacaoCpfStatus? SituacaoCpf { get; set; }
 
     [MaxLength(150)]
     public string? Cargo { get; set; }
