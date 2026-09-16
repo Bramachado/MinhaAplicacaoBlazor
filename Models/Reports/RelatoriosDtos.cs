@@ -241,6 +241,7 @@ public class FolhaFornecedor2LinhaDto
     /// <summary>Id do FolhaFornecedorItem de origem, usado para abrir os detalhes.</summary>
     public int ItemId { get; set; }
 
+    public int FornecedorId { get; set; }
     public string Fornecedor { get; set; } = string.Empty;
     public string? CpfCnpjFornecedor { get; set; }
     public string? TipoPagamento { get; set; }

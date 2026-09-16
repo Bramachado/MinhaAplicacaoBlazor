@@ -61,9 +61,12 @@ public static class PaymentNormalizer
         // PIX
         if (FormaLancamento.EhPix(p.Forma))
         {
-            p.ChavePix = (input.ChavePix ?? string.Empty).Trim();
+            var chaveBruta = (input.ChavePix ?? string.Empty).Trim();
             p.FormaIniciacaoPix = MapearTipoChaveExplicito(input.TipoChavePix)
-                                  ?? InferirFormaIniciacaoPix(p.ChavePix);
+                                  ?? InferirFormaIniciacaoPix(chaveBruta);
+            // Chave tipo CPF/CNPJ é cadastrada no DICT do Bacen só com dígitos
+            // (sem pontos/traço/barra); os demais tipos vão como informados.
+            p.ChavePix = p.FormaIniciacaoPix == "03" ? CnabText.ApenasDigitos(chaveBruta) : chaveBruta;
             p.SegmentosGerados = "A,B";
         }
 
@@ -87,43 +90,48 @@ public static class PaymentNormalizer
         var t = (tipo ?? string.Empty).Trim().ToUpperInvariant();
         return t switch
         {
-            "TELEFONE" => "001",
-            "EMAIL" or "E-MAIL" => "002",
-            "CPFCNPJ" or "CPF" or "CNPJ" => "003",
-            "ALEATORIA" or "ALEATÓRIA" or "EVP" => "004",
+            "TELEFONE" => "01",
+            "EMAIL" or "E-MAIL" => "02",
+            "CPFCNPJ" or "CPF" or "CNPJ" => "03",
+            "ALEATORIA" or "ALEATÓRIA" or "EVP" => "04",
             _ => null
         };
     }
 
     /// <summary>
-    /// Infere a forma de iniciação PIX pela chave: telefone 001, e-mail 002,
-    /// CPF/CNPJ 003, aleatória 004. Dados bancários (005) não têm chave.
+    /// Infere a forma de iniciação PIX pela chave: telefone 01, e-mail 02,
+    /// CPF/CNPJ 03, aleatória 04. Dados bancários (05) não têm chave.
+    /// Código de 2 dígitos (campo alfa de 3 posições, com espaço à direita) —
+    /// conferido contra remessa real aceita pelo BTG: "03 " para CPF/CNPJ, "02 "
+    /// para e-mail. O valor de 3 dígitos ("003") usado antes não era reconhecido
+    /// pelo banco, que caía para o roteamento por dados bancários (Segmento A) —
+    /// falhando quando a conta do favorecido não tinha agência/conta preenchidas.
     /// </summary>
     public static string InferirFormaIniciacaoPix(string? chave)
     {
         if (string.IsNullOrWhiteSpace(chave))
-            return "005"; // sem chave: dados bancários
+            return "05"; // sem chave: dados bancários
 
         var c = chave.Trim();
 
         if (c.Contains('@'))
-            return "002"; // e-mail
+            return "02"; // e-mail
 
         var digitos = CnabText.ApenasDigitos(c);
 
         // Chave aleatória (EVP): UUID de 32 hex / 36 com hífens.
         var semHifen = c.Replace("-", string.Empty);
         if (semHifen.Length == 32 && semHifen.All(Uri.IsHexDigit))
-            return "004";
+            return "04";
 
         if (digitos.Length == 11 && (c.StartsWith("+55") || digitos.StartsWith("55") || c.StartsWith('(')))
-            return "001"; // telefone
+            return "01"; // telefone
         if ((c.StartsWith("+") || digitos.Length is 12 or 13) && digitos.Length >= 12)
-            return "001"; // telefone com DDI
+            return "01"; // telefone com DDI
 
         if (digitos.Length is 11 or 14 && digitos == c)
-            return "003"; // CPF/CNPJ
+            return "03"; // CPF/CNPJ
 
-        return "004"; // fallback: trata como aleatória
+        return "04"; // fallback: trata como aleatória
     }
 }

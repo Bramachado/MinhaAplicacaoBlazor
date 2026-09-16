@@ -2,9 +2,16 @@
 @attribute [Authorize(Policy = "RelatoriosFinanceiros.Ver")]
 @rendermode InteractiveServer
 
+@using System.IO.Compression
 @using System.Text
 @using System.Globalization
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
+@using MinhaAplicacaoBlazor.CnabBtg
+@using MinhaAplicacaoBlazor.CnabBtg.Audit
+@using MinhaAplicacaoBlazor.CnabBtg.Data
+@using MinhaAplicacaoBlazor.CnabBtg.Generation
+@using MinhaAplicacaoBlazor.CnabBtg.Payments
 @using MinhaAplicacaoBlazor.Data
 @using MinhaAplicacaoBlazor.Models
 @using MinhaAplicacaoBlazor.Models.Reports
@@ -13,6 +20,8 @@
 @inject RelatorioFinanceiroService Service
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject SerproCpfConsultaService SerproService
+@inject CnabBtgGeracaoService CnabService
+@inject AuthenticationStateProvider AuthProvider
 
 <PageTitle>Folha de Tutores 2</PageTitle>
 
@@ -66,13 +75,35 @@
                         Gerar Relatório
                     </button>
                     <button class="btn btn-secondary" @onclick="Limpar">Limpar</button>
-                    <button class="btn btn-success" @onclick="ExportarExcelAsync" disabled="@(!gerado || QuantidadeSelecionadas == 0)">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1" style="vertical-align:-2px;">
-                            <path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.781l2.116 2.54a.5.5 0 0 0 .768-.641L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.219z"/>
-                            <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5z"/>
-                        </svg>
-                        Exportar Excel (@QuantidadeSelecionadas)
-                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" disabled="@(!gerado || QuantidadeSelecionadas == 0)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1" style="vertical-align:-2px;">
+                                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                                <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/>
+                            </svg>
+                            Exportar
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <button class="dropdown-item" type="button" @onclick="ExportarExcelAsync" disabled="@(!gerado || QuantidadeSelecionadas == 0)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1" style="vertical-align:-2px;">
+                                        <path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.781l2.116 2.54a.5.5 0 0 0 .768-.641L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.219z"/>
+                                        <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5z"/>
+                                    </svg>
+                                    Excel (@QuantidadeSelecionadas)
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" type="button" @onclick="AbrirCnabExport" disabled="@(!gerado || QuantidadeSelecionadas == 0)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1" style="vertical-align:-2px;">
+                                        <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3-.5A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5z"/>
+                                        <path d="M4.5 8.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5"/>
+                                    </svg>
+                                    CNAB (@QuantidadeSelecionadas)
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                     <button class="btn btn-info text-white" @onclick="AbrirConferenciaAsync" disabled="@(!gerado || linhas.Count == 0)">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1" style="vertical-align:-2px;">
                             <path d="M13.485 1.431a1.473 1.473 0 0 1 2.104 2.062l-7.84 9.801a1.473 1.473 0 0 1-2.12.04L.431 8.138a1.473 1.473 0 0 1 2.084-2.083l4.111 4.112 6.82-8.69a.486.486 0 0 1 .04-.045z"/>
@@ -368,6 +399,165 @@
                     else
                     {
                         <button type="button" class="btn btn-secondary" @onclick="FecharConferencia">Fechar</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (cnabExportAberto)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Exportar para CNAB</h5>
+                    <button type="button" class="btn-close" @onclick="FecharCnabExport" disabled="@cnabProcessando"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(cnabErro))
+                    {
+                        <div class="alert alert-danger">@cnabErro</div>
+                    }
+
+                    @if (cnabResultado is null)
+                    {
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Convênio</label>
+                                <select class="form-select" @bind="cnabForm.EmpresaPagadora">
+                                    @foreach (var e in CnabService.Empresas)
+                                    {
+                                        <option value="@e.Codigo">@e.Codigo — @e.RazaoSocial (conv. @e.Convenio)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Data do Pagamento</label>
+                                <InputDate class="form-control" @bind-Value="cnabForm.DataPagamento" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nome do Arquivo</label>
+                                <input class="form-control" value="@cnabForm.NomeArquivo" readonly />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo</label>
+                                <select class="form-select" @bind="cnabForm.TipoPagamentoPrincipal">
+                                    <option value="PIX">PIX</option>
+                                    <option value="01">Crédito em Conta</option>
+                                    <option value="41">TED</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Ambiente</label>
+                                <select class="form-select" @bind="cnabForm.Ambiente">
+                                    <option value="TESTE">Teste</option>
+                                    <option value="PRODUCAO">Produção</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Registros Inválidos</label>
+                                <select class="form-select" @bind="cnabForm.BloquearSeHouverInvalidos">
+                                    <option value="false">Remover</option>
+                                    <option value="true">Bloquear</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Lote</label>
+                                <select class="form-select" @bind="cnabForm.SepararLotesPorForma">
+                                    <option value="false">Único</option>
+                                    <option value="true">Separado por forma</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="alert alert-info mt-3 mb-0">
+                            @QuantidadeSelecionadas tutor(es) selecionado(s). Cada arquivo .rem terá no máximo 48 registros;
+                            se necessário, mais de um arquivo será gerado.
+                        </div>
+                    }
+                    else
+                    {
+                        @if (cnabResultado.Bloqueado)
+                        {
+                            <div class="alert alert-danger"><strong>Geração bloqueada.</strong> @cnabResultado.MotivoBloqueio</div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-success">
+                                CNAB gerado com sucesso (NSA @cnabResultado.NsaInicial–@cnabResultado.NsaFinal).
+                                A validação final deve ser feita no ambiente BTG.
+                            </div>
+                        }
+
+                        <div class="row g-2 mb-3">
+                            <div class="col"><div class="card border-secondary"><div class="card-body py-2"><small class="text-muted">Selecionados</small><h5 class="mb-0">@cnabResultado.TotalSelecionados</h5></div></div></div>
+                            <div class="col"><div class="card border-success"><div class="card-body py-2"><small class="text-muted">Válidos</small><h5 class="mb-0 text-success">@cnabResultado.TotalValidos</h5></div></div></div>
+                            <div class="col"><div class="card border-info"><div class="card-body py-2"><small class="text-muted">Corrigidos</small><h5 class="mb-0">@cnabResultado.TotalCorrigidos</h5></div></div></div>
+                            <div class="col"><div class="card border-warning"><div class="card-body py-2"><small class="text-muted">Pendentes</small><h5 class="mb-0">@cnabResultado.TotalPendentes</h5></div></div></div>
+                            <div class="col"><div class="card border-danger"><div class="card-body py-2"><small class="text-muted">Inválidos</small><h5 class="mb-0 text-danger">@cnabResultado.TotalInvalidos</h5></div></div></div>
+                        </div>
+
+                        @if (cnabResultado.Arquivos.Count > 0)
+                        {
+                            <h6>Arquivos gerados</h6>
+                            <table class="table table-sm table-striped align-middle">
+                                <thead class="table-dark">
+                                    <tr><th>Arquivo</th><th>NSA</th><th class="text-end">Operações</th><th class="text-end">Registros</th><th class="text-end">Valor</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var a in cnabResultado.Arquivos)
+                                    {
+                                        <tr>
+                                            <td>@a.FileName</td>
+                                            <td>@a.Nsa</td>
+                                            <td class="text-end">@a.Operacoes</td>
+                                            <td class="text-end">@a.QuantidadeRegistros</td>
+                                            <td class="text-end">@Moeda(a.ValorTotal)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+
+                        @if (CnabProblemas.Count > 0)
+                        {
+                            <h6 class="mt-3">Não gerados / pendentes</h6>
+                            <table class="table table-sm align-middle">
+                                <thead class="table-dark">
+                                    <tr><th>Nome</th><th class="text-end">Valor</th><th>Status</th><th>Observações</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var p in CnabProblemas)
+                                    {
+                                        <tr>
+                                            <td>@p.Nome</td>
+                                            <td class="text-end">@Moeda(p.Valor)</td>
+                                            <td>@p.Status</td>
+                                            <td><small>@string.Join(" | ", p.Erros.Concat(p.Avisos))</small></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    }
+                </div>
+                <div class="modal-footer">
+                    @if (cnabResultado is null)
+                    {
+                        <button class="btn btn-secondary" @onclick="FecharCnabExport" disabled="@cnabProcessando">Cancelar</button>
+                        <button class="btn btn-primary" @onclick="GerarCnabExportAsync" disabled="@cnabProcessando">
+                            @if (cnabProcessando) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                            Gerar CNAB
+                        </button>
+                    }
+                    else
+                    {
+                        @if (!cnabResultado.Bloqueado && cnabResultado.Arquivos.Count > 0)
+                        {
+                            <button class="btn btn-success" @onclick="BaixarCnabAsync">Baixar Arquivo(s)</button>
+                        }
+                        <button class="btn btn-secondary" @onclick="FecharCnabExport">Fechar</button>
                     }
                 </div>
             </div>
@@ -698,4 +888,183 @@
     private void CancelarConferencia() => conferenciaCts?.Cancel();
 
     private void FecharConferencia() => conferenciaAberta = false;
+
+    // ---- Exportar para CNAB ----
+    private bool cnabExportAberto;
+    private bool cnabProcessando;
+    private string? cnabErro;
+    private readonly CnabExportForm cnabForm = new();
+    private CnabGenerationResult? cnabResultado;
+
+    private List<NormalizedPayment> CnabProblemas =>
+        cnabResultado?.Pagamentos
+            .Where(p => p.Status is StatusPagamentoCnab.Invalido or StatusPagamentoCnab.PendenteDeConfirmacao)
+            .ToList() ?? new();
+
+    private sealed class CnabExportForm
+    {
+        public string EmpresaPagadora { get; set; } = string.Empty;
+        public DateTime DataPagamento { get; set; } = DateTime.Today;
+        public string NomeArquivo { get; set; } = string.Empty;
+        public string TipoPagamentoPrincipal { get; set; } = "PIX";
+        public string Ambiente { get; set; } = "TESTE";
+        public bool BloquearSeHouverInvalidos { get; set; }
+        public bool SepararLotesPorForma { get; set; }
+    }
+
+    private void AbrirCnabExport()
+    {
+        cnabForm.EmpresaPagadora = CnabService.Empresas.FirstOrDefault()?.Codigo ?? string.Empty;
+        cnabForm.DataPagamento = DateTime.Today;
+        cnabForm.NomeArquivo = $"CNAB_Folha_Tutor_{DateTime.Now:yyyyMMdd_HHmmss}";
+        cnabForm.TipoPagamentoPrincipal = "PIX";
+        cnabForm.Ambiente = "TESTE";
+        cnabForm.BloquearSeHouverInvalidos = false;
+        cnabForm.SepararLotesPorForma = false;
+        cnabErro = null;
+        cnabResultado = null;
+        cnabExportAberto = true;
+    }
+
+    private void FecharCnabExport()
+    {
+        cnabExportAberto = false;
+        cnabResultado = null;
+        cnabErro = null;
+    }
+
+    /// <summary>
+    /// Gera o(s) .rem a partir das linhas selecionadas no relatório (independente
+    /// do status da folha), usando as classes puras do gerador CNAB BTG. O NSA é
+    /// obtido/atualizado na mesma sequência (CnabSequences) usada pelo módulo
+    /// "Gerenciar CNAB" para não colidir com outros lotes já enviados ao banco.
+    /// </summary>
+    private async Task GerarCnabExportAsync()
+    {
+        cnabErro = null;
+        cnabProcessando = true;
+        try
+        {
+            var selecionadas = linhas.Where(l => l.Selecionado).ToList();
+            if (selecionadas.Count == 0)
+            {
+                cnabErro = "Nenhum tutor selecionado.";
+                return;
+            }
+
+            var empresa = EmpresaPagadora.Obter(cnabForm.EmpresaPagadora, CnabService.Empresas);
+            if (empresa is null)
+            {
+                cnabErro = "Selecione um convênio válido.";
+                return;
+            }
+
+            await using var context = await DbFactory.CreateDbContextAsync();
+
+            // O relatório não traz o dígito da conta separado: busca do cadastro do tutor.
+            var tutorIds = selecionadas.Select(l => l.TutorId).Distinct().ToList();
+            var digitosPorTutor = await context.Tutores.AsNoTracking()
+                .Where(t => tutorIds.Contains(t.Id))
+                .Select(t => new { t.Id, Digito = t.ContaBancaria!.DigitoConta })
+                .ToDictionaryAsync(x => x.Id, x => x.Digito);
+
+            var inputs = selecionadas.Select(l => new PaymentInput
+            {
+                Id = l.ItemId,
+                Origem = "Tutor",
+                Nome = l.Tutor,
+                NomeTitular = l.NomeTitular,
+                CpfCnpj = l.CpfCnpjConta,
+                Valor = l.ValorTotalReceber,
+                Forma = l.Forma, // "PIX"/"TED" do cadastro; o Tipo do popup só é usado como fallback
+                TipoPessoa = l.TipoPessoa,
+                ChavePix = l.ChavePix,
+                TipoChavePix = l.TipoChavePix,
+                BancoNome = l.NomeBanco,
+                CodigoBanco = l.CodigoBanco,
+                Agencia = l.Agencia,
+                Conta = l.Conta,
+                DigitoConta = digitosPorTutor.TryGetValue(l.TutorId, out var dv) ? dv : null
+            }).ToList();
+
+            var seq = await context.CnabSequences.FirstOrDefaultAsync(s => s.EmpresaPagadora == empresa.Codigo);
+            var nsaInicial = (seq?.UltimoNsa ?? 0) + 1;
+
+            var user = (await AuthProvider.GetAuthenticationStateAsync()).User;
+
+            var options = new CnabGenerationOptions
+            {
+                Empresa = empresa,
+                DataPagamento = cnabForm.DataPagamento,
+                NsaInicial = nsaInicial,
+                NomeBaseArquivo = cnabForm.NomeArquivo,
+                TipoPagamentoPrincipal = cnabForm.TipoPagamentoPrincipal,
+                Ambiente = string.Equals(cnabForm.Ambiente, "PRODUCAO", StringComparison.OrdinalIgnoreCase)
+                    ? AmbienteCnab.Producao : AmbienteCnab.Teste,
+                TratamentoInvalidos = cnabForm.BloquearSeHouverInvalidos ? TratamentoInvalidos.Bloquear : TratamentoInvalidos.Remover,
+                SepararLotesPorForma = cnabForm.SepararLotesPorForma,
+                MaxOperacoesPorArquivo = 48,
+                GeradoEm = DateTime.Now,
+                GeradoPor = user.Identity?.Name
+            };
+
+            var generator = new CnabBtgPaymentGenerator();
+            var resultado = generator.Gerar(inputs, options);
+            cnabResultado = resultado;
+
+            if (!resultado.Bloqueado && resultado.Arquivos.Count > 0)
+            {
+                if (seq is null)
+                {
+                    context.CnabSequences.Add(new CnabSequence
+                    {
+                        EmpresaPagadora = empresa.Codigo,
+                        UltimoNsa = resultado.NsaFinal,
+                        UpdatedAt = options.GeradoEm
+                    });
+                }
+                else
+                {
+                    seq.UltimoNsa = resultado.NsaFinal;
+                    seq.UpdatedAt = options.GeradoEm;
+                }
+                await context.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            cnabErro = $"Erro ao gerar CNAB: {ex.Message}";
+        }
+        finally
+        {
+            cnabProcessando = false;
+        }
+    }
+
+    private async Task BaixarCnabAsync()
+    {
+        if (cnabResultado is null || cnabResultado.Arquivos.Count == 0) return;
+
+        if (cnabResultado.Arquivos.Count == 1)
+        {
+            var a = cnabResultado.Arquivos[0];
+            var base64 = Convert.ToBase64String(CnabZipPacker.RemBytes(a.Conteudo));
+            await JS.InvokeVoidAsync("baixarArquivoBase64", a.FileName, base64, "application/octet-stream");
+            return;
+        }
+
+        using var ms = new MemoryStream();
+        using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            foreach (var a in cnabResultado.Arquivos)
+            {
+                var entry = zip.CreateEntry(a.FileName, CompressionLevel.Optimal);
+                await using var s = entry.Open();
+                var bytes = CnabZipPacker.RemBytes(a.Conteudo);
+                await s.WriteAsync(bytes);
+            }
+        }
+        var zipBase64 = Convert.ToBase64String(ms.ToArray());
+        await JS.InvokeVoidAsync("baixarArquivoBase64", $"{cnabForm.NomeArquivo}.zip", zipBase64, "application/zip");
+    }
 }

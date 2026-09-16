@@ -64,8 +64,10 @@ var result = new CnabBtgPaymentGenerator().Gerar(listaDePaymentInput, options);
 - Um **lote por forma de lançamento** (o Header de Lote tem forma única).
 - Formas suportadas: **45 PIX**, **01 crédito em conta**, **05 poupança**,
   **41/43 TED**. Boleto/QR/tributos ficam preparados mas **não são gerados** sem módulo.
-- Segmento B PIX: chave em Informação 10 (33–67, máx. 35). Chave maior → **inválida**
-  (não trunca). Tipo de chave inferido (telefone 001, e-mail 002, CPF/CNPJ 003, aleatória 004).
+- Segmento B PIX: chave em Informação 12 (128–226, máx. 99). Chave maior → **inválida**
+  (não trunca). Tipo de chave inferido (telefone 01, e-mail 02, CPF/CNPJ 03, aleatória 04,
+  dados bancários 05) — código de 2 dígitos no campo alfa de 3 posições (posições 15–17
+  do Segmento B), conferido contra remessa real aceita pelo BTG.
 - Inválidos **não entram** no `.rem`. Opção "bloquear se houver inválidos" impede a
   geração inteira. Pendentes (ex.: duplicidade) ficam de fora e são listados.
 - **Auditoria JSON + CSV** (original × normalizado, totais, arquivos) e **ZIP** com tudo.

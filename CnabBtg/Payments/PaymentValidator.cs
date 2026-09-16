@@ -5,12 +5,12 @@ namespace MinhaAplicacaoBlazor.CnabBtg.Payments;
 /// <summary>
 /// Valida pagamentos já normalizados e os classifica. Não altera dados de negócio
 /// (valor, banco, conta): apenas verifica e marca. O tamanho máximo da chave PIX
-/// no Segmento B (Informação 10) é 35 posições.
+/// no Segmento B (Informação 12, posições 128–226) é 99 posições.
 /// </summary>
 public static class PaymentValidator
 {
     public const int TamanhoNomeFavorecido = 30;
-    public const int TamanhoChavePix = 35;
+    public const int TamanhoChavePix = 99;
 
     /// <summary>Valida a lista completa (inclui detecção de duplicidade CPF/CNPJ + valor + data).</summary>
     public static void ValidarLote(IReadOnlyList<NormalizedPayment> pagamentos, CnabGenerationOptions options)

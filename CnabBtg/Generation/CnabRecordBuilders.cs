@@ -64,7 +64,8 @@ public static class CnabRecordBuilders
             .Alfa(73, 30, e.RazaoSocial)
             .Brancos(103, 40)                      // mensagem
             .Brancos(143, 80)                      // endereço da empresa (não utilizado)
-            .Num(223, 2, FormaLancamento.ExigeContaBancaria(forma) ? "01" : "00") // indicativo forma pagto
+            // Indicativo forma pagto: "01" também para PIX (conferido contra remessa real aceita pelo BTG).
+            .Num(223, 2, FormaLancamento.ExigeContaBancaria(forma) || FormaLancamento.EhPix(forma) ? "01" : "00")
             .Brancos(225, 16)
             .Build();
     }
@@ -110,15 +111,15 @@ public static class CnabRecordBuilders
             .Num(8, 1, "3")
             .Num(9, 5, seqNoLote)
             .Alfa(14, 1, "B")
-            .Alfa(15, 3, FormaLancamento.EhPix(p.Forma) ? (p.FormaIniciacaoPix ?? "004") : "   ")
+            .Alfa(15, 3, FormaLancamento.EhPix(p.Forma) ? (p.FormaIniciacaoPix ?? "04") : "   ")
             .Num(18, 1, p.TipoInscricao)
             .Num(19, 14, p.CpfCnpj);
 
         if (FormaLancamento.EhPix(p.Forma))
         {
-            b.Alfa(33, 35, p.ChavePix)             // Informação 10 = chave PIX
+            b.Brancos(33, 35)                      // Informação 10
              .Brancos(68, 60)                      // Informação 11
-             .Brancos(128, 99);                    // Informação 12
+             .Alfa(128, 99, p.ChavePix);            // Informação 12 = chave PIX
         }
         else
         {

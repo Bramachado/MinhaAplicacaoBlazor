@@ -375,6 +375,7 @@ public class RelatorioFinanceiroService
                 linhas.Add(new FolhaFornecedor2LinhaDto
                 {
                     ItemId = item.Id,
+                    FornecedorId = forn?.Id ?? 0,
                     Fornecedor = forn?.NomeRazaoSocial ?? "(?)",
                     CpfCnpjFornecedor = forn?.CpfCnpj,
                     TipoPagamento = forn?.TipoPagamento,
