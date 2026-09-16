@@ -191,6 +191,7 @@
                             <td>@l.Cpf</td>
                             <td>@(l.DataNascimento?.ToString("dd/MM/yyyy") ?? "—")</td>
                             <td class="text-end fw-semibold">@Moeda(l.ValorTotalReceber)</td>
+                            <td>@l.Unidade</td>
                             <td>@l.NomeTitular</td>
                             <td>@l.CpfCnpjConta</td>
                             <td>@l.Forma</td>
@@ -208,7 +209,7 @@
                     <tr>
                         <td colspan="6" class="text-end fw-bold">Total selecionado</td>
                         <td class="text-end fw-bold">@Moeda(TotalSelecionado)</td>
-                        <td colspan="10"></td>
+                        <td colspan="11"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -603,6 +604,7 @@
         new("Cpf",               "CPF",             l => l.Cpf),
         new("DataNascimento",    "Dt. Nascimento",  l => l.DataNascimento),
         new("ValorTotalReceber", "Valor a Receber", l => l.ValorTotalReceber, true),
+        new("Unidade",           "Unidade",         l => l.Unidade),
         new("NomeTitular",       "Nome Titular",    l => l.NomeTitular),
         new("CpfCnpjConta",      "CPF/CNPJ Titular",l => l.CpfCnpjConta),
         new("Forma",             "Forma",           l => l.Forma),
@@ -711,6 +713,7 @@
             ("CPF",             l => l.Cpf ?? "",                                 true,  false),
             ("Dt. Nascimento",  l => l.DataNascimento?.ToString("dd/MM/yyyy") ?? "", false, false),
             ("Valor a Receber", l => l.ValorTotalReceber.ToString("N2", ptBr),    false, true),
+            ("Unidade",         l => l.Unidade ?? "",                             false, false),
             ("Nome Titular",    l => l.NomeTitular ?? "",                          false, false),
             ("CPF/CNPJ Titular",l => l.CpfCnpjConta ?? "",                         true,  false),
             ("Forma",           l => l.Forma ?? "",                               false, false),

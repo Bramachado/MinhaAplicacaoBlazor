@@ -193,6 +193,7 @@
                             <td>@(l.DataNascimento?.ToString("dd/MM/yyyy") ?? "—")</td>
                             <td class="text-end fw-semibold">@Moeda(l.ValorTotal)</td>
                             <td class="text-end">@Moeda(l.ValorReceberPix)</td>
+                            <td>@l.Unidade</td>
                             <td>@l.NomeTitular</td>
                             <td>@l.CpfCnpjConta</td>
                             <td>@l.Forma</td>
@@ -211,7 +212,7 @@
                         <td colspan="6" class="text-end fw-bold">Totais selecionados</td>
                         <td class="text-end fw-bold">@Moeda(TotalSelecionado)</td>
                         <td class="text-end fw-bold">@Moeda(TotalPixSelecionado)</td>
-                        <td colspan="10"></td>
+                        <td colspan="11"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -635,6 +636,7 @@
         new("DataNascimento",  "Dt. Nascimento",  l => l.DataNascimento),
         new("ValorTotal",      "Valor Total",     l => l.ValorTotal, true),
         new("ValorReceberPix", "Receber PIX",     l => l.ValorReceberPix, true),
+        new("Unidade",         "Unidade",         l => l.Unidade),
         new("NomeTitular",     "Nome Titular",    l => l.NomeTitular),
         new("CpfCnpjConta",    "CPF/CNPJ Titular",l => l.CpfCnpjConta),
         new("Forma",           "Forma",           l => l.Forma),
@@ -745,6 +747,7 @@
             ("Dt. Nascimento",  l => l.DataNascimento?.ToString("dd/MM/yyyy") ?? "", false, false),
             ("Valor Total",     l => l.ValorTotal.ToString("N2", ptBr),      false, true),
             ("Receber PIX",     l => l.ValorReceberPix.ToString("N2", ptBr), false, true),
+            ("Unidade",         l => l.Unidade ?? "",                         false, false),
             ("Nome Titular",    l => l.NomeTitular ?? "",                     false, false),
             ("CPF/CNPJ Titular",l => l.CpfCnpjConta ?? "",                    true,  false),
             ("Forma",           l => l.Forma ?? "",                          false, false),

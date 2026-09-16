@@ -250,6 +250,9 @@ public class FolhaFornecedor2LinhaDto
     /// <summary>Descrição do banco pagador (Bancos.Descricao).</summary>
     public string? BancoPagador { get; set; }
 
+    public string? Categoria { get; set; }
+    public string? Unidade { get; set; }
+
     // Conta bancária do fornecedor.
     public string? NomeTitular { get; set; }
     public string? CpfCnpjConta { get; set; }
@@ -283,6 +286,8 @@ public class FolhaColaborador2LinhaDto
     public decimal ValorTotal { get; set; }
     public decimal ValorReceberPix { get; set; }
 
+    public string? Unidade { get; set; }
+
     // Conta bancária do colaborador.
     public string? NomeTitular { get; set; }
     public string? CpfCnpjConta { get; set; }
@@ -314,6 +319,8 @@ public class FolhaTutor2LinhaDto
     public string? Cpf { get; set; }
     public DateTime? DataNascimento { get; set; }
     public decimal ValorTotalReceber { get; set; }
+
+    public string? Unidade { get; set; }
 
     // Conta bancária do tutor.
     public string? NomeTitular { get; set; }

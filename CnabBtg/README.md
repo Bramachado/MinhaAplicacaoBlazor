@@ -4,35 +4,25 @@ Gera arquivos de remessa de pagamento no padrão **FEBRABAN 240** para o **Banco
 Pactual (208)**, a partir dos pagamentos das folhas fechadas da aplicação. Núcleo
 puro (sem EF), independente da origem dos dados: recebe uma lista de `PaymentInput`.
 
-## Fluxo do usuário (principal: **Gerenciar CNAB**)
+## Fluxo do usuário
 
-Menu **Financeiro → Gerenciar CNAB** (`/cnab-btg/gerenciar`, também aceita
-`?competenciaId=123`). É o fluxo oficial de conferência e geração.
+Cada relatório de folha (**Fornecedores**, **Tutores**, **Colaboradores**) tem seu
+próprio botão **CNAB** que abre um modal inline de exportação: seleciona os
+pagamentos do tipo Transferência, informa empresa pagadora/data/ambiente e gera
+o `.rem` + auditoria + ZIP na hora, usando `CnabBtgGeracaoService.Empresas` e o
+gerador diretamente (sem persistir lote/histórico).
 
-1. Selecionar a **competência**. A tela carrega **todos** os pagamentos das folhas
-   fechadas (colaboradores, tutores, fornecedores).
-2. A tela separa e totaliza para conferência (cards): total da competência,
-   transferências, **boletos**, selecionado, **válido p/ geração**, inválido,
-   já gerado e a **diferença** selecionado−gerado. Filtros: tipo (Todos/
-   Transferências/Boletos) e status CNAB (Pendentes/Já gerados/Inválidos).
-3. Marcar os pagamentos e clicar **Validar Selecionados** → validação por item.
-4. **Gerar CNAB** abre o modal com os dados obrigatórios (empresa pagadora, data,
-   NSA automático/manual, nome do arquivo, ambiente Teste/Produção,
-   bloquear-inválidos, separar-lotes-por-forma, convênio).
-5. Gera `.rem` + auditoria **JSON/CSV** + **ZIP**, grava o histórico e permite
-   baixar novamente em **Histórico CNAB** (`/cnab-btg/historico`).
+As telas **Gerenciar CNAB** (`/cnab-btg/gerenciar`) e **Histórico CNAB**
+(`/cnab-btg/historico`) — um fluxo alternativo de conferência/geração/histórico
+por competência, com persistência em `CnabBatch` e telas dedicadas — foram
+**removidas** por estarem sem uso. Os métodos que as serviam
+(`CnabBtgGeracaoService.GerarAsync/ObterPagamentosAsync/ObterHistoricoAsync/
+ObterDetalheAsync/ObterZipAsync`) e as tabelas `CnabBatch`/`CnabBatchPayment`/
+`CnabGeneratedFile`/`CnabSequence` continuam no banco (histórico preservado),
+mas hoje não têm nenhuma tela chamando-os.
 
-Os cards mostram os totais **PIX** e **TED** separadamente, e o filtro de tipo permite
-ver **Somente PIX** / **Somente TED**. Na geração, **PIX e TED (e cada forma) saem em
-arquivos `.rem` separados**, cada um com no máximo **50 operações** — havendo mais de 50
-de um tipo, gera-se outro arquivo (com NSA próprio).
-
-> **Boletos** aparecem e entram nos totais da competência, mas **nunca** no `.rem`
-> (dependem dos Segmentos J/J-52, ainda não implementados). Se selecionados, a tela
-> alerta e a geração os ignora (registrado nos totais do lote).
-
-O botão **Gerar CNAB** do relatório de **Pagamentos Bancários** agora **redireciona**
-para `/cnab-btg/gerenciar?competenciaId={competenciaId}` (não gera mais direto).
+Resta a tela **Configurações CNAB** (`/cnab-btg/configuracoes`), só leitura das
+empresas pagadoras configuradas.
 
 ## Estrutura de código (`/CnabBtg`)
 
@@ -42,10 +32,9 @@ para `/cnab-btg/gerenciar?competenciaId={competenciaId}` (não gera mais direto)
 | `Payments/` | `PaymentInput`, `NormalizedPayment`, `PaymentNormalizer`, `PaymentValidator` |
 | `Audit/` | `CnabAuditReport/Row`, `CnabAuditWriter` (JSON/CSV), `CnabZipPacker` |
 | `Data/` | `CnabBatch` (+ campos de conferência), `CnabGeneratedFile`, `CnabBatchPayment`, `CnabSequence` |
-| (raiz) | `CnabBtgGeracaoService` (geração + persistência), **`CnabBtgGerenciamentoService`** (conferência da tela: carrega TODOS incl. boletos, classifica, totais, valida), DTOs (`CnabBtgDtos`, `CnabGerenciarDtos`) |
+| (raiz) | `CnabBtgGeracaoService` (geração + persistência; `Empresas` usado pelas telas de Folha e por `ConfiguracoesCnabBtg.razor`), DTOs (`CnabBtgDtos`) |
 
-Telas: `Components/Pages/Cnab/GerenciarCnabBtg.razor` (principal), `HistoricoCnabBtg.razor`,
-`ConfiguracoesCnabBtg.razor`, `GerarCnabModal.razor` (modal de geração reaproveitado).
+Tela: `Components/Pages/Cnab/ConfiguracoesCnabBtg.razor`.
 
 O gerador é usado pelo `CnabBtgGeracaoService`, mas pode ser chamado isoladamente:
 
@@ -71,12 +60,10 @@ var result = new CnabBtgPaymentGenerator().Gerar(listaDePaymentInput, options);
 - Inválidos **não entram** no `.rem`. Opção "bloquear se houver inválidos" impede a
   geração inteira. Pendentes (ex.: duplicidade) ficam de fora e são listados.
 - **Auditoria JSON + CSV** (original × normalizado, totais, arquivos) e **ZIP** com tudo.
-- Persistência: `CnabBatch` + `CnabGeneratedFile` + `CnabBatchPayment` (marca
-  `StatusCnab = CNAB_GERADO`, **nunca "Pago"**) + `CnabSequence` (NSA por empresa).
-- Pagamento já incluído em um CNAB ativo **não** pode ser reincluído — **exceto** com
-  o modo **"Permitir gerar novamente"** ligado na tela Gerenciar CNAB (padrão **ligado**
-  durante os testes; desligue em produção). Nesse modo os itens já gerados continuam
-  selecionáveis e entram no `.rem` de novo, mantendo a marcação "já em CNAB" para conferência.
+- Persistência (só no fluxo `CnabBtgGeracaoService.GerarAsync`, hoje sem tela chamando-o):
+  `CnabBatch` + `CnabGeneratedFile` + `CnabBatchPayment` (marca `StatusCnab = CNAB_GERADO`,
+  **nunca "Pago"**) + `CnabSequence` (NSA por empresa). O fluxo inline das telas de Folha
+  não persiste lote/histórico.
 
 > No texto/gerador: *"Arquivo gerado conforme regras estruturais CNAB. A validação
 > final deve ser feita no ambiente BTG."*

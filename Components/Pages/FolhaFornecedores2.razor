@@ -179,6 +179,8 @@
                             </td>
                             <td class="text-end fw-semibold">@Moeda(l.ValorTotalPagar)</td>
                             <td>@l.BancoPagador</td>
+                            <td>@l.Categoria</td>
+                            <td>@l.Unidade</td>
                             <td>@l.NomeTitular</td>
                             <td>@l.CpfCnpjConta</td>
                             <td>@l.Forma</td>
@@ -195,12 +197,12 @@
                 <tfoot class="table-light">
                     <tr>
                         <th colspan="6" class="text-end">Total selecionado</th>
-                        <th colspan="11"></th>
+                        <th colspan="13"></th>
                     </tr>
                     <tr>
                         <td colspan="5"></td>
                         <td class="text-end fw-bold">@Moeda(TotalSelecionado)</td>
-                        <td colspan="11"></td>
+                        <td colspan="13"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -599,6 +601,8 @@
         new("TipoPagamento",     "Tipo Pagamento",   l => l.TipoPagamento),
         new("ValorTotalPagar",   "Valor a Pagar",    l => l.ValorTotalPagar, true),
         new("BancoPagador",      "Banco Pagador",    l => l.BancoPagador),
+        new("Categoria",         "Categoria",        l => l.Categoria),
+        new("Unidade",           "Unidade",          l => l.Unidade),
         new("NomeTitular",       "Nome Titular",     l => l.NomeTitular),
         new("CpfCnpjConta",      "CPF/CNPJ Titular", l => l.CpfCnpjConta),
         new("Forma",             "Forma",            l => l.Forma),
@@ -715,6 +719,8 @@
             ("Tipo Pagamento",  l => l.TipoPagamento ?? "",              false, false),
             ("Valor a Pagar",   l => l.ValorTotalPagar.ToString("N2", ptBr), false, true),
             ("Banco Pagador",   l => l.BancoPagador ?? "",               false, false),
+            ("Categoria",       l => l.Categoria ?? "",                  false, false),
+            ("Unidade",         l => l.Unidade ?? "",                    false, false),
             ("Nome Titular",    l => l.NomeTitular ?? "",                false, false),
             ("CPF/CNPJ Titular",l => l.CpfCnpjConta ?? "",               true,  false),
             ("Forma",           l => l.Forma ?? "",                      false, false),

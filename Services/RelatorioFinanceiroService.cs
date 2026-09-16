@@ -362,6 +362,8 @@ public class RelatorioFinanceiroService
             .AsNoTracking()
             .Where(f => f.CompetenciaId == competenciaId)
             .Include(f => f.Itens).ThenInclude(i => i.Fornecedor!).ThenInclude(fr => fr.ContaBancaria)
+            .Include(f => f.Itens).ThenInclude(i => i.Fornecedor!).ThenInclude(fr => fr.Unidade)
+            .Include(f => f.Itens).ThenInclude(i => i.Fornecedor!).ThenInclude(fr => fr.CategoriaFornecedor)
             .Include(f => f.Itens).ThenInclude(i => i.BancoPagador)
             .ToListAsync();
 
@@ -381,6 +383,8 @@ public class RelatorioFinanceiroService
                     TipoPagamento = forn?.TipoPagamento,
                     ValorTotalPagar = item.ValorTotalPagar,
                     BancoPagador = item.BancoPagador?.Descricao,
+                    Categoria = forn?.CategoriaFornecedor?.Nome,
+                    Unidade = forn?.Unidade?.Nome,
                     NomeTitular = conta?.NomeTitular,
                     CpfCnpjConta = conta?.CpfCnpj,
                     Forma = conta?.Forma.ToString(),
@@ -418,6 +422,7 @@ public class RelatorioFinanceiroService
             .AsNoTracking()
             .Where(f => f.CompetenciaId == competenciaId)
             .Include(f => f.Itens).ThenInclude(i => i.Colaborador!).ThenInclude(c => c.ContaBancaria)
+            .Include(f => f.Itens).ThenInclude(i => i.Colaborador!).ThenInclude(c => c.Unidade)
             .ToListAsync();
 
         var linhas = new List<FolhaColaborador2LinhaDto>();
@@ -438,6 +443,7 @@ public class RelatorioFinanceiroService
                     DataNascimento = colab?.DataNascimento,
                     ValorTotal = item.ValorTotal,
                     ValorReceberPix = item.ValorReceberPix,
+                    Unidade = colab?.Unidade?.Nome,
                     NomeTitular = conta.NomeTitular,
                     CpfCnpjConta = conta.CpfCnpj,
                     Forma = conta.Forma.ToString(),
@@ -471,6 +477,7 @@ public class RelatorioFinanceiroService
             .AsNoTracking()
             .Where(f => f.CompetenciaId == competenciaId)
             .Include(f => f.Itens).ThenInclude(i => i.Tutor!).ThenInclude(t => t.ContaBancaria)
+            .Include(f => f.Itens).ThenInclude(i => i.Tutor!).ThenInclude(t => t.Unidade)
             .ToListAsync();
 
         var linhas = new List<FolhaTutor2LinhaDto>();
@@ -490,6 +497,7 @@ public class RelatorioFinanceiroService
                     Cpf = tutor?.Cpf,
                     DataNascimento = tutor?.DataNascimento,
                     ValorTotalReceber = item.ValorTotalReceber,
+                    Unidade = tutor?.Unidade?.Nome,
                     NomeTitular = conta.NomeTitular,
                     CpfCnpjConta = conta.CpfCnpj,
                     Forma = conta.Forma.ToString(),
