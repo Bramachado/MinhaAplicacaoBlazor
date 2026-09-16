@@ -40,4 +40,8 @@ public class Arquivo : IEntidadeEmpresa
     // Vínculo opcional a uma entrada financeira (anexo).
     public int? EntradaId { get; set; }
     public Entrada? Entrada { get; set; }
+
+    // Vínculo opcional a uma unidade (anexo de documentos do cadastro).
+    public int? UnidadeId { get; set; }
+    public Unidade? Unidade { get; set; }
 }

@@ -487,6 +487,12 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(x => x.EntradaId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<Arquivo>()
+            .HasOne(x => x.Unidade)
+            .WithMany(x => x.Arquivos)
+            .HasForeignKey(x => x.UnidadeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // === Auditoria ===
         modelBuilder.Entity<RegistroAuditoria>()
             .Property(x => x.Acao)

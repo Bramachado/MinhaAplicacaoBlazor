@@ -26,4 +26,6 @@ public class Unidade : IEntidadeEmpresa
     public bool Ativa { get; set; } = true;
 
     public List<Tutor> Tutores { get; set; } = new();
+
+    public List<Arquivo> Arquivos { get; set; } = new();
 }

@@ -14,8 +14,8 @@
                    @bind="descricao" @bind:event="oninput" disabled="@enviando" />
         </div>
         <div class="col-md-5">
-            <label class="form-label">Arquivo (PDF, JPG, PNG) <span class="text-danger">*</span></label>
-            <InputFile class="form-control" OnChange="OnArquivoSelecionado" accept=".pdf,.jpg,.jpeg,.png"
+            <label class="form-label">Arquivo (PDF, JPG, PNG, TXT) <span class="text-danger">*</span></label>
+            <InputFile class="form-control" OnChange="OnArquivoSelecionado" accept=".pdf,.jpg,.jpeg,.png,.txt"
                        disabled="@enviando" @key="inputFileKey" />
         </div>
         <div class="col-md-2 d-flex align-items-end">
@@ -62,16 +62,19 @@
     // Quando informado, o arquivo é vinculado a esta entrada financeira.
     [Parameter] public int? EntradaId { get; set; }
 
+    // Quando informado, o arquivo é vinculado a esta unidade (documentos do cadastro).
+    [Parameter] public int? UnidadeId { get; set; }
+
     private const long TamanhoMaximo = 15 * 1024 * 1024; // 15 MB
 
     private static readonly HashSet<string> ContentTypesPermitidos = new(StringComparer.OrdinalIgnoreCase)
     {
-        "application/pdf", "image/jpeg", "image/jpg", "image/png"
+        "application/pdf", "image/jpeg", "image/jpg", "image/png", "text/plain", ""
     };
 
     private static readonly HashSet<string> ExtensoesPermitidas = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".pdf", ".jpg", ".jpeg", ".png"
+        ".pdf", ".jpg", ".jpeg", ".png", ".txt"
     };
 
     private string descricao = string.Empty;
@@ -135,12 +138,13 @@
                 Data = DateTime.Now,
                 Descricao = descricao.Trim(),
                 NomeArquivo = arquivoSelecionado.Name,
-                ContentType = arquivoSelecionado.ContentType,
+                ContentType = NormalizarContentType(arquivoSelecionado.ContentType, arquivoSelecionado.Name),
                 TamanhoBytes = conteudo.LongLength,
                 Conteudo = conteudo,
                 FolhaFornecedorItemId = FolhaFornecedorItemId,
                 FolhaFornecedorItemNotaId = FolhaFornecedorItemNotaId,
-                EntradaId = EntradaId
+                EntradaId = EntradaId,
+                UnidadeId = UnidadeId
             };
 
             await using var context = await DbFactory.CreateDbContextAsync();
@@ -164,6 +168,21 @@
         {
             enviando = false;
         }
+    }
+
+    private static string NormalizarContentType(string contentType, string nomeArquivo)
+    {
+        if (!string.IsNullOrWhiteSpace(contentType))
+            return contentType;
+
+        return Path.GetExtension(nomeArquivo).ToLowerInvariant() switch
+        {
+            ".txt" => "text/plain",
+            ".pdf" => "application/pdf",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            _ => "application/octet-stream"
+        };
     }
 
     private static string FormatarTamanho(long bytes)
